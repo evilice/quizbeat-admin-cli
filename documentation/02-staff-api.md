@@ -140,7 +140,7 @@ refresh и logout доступны без access.
 | --- | --- | --- | --- |
 | `POST` | `/compositions/:id/audio` | `201` `{ originalAudioDurationSec }` | Multipart, поле `file` (одно). Заменяет предыдущий оригинал. Нет файла — `400` |
 | `GET` | `/compositions/:id/audio` | `200` `{ url }` | Временная ссылка на оригинал. `404`, если композиции нет или оригинал ещё не загружен |
-| `POST` | `/compositions/:id/clips` | `201` массив отрезков | Тело `{ points: [...] }`, хотя бы одна точка. Точка: `startTimeSec` (целое ≥ 0), `durationSec` только из `1, 2, 3, 5, 8, 13, 21`, `difficulty`: `EASY`, `MEDIUM` или `HARD`. Сервер отклоняет точку, которая вылезает за длительность оригинала |
+| `POST` | `/compositions/:id/clips` | `201` массив **новых** отрезков | Тело `{ points: [...] }`, хотя бы одна точка. Ответ — только созданные в этом запросе, не весь список. Точка: `startTimeSec` (целое ≥ 0), `durationSec` только из `1, 2, 3, 5, 8, 13, 21`, `difficulty`: `EASY`, `MEDIUM` или `HARD`. Сервер отклоняет точку, которая вылезает за длительность оригинала |
 | `GET` | `/compositions/:id/clips` | `200` массив | Без пагинации. Им опрашивают нарезку |
 | `DELETE` | `/compositions/:id/clips/:clipId` | `204` | Жёсткое удаление |
 | `POST` | `/compositions/:id/clips/:clipId/regenerate` | `200` отрезок | Сброс в `PENDING` и повторная постановка в очередь |
@@ -164,7 +164,7 @@ flac. Ориентир размера — 200 МБ (`STORAGE_MAX_AUDIO_SIZE_BYTE
 
 | Метод | Путь | Успех | Что важно |
 | --- | --- | --- | --- |
-| `POST` | `/compositions/:id/images` | `201` массив | Multipart, поле `files`, до 10 файлов за запрос. Пустой набор — `400` |
+| `POST` | `/compositions/:id/images` | `201` массив **только что загруженных** | Multipart, поле `files`, до 10 файлов за запрос. Ответ — не весь список картинок композиции. Пустой набор — `400` |
 | `GET` | `/compositions/:id/images` | `200` массив | Без пагинации, в порядке `order` |
 | `PATCH` | `/compositions/:id/images/order` | `200` массив | `{ imageIds }` — полный список id в новом порядке. Набор должен совпасть с текущим, пустой не отправляется. `order` в ответе — индекс с 0 |
 | `DELETE` | `/compositions/:id/images/:imageId` | `204` | Жёсткое удаление |

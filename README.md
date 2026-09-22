@@ -25,8 +25,10 @@
   практики для написания кода через вайб-кодинг. Адаптация правил бэкенда.
 - [Оформление задач](./documentation/tasks/task-writing-guidelines.md) —
   как декомпозировать этап ТЗ на файлы в `documentation/tasks/step-N/`.
-  Этап 0 разобран в
-  [documentation/tasks/step-0](./documentation/tasks/step-0/README.md).
+  Этапы 0–2 разобраны в
+  [documentation/tasks/step-0](./documentation/tasks/step-0/README.md),
+  [step-1](./documentation/tasks/step-1/README.md),
+  [step-2](./documentation/tasks/step-2/README.md).
 
 Схема таблиц сервера — в
 [модели данных бэкенда](../quizbeat-srv/documentation/02-data-model.md).

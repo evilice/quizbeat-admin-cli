@@ -52,8 +52,10 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
 - [documentation/04-development-rules.md](./documentation/04-development-rules.md) —
   обязательные правила (кратко — ниже).
 - [documentation/tasks/task-writing-guidelines.md](./documentation/tasks/task-writing-guidelines.md) —
-  формат задач. Декомпозиция этапа 0 —
-  [documentation/tasks/step-0/README.md](./documentation/tasks/step-0/README.md).
+  формат задач. Декомпозиция этапов 0–2 —
+  [этап 0](./documentation/tasks/step-0/README.md),
+  [этап 1](./documentation/tasks/step-1/README.md),
+  [этап 2](./documentation/tasks/step-2/README.md).
   Следующие этапы разбираются на задачи отдельно, перед реализацией.
 
 ## Правила разработки (кратко; полный текст —

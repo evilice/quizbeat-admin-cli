@@ -14,9 +14,14 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
 
 Роли, сценарии, стек —
 [documentation/01-project-overview.md](./documentation/01-project-overview.md).
+Карта staff-API —
+[documentation/02-staff-api.md](./documentation/02-staff-api.md).
 Этапы и принятые решения —
 [documentation/03-technical-specification.md](./documentation/03-technical-specification.md).
-Поля запросов и ответов — код `quizbeat-srv`, не пересказ в ТЗ клиента.
+Нумерация документов и этапов — этого репозитория, не `quizbeat-srv`.
+Сессия — этап 1, сотрудники — этап 2, контент с тегов на этапе 3.
+Поля запросов сверять с картой и с кодом `quizbeat-srv`; если они
+разошлись, верен код сервера, карта правится здесь.
 
 ## Стек
 
@@ -40,8 +45,10 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
 ## Документация — куда смотреть
 
 - [documentation/01-project-overview.md](./documentation/01-project-overview.md)
-- [documentation/03-technical-specification.md](./documentation/03-technical-specification.md) —
+- [documentation/02-staff-api.md](./documentation/02-staff-api.md) —
   сверяться заново, не полагаться на память из прошлой сессии.
+- [documentation/03-technical-specification.md](./documentation/03-technical-specification.md) —
+  порядок поставки экранов. Сверяться заново.
 - [documentation/04-development-rules.md](./documentation/04-development-rules.md) —
   обязательные правила (кратко — ниже).
 - [documentation/tasks/task-writing-guidelines.md](./documentation/tasks/task-writing-guidelines.md) —
@@ -65,8 +72,8 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
    и любого `dangerouslySetInnerHTML`. Уровень усилия указывается явно.
 8. `npm run lint` и `npm run test` после каждого изменения; `npm run build`
    перед сдачей задачи, которая трогает сборку, маршрут или стор.
-9. Обзор и ТЗ правятся в том же PR, что и код. Контракт сервера отсюда не
-   переписывается.
+9. Обзор, карта API и ТЗ правятся в том же PR, что и код. Контракт сервера
+   отсюда не переписывается: расхождение чинится в карте клиента.
 10. Коммиты с префиксом (`feat:`, `fix:`, `docs:`, `chore:`), текст после
     префикса — на русском.
 

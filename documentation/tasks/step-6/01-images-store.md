@@ -44,7 +44,7 @@ Multipart с именем `file` вместо `files`, JSON-заголовок �
 | Методы стора: `POST .../images`, `GET .../images`, `PATCH .../images/order`, `DELETE .../images/:imageId` | Блок загрузки и списка на карточке — [задача 2](./02-images-upload-and-list.md) |
 | Обобщение того же HTTP-клиента / multipart-пути этапа 5 под несколько частей с именем поля `files` (правило 5: не копировать транспорт) | Перетаскивание в UI — [задача 3](./03-images-reorder.md) |
 | Тесты на моке: поле `files`, не больше 10 файлов из стора при клиентском запрете, полный `imageIds`, пустой `imageIds` не уходит, `204` удаления → успех | Удаление в UI — [задача 4](./04-images-delete.md) |
-| | `GET /compositions/:id/full`, заметки, аудио — [этап 8](../../03-technical-specification.md#этап-8--сборка-карточки-композиции) / [этап 7](../../03-technical-specification.md#этап-7--заметки-а-знали-ли-вы) / [этап 5](../../03-technical-specification.md#этап-5--аудио-и-отрезки) |
+| | `GET /compositions/:id/full` — принадлежит стору композиций, [задача 1 этапа 4](../step-4/01-compositions-store.md). Заметки, аудио — [этап 7](../../03-technical-specification.md#этап-7--заметки-а-знали-ли-вы) / [этап 5](../../03-technical-specification.md#этап-5--аудио-и-отрезки) |
 
 ## ⚠ Технические нюансы и ограничения
 

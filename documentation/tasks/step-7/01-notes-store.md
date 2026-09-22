@@ -41,7 +41,7 @@ DTO —
 | Методы стора: `GET` / `POST` `.../notes`, `PATCH .../notes/:noteId`, `PATCH .../notes/order`, `DELETE .../notes/:noteId` | Блок списка на карточке — [задача 2](./02-notes-list.md) |
 | Тесты на моке: `translations` с `text` (не `name`), оба перевода в `PATCH`, полный `noteIds`, пустой не уходит, путь с сегментом `order`, `204` удаления → успех | Форма UI — [задача 3](./03-note-form.md). Стор отправляет тот набор, который ему передали |
 | | Смена порядка в UI — [задача 4](./04-notes-reorder.md); удаление в UI — [задача 5](./05-notes-delete.md) |
-| | `GET /compositions/:id/full`, картинки, аудио — [этап 8](../../03-technical-specification.md#этап-8--сборка-карточки-композиции) / [этап 6](../../03-technical-specification.md#этап-6--изображения-композиции) / [этап 5](../../03-technical-specification.md#этап-5--аудио-и-отрезки) |
+| | `GET /compositions/:id/full` — принадлежит стору композиций, [задача 1 этапа 4](../step-4/01-compositions-store.md). Картинки, аудио — [этап 6](../../03-technical-specification.md#этап-6--изображения-композиции) / [этап 5](../../03-technical-specification.md#этап-5--аудио-и-отрезки) |
 
 ## ⚠ Технические нюансы и ограничения
 

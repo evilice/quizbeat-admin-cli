@@ -42,7 +42,7 @@ DTO —
 | Расширение того же HTTP-клиента под `FormData` (один метод / низкоуровневый вызов без `Content-Type: application/json`) | Волна, разметка, отправка с UI — [задача 3](./03-waveform-and-points.md) |
 | Тесты на моке: поле `file`, тело `{ points }`, отсутствие выдуманного `fileUrl` до `DONE`, `204` удаления → успех | Опрос по таймеру — [задача 4](./04-clips-list-and-poll.md). Стор делает разовый `GET`, не `setInterval` |
 | | Удаление/перегенерация в UI — [задача 5](./05-clip-delete-and-regenerate.md) |
-| | `GET /compositions/:id/full`, картинки (`files`), заметки — [этап 8](../../03-technical-specification.md#этап-8--сборка-карточки-композиции) / [этап 6](../../03-technical-specification.md#этап-6--изображения-композиции) / [этап 7](../../03-technical-specification.md#этап-7--заметки-а-знали-ли-вы) |
+| | `GET /compositions/:id/full` — принадлежит стору композиций, [задача 1 этапа 4](../step-4/01-compositions-store.md). Картинки (`files`), заметки — [этап 6](../../03-technical-specification.md#этап-6--изображения-композиции) / [этап 7](../../03-technical-specification.md#этап-7--заметки-а-знали-ли-вы) |
 
 ## ⚠ Технические нюансы и ограничения
 

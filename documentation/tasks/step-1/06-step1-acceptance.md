@@ -26,14 +26,8 @@
 
 ## ⚠ Технические нюансы и ограничения
 
-- Сид `SUPER_ADMIN` создаётся при старте `quizbeat-srv`, только если
-  `NODE_ENV` не `test` и в env сервера заданы `SUPER_ADMIN_EMAIL` и
-  `SUPER_ADMIN_PASSWORD`. Приёмка против сервера с `NODE_ENV=test`
-  логином сида не подтверждается: автосид там выключен. Пароль сида в
-  этот репозиторий не копируется.
-- Клиент открывается на `http://localhost:5173`. Если порт занят,
-  `strictPort` роняет dev-сервер. Переносить порт нельзя: origin
-  прописан в `CORS_ORIGIN_ADMIN`.
+- Условия сида `SUPER_ADMIN` и порта dev-сервера — общие для всех
+  этапов, см. [acceptance-preconditions.md](../acceptance-preconditions.md).
 - В сетевой панели у логина один `POST /auth/staff/login` без заголовка
   `Authorization`. После перезагрузки — один `POST /auth/staff/refresh`,
   не два: восстановление и перехватчик делят promise задачи 2. Два

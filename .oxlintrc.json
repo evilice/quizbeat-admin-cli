@@ -6,7 +6,10 @@
   },
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react/only-export-components": [
+      "warn",
+      { "allowConstantExport": true, "allowExportNames": ["useRootStore"] }
+    ],
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-floating-promises": "error"
   }

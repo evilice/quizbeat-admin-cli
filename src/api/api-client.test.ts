@@ -14,14 +14,14 @@ describe('createApiClient', () => {
         statusCode: 401,
         message: 'Invalid credentials',
         error: 'Unauthorized',
-        path: '/auth/staff/login',
+        path: '/items',
         timestamp: '2026-09-23T00:00:00.000Z',
       }),
     );
     const client = createApiClient(() => null);
 
     await expect(
-      client.requestJson('/auth/staff/login', { method: 'POST' }),
+      client.requestJson('/items', { method: 'POST' }),
     ).rejects.toMatchObject({
       status: 401,
       messages: ['Invalid credentials'],
@@ -34,14 +34,14 @@ describe('createApiClient', () => {
         statusCode: 400,
         message: ['email must be an email', 'password must be longer'],
         error: 'Bad Request',
-        path: '/auth/staff/login',
+        path: '/items',
         timestamp: '2026-09-23T00:00:00.000Z',
       }),
     );
     const client = createApiClient(() => null);
 
     await expect(
-      client.requestJson('/auth/staff/login', { method: 'POST' }),
+      client.requestJson('/items', { method: 'POST' }),
     ).rejects.toMatchObject({
       status: 400,
       messages: ['email must be an email', 'password must be longer'],
@@ -75,7 +75,7 @@ describe('createApiClient', () => {
     const client = createApiClient(() => 'access-token');
 
     await expect(
-      client.requestJson('/auth/staff/logout', { method: 'POST' }),
+      client.requestJson('/session', { method: 'POST' }),
     ).resolves.toBeUndefined();
   });
 

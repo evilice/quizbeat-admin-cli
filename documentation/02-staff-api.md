@@ -75,7 +75,11 @@ refresh и logout доступны без access.
 | `POST` | `/auth/staff/logout` | `204` без тела | `refreshToken`. Отзывает этот refresh, даже если он уже отозван — ответ всё равно `204` |
 
 Неверный пароль, неизвестный email и неактивный сотрудник на логине дают
-один и тот же `401`, без различия «нет такого пользователя».
+один и тот же `401`, без различия «нет такого пользователя». Строка
+`message` при этом — `Invalid credentials`. Негодный refresh —
+`Invalid or expired refresh token`. Access-гард —
+`Invalid or missing access token`. Это не то же самое, что `401` на смене
+своего пароля: там другая строка, см. раздел сотрудников.
 Деактивированный сотрудник не продлевает сессию через refresh.
 Уже выданный access после деактивации живёт до своего TTL: `DELETE
 /admins/:id` отзывает refresh, но не обрывает access.
@@ -89,7 +93,7 @@ refresh и logout доступны без access.
 | --- | --- | --- | --- | --- |
 | `GET` | `/admins` | `SUPER_ADMIN` | `200` страница | Поиск `search` по подстроке email. Фильтр `role`: `ADMIN` или `SUPER_ADMIN`. Фильтр `isActive` — строки `true` / `false`, не повторяющийся флаг. Без фильтра сервер отдаёт и деактивированных |
 | `POST` | `/admins` | `SUPER_ADMIN` | `201` сотрудник | `email`, `password` (не короче 8), `role`. В ответе пароля нет: `id`, `email`, `role`, `isActive`, `createdAt`, `updatedAt` |
-| `PATCH` | `/admins/me/password` | любой staff | `204` | `currentPassword`, `newPassword` (не короче 8). Это не сброс чужого пароля |
+| `PATCH` | `/admins/me/password` | любой staff | `204` | `currentPassword`, `newPassword` (не короче 8). Неверный текущий пароль — `401` и `message` `Current password is incorrect`: access при этом валиден, refresh не отзывается. Успех отзывает все активные refresh этого сотрудника и новую пару не выдаёт; access доживает до своего TTL |
 | `PATCH` | `/admins/:id/password` | `SUPER_ADMIN` | `204` | Только `newPassword`. Текущий пароль цели не нужен. `404`, если id нет |
 | `PATCH` | `/admins/:id` | `SUPER_ADMIN` | `200` сотрудник | Необязательные `role` и `isActive`. Повторная активация — `isActive: true`, отдельного эндпоинта нет |
 | `DELETE` | `/admins/:id` | `SUPER_ADMIN` | `200` сотрудник | Не удаляет строку. Ставит `isActive: false` и отзывает refresh. Ответ с уже неактивным сотрудником |

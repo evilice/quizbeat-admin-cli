@@ -52,8 +52,9 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
 - [documentation/04-development-rules.md](./documentation/04-development-rules.md) —
   обязательные правила (кратко — ниже).
 - [documentation/tasks/task-writing-guidelines.md](./documentation/tasks/task-writing-guidelines.md) —
-  формат задач. Каталога `step-N/` ещё нет: декомпозиция этапа делается
-  отдельно, перед его реализацией.
+  формат задач. Декомпозиция этапа 0 —
+  [documentation/tasks/step-0/README.md](./documentation/tasks/step-0/README.md).
+  Следующие этапы разбираются на задачи отдельно, перед реализацией.
 
 ## Правила разработки (кратко; полный текст —
 в [documentation/04-development-rules.md](./documentation/04-development-rules.md))
@@ -95,6 +96,8 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
   Вернуть композицию нельзя. Сотрудника можно активировать снова через
   `PATCH`.
 - Деактивация не обрывает уже выданный access до конца его TTL (около 15
-  минут).
+  минут). Успешная смена своего пароля тоже отзывает refresh и не выдаёт
+  новую пару; неверный текущий пароль — отдельный `401`
+  (`Current password is incorrect`), не отказ access-токена.
 - Документация и коммиты — на русском, идентификаторы в коде — на
   английском.

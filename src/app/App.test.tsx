@@ -25,7 +25,7 @@ describe('оболочка', () => {
   });
 
   it('хук стора возвращает экземпляр корневого стора', () => {
-    const store = new RootStore();
+    const store = newRootStore();
 
     render(shell(store, '/', <StoreProbe expected={store} />));
 
@@ -33,7 +33,7 @@ describe('оболочка', () => {
   });
 
   it('локаль темы совпадает с ruRU установленного пакета', () => {
-    render(shell(new RootStore(), '/', <ThemeProbe />));
+    render(shell(newRootStore(), '/', <ThemeProbe />));
 
     expect(screen.getByTestId('theme-probe').textContent).toBe('match');
   });
@@ -49,7 +49,7 @@ describe('оболочка', () => {
 });
 
 function renderAt(path: string): void {
-  render(shell(new RootStore(), path));
+  render(shell(newRootStore(), path));
 }
 
 function shell(store: RootStore, path: string, probe?: ReactNode) {
@@ -60,6 +60,19 @@ function shell(store: RootStore, path: string, probe?: ReactNode) {
       <RouterProvider router={router} />
     </AppProviders>
   );
+}
+
+function newRootStore(): RootStore {
+  const memory = new Map<string, string>();
+  return new RootStore({
+    getItem: (key) => memory.get(key) ?? null,
+    setItem: (key, value) => {
+      memory.set(key, value);
+    },
+    removeItem: (key) => {
+      memory.delete(key);
+    },
+  });
 }
 
 function StoreProbe({ expected }: { expected: RootStore }) {

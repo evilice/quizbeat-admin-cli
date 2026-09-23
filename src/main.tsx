@@ -10,7 +10,7 @@ if (rootElement === null) {
   throw new Error('Элемент #root не найден');
 }
 
-const rootStore = new RootStore();
+const rootStore = new RootStore(window.localStorage);
 const router = createBrowserRouter(routes);
 
 createRoot(rootElement).render(

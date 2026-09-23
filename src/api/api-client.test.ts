@@ -79,6 +79,20 @@ describe('createApiClient', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('на не-JSON теле успешного ответа отдаёт ApiError со статусом ответа', async () => {
+    stubFetch(() => new Response('not-json', { status: 200 }));
+    const client = createApiClient(() => null);
+
+    const error = await rejection(client.request('/health', { method: 'GET' }));
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      status: 200,
+      messages: ['not-json'],
+    });
+    expect((error as ApiError).message).not.toContain('Unexpected token');
+  });
+
   it('на не-JSON теле HTTP-ошибки отдаёт статус и не бросает ошибку парсера', async () => {
     stubFetch(() => new Response('not-json', { status: 502 }));
     const client = createApiClient(() => null);
@@ -86,7 +100,7 @@ describe('createApiClient', () => {
     const error = await rejection(client.request('/health', { method: 'GET' }));
 
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ status: 502 });
+    expect(error).toMatchObject({ status: 502, messages: ['not-json'] });
     expect((error as ApiError).message).not.toContain('Unexpected token');
   });
 

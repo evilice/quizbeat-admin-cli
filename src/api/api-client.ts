@@ -36,7 +36,11 @@ export function createApiClient(getAccessToken: () => string | null) {
       if (raw.trim() === '') {
         return undefined;
       }
-      return JSON.parse(raw) as unknown;
+      try {
+        return JSON.parse(raw) as unknown;
+      } catch {
+        throw new ApiError(response.status, [raw]);
+      }
     }
 
     throw errorFromResponse(response.status, raw);

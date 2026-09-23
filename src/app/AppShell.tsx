@@ -1,7 +1,7 @@
 import { AppBar, Box, Button, Toolbar, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router';
+import { Link, Outlet } from 'react-router';
 import { ApiError } from '../api/api-error.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
 import { LoginPage } from './LoginPage.tsx';
@@ -55,6 +55,12 @@ export const AppShell = observer(function AppShell() {
           </Typography>
           {signedIn ? (
             <>
+              {session.role === 'SUPER_ADMIN' ? (
+                <Button color="inherit" component={Link} to="/admins">
+                  Сотрудники
+                </Button>
+              ) : null}
+              <Typography component="span">{session.id}</Typography>
               <Typography component="span">{session.email}</Typography>
               <Button color="inherit" onClick={() => void session.logout()}>
                 Выйти

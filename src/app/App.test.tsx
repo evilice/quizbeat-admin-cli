@@ -85,6 +85,61 @@ describe('оболочка', () => {
   });
 });
 
+describe('роль в оболочке и пункт сотрудников', () => {
+  it('SUPER_ADMIN видит пункт, переход на /admins показывает заглушку без fetch, id в шапке равен sub', () => {
+    const sub = 'super-1';
+    const access = makeAccessToken({
+      sub,
+      role: 'SUPER_ADMIN',
+      type: 'staff',
+    });
+    const fetchMock = stubFetch(() =>
+      jsonResponse(500, { message: 'unexpected' }),
+    );
+    const store = newRootStore();
+    store.session.setPair(access, 'refresh-1', 'super@example.com');
+
+    render(shell(store, '/'));
+
+    expect(screen.getByText(sub)).toBeTruthy();
+    expect(store.session.id).toBe(sub);
+    const link = screen.getByRole('link', { name: 'Сотрудники' });
+    expect(link.getAttribute('href')).toBe('/admins');
+
+    fireEvent.click(link);
+
+    expect(
+      screen.getByText('Раздел сотрудников появится на следующем этапе.'),
+    ).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(0);
+  });
+
+  it('ADMIN пункт не видит, прямой заход на /admins — та же заглушка без fetch, id в шапке равен sub', () => {
+    const sub = 'admin-2';
+    const access = makeAccessToken({
+      sub,
+      role: 'ADMIN',
+      type: 'staff',
+    });
+    const fetchMock = stubFetch(() =>
+      jsonResponse(500, { message: 'unexpected' }),
+    );
+    const store = newRootStore();
+    store.session.setPair(access, 'refresh-1', 'admin@example.com');
+
+    render(shell(store, '/admins'));
+
+    expect(screen.getByText(sub)).toBeTruthy();
+    expect(store.session.id).toBe(sub);
+    expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+    expect(
+      screen.getByText('Раздел сотрудников появится на следующем этапе.'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/доступ запрещён/i)).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(0);
+  });
+});
+
 describe('логин, восстановление и выход', () => {
   it('без refresh на / видны поля и заголовок, выхода нет', () => {
     renderAt('/');

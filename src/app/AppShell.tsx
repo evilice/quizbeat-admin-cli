@@ -60,6 +60,9 @@ export const AppShell = observer(function AppShell() {
                   Сотрудники
                 </Button>
               ) : null}
+              <Button color="inherit" component={Link} to="/password">
+                Сменить пароль
+              </Button>
               <Typography component="span">{session.id}</Typography>
               <Typography component="span">{session.email}</Typography>
               <Button color="inherit" onClick={() => void session.logout()}>

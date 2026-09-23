@@ -140,6 +140,133 @@ describe('роль в оболочке и пункт сотрудников', ()
   });
 });
 
+describe('смена своего пароля', () => {
+  it('новый пароль из 7 символов не вызывает fetch', () => {
+    const fetchMock = stubFetch(() =>
+      jsonResponse(500, { message: 'unexpected' }),
+    );
+    const store = newRootStore();
+    store.session.setPair(
+      makeAccessToken({ sub: 'admin-1', role: 'ADMIN', type: 'staff' }),
+      'refresh-1',
+      'admin@example.com',
+    );
+
+    render(shell(store, '/password'));
+
+    fireEvent.change(screen.getByLabelText(/текущий пароль/i), {
+      target: { value: 'old-secret' },
+    });
+    fireEvent.change(screen.getByLabelText(/новый пароль/i), {
+      target: { value: '1234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Сменить пароль' }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(0);
+    expect(
+      screen.getByText(/новый пароль должен быть не короче 8 символов/i),
+    ).toBeTruthy();
+  });
+
+  it('успешный 204 забывает refresh, оставляет access и показывает подтверждение', async () => {
+    const access = makeAccessToken({
+      sub: 'admin-1',
+      role: 'ADMIN',
+      type: 'staff',
+    });
+    const fetchMock = stubFetch(
+      () => new Response(null, { status: 204 }),
+    );
+    const storage = createMemoryStorage();
+    const store = new RootStore(storage);
+    store.session.setPair(access, 'refresh-1', 'admin@example.com');
+
+    render(shell(store, '/password'));
+
+    fireEvent.change(screen.getByLabelText(/текущий пароль/i), {
+      target: { value: 'old-secret' },
+    });
+    fireEvent.change(screen.getByLabelText(/новый пароль/i), {
+      target: { value: 'new-secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Сменить пароль' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Пароль изменён')).toBeTruthy();
+    });
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      `${apiBaseUrl}/admins/me/password`,
+    );
+    expect(storage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+    expect(store.session.refreshToken).toBeNull();
+    expect(store.session.accessToken).toBe(access);
+    expect(screen.getByRole('button', { name: 'Выйти' })).toBeTruthy();
+    expect(
+      (screen.getByLabelText(/текущий пароль/i) as HTMLInputElement).value,
+    ).toBe('');
+    expect(
+      (screen.getByLabelText(/новый пароль/i) as HTMLInputElement).value,
+    ).toBe('');
+  });
+
+  it('401 Current password is incorrect показывает строку, не шлёт refresh и не очищает access', async () => {
+    const access = makeAccessToken({
+      sub: 'admin-1',
+      role: 'ADMIN',
+      type: 'staff',
+    });
+    const fetchMock = stubFetch(() =>
+      jsonResponse(401, {
+        statusCode: 401,
+        message: 'Current password is incorrect',
+        error: 'Unauthorized',
+        path: '/admins/me/password',
+        timestamp: '2026-09-23T00:00:00.000Z',
+      }),
+    );
+    const storage = createMemoryStorage();
+    const store = new RootStore(storage);
+    store.session.setPair(access, 'refresh-keep', 'admin@example.com');
+
+    render(shell(store, '/password'));
+
+    fireEvent.change(screen.getByLabelText(/текущий пароль/i), {
+      target: { value: 'wrong' },
+    });
+    fireEvent.change(screen.getByLabelText(/новый пароль/i), {
+      target: { value: 'new-secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Сменить пароль' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Current password is incorrect')).toBeTruthy();
+    });
+    const refreshCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).endsWith('/auth/staff/refresh'),
+    );
+    expect(refreshCalls).toHaveLength(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(store.session.accessToken).toBe(access);
+    expect(store.session.refreshToken).toBe('refresh-keep');
+    expect(storage.getItem(REFRESH_TOKEN_KEY)).toBe('refresh-keep');
+  });
+
+  it('ссылка на форму есть в шапке при роли ADMIN', () => {
+    const store = newRootStore();
+    store.session.setPair(
+      makeAccessToken({ sub: 'admin-2', role: 'ADMIN', type: 'staff' }),
+      'refresh-1',
+      'admin@example.com',
+    );
+
+    render(shell(store, '/'));
+
+    const link = screen.getByRole('link', { name: 'Сменить пароль' });
+    expect(link.getAttribute('href')).toBe('/password');
+    expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+  });
+});
+
 describe('логин, восстановление и выход', () => {
   it('без refresh на / видны поля и заголовок, выхода нет', () => {
     renderAt('/');

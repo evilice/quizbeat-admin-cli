@@ -6,6 +6,7 @@ import {
   LoginRedirect,
   MissingPage,
 } from './pages.tsx';
+import { ChangePasswordPage } from './ChangePasswordPage.tsx';
 
 export const routes: RouteObject[] = [
   {
@@ -14,6 +15,7 @@ export const routes: RouteObject[] = [
       { path: '/login', element: <LoginRedirect /> },
       { path: '/', element: <HomePage /> },
       { path: '/admins', element: <AdminsPage /> },
+      { path: '/password', element: <ChangePasswordPage /> },
       { path: '*', element: <MissingPage /> },
     ],
   },

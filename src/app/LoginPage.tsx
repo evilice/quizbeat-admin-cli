@@ -1,9 +1,10 @@
-import { Box, Button, TextField, Typography } from '@mui/material';
+import { Box, Button, TextField } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '../api/api-error.ts';
 import { normalizeEmail } from '../lib/normalize-email.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
+import { ErrorMessages } from './ErrorMessages.tsx';
 
 export const LoginPage = observer(function LoginPage({
   restoreMessages = null,
@@ -63,11 +64,7 @@ export const LoginPage = observer(function LoginPage({
         }}
         autoComplete="current-password"
       />
-      {messages.map((message, index) => (
-        <Typography key={`${index}:${message}`} color="error">
-          {message}
-        </Typography>
-      ))}
+      <ErrorMessages messages={messages} />
       <Button type="submit" variant="contained" disabled={submitting}>
         Войти
       </Button>

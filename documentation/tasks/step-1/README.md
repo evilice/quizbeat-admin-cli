@@ -1,5 +1,7 @@
 # Этап 1 — Сессия сотрудника: декомпозиция на задачи
 
+Статус этапа: выполнен. Сводка — [status.md](../status.md).
+
 Источник: [03-technical-specification.md, раздел «Этап 1»](../../03-technical-specification.md#этап-1--сессия-сотрудника)
 и поведение `401` из [раздела 2](../../03-technical-specification.md#2-общие-технические-требования).
 Карта вызовов — [сессия](../../02-staff-api.md#2-сессия) и строка
@@ -31,14 +33,14 @@ flowchart TD
 
 ## Список задач
 
-| # | Задача | Зависит от | Файл |
-|---|--------|------------|------|
-| 1 | Модель сессии: разбор access, память, `localStorage` | этап 0, задачи [2](../step-0/02-http-client.md) и [3](../step-0/03-app-shell.md) | [01-session-model.md](./01-session-model.md) |
-| 2 | Вызовы login/refresh/logout и один refresh на пачку `401` | 1 | [02-refresh-on-401.md](./02-refresh-on-401.md) |
-| 3 | Экран логина, восстановление при загрузке, выход | 2 | [03-login-logout.md](./03-login-logout.md) |
-| 4 | Роль в оболочке и пункт меню сотрудников | 3 | [04-role-menu.md](./04-role-menu.md) |
-| 5 | Смена своего пароля | 3 | [05-change-own-password.md](./05-change-own-password.md) |
-| 6 | Приёмка этапа 1 целиком | 4, 5 | [06-step1-acceptance.md](./06-step1-acceptance.md) |
+| # | Задача | Зависит от | Файл | Статус |
+|---|--------|------------|------|--------|
+| 1 | Модель сессии: разбор access, память, `localStorage` | этап 0, задачи [2](../step-0/02-http-client.md) и [3](../step-0/03-app-shell.md) | [01-session-model.md](./01-session-model.md) | выполнена |
+| 2 | Вызовы login/refresh/logout и один refresh на пачку `401` | 1 | [02-refresh-on-401.md](./02-refresh-on-401.md) | выполнена |
+| 3 | Экран логина, восстановление при загрузке, выход | 2 | [03-login-logout.md](./03-login-logout.md) | выполнена |
+| 4 | Роль в оболочке и пункт меню сотрудников | 3 | [04-role-menu.md](./04-role-menu.md) | выполнена |
+| 5 | Смена своего пароля | 3 | [05-change-own-password.md](./05-change-own-password.md) | выполнена |
+| 6 | Приёмка этапа 1 целиком | 4, 5 | [06-step1-acceptance.md](./06-step1-acceptance.md) | выполнена |
 
 ## Почему такой порядок
 

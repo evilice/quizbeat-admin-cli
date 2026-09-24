@@ -50,6 +50,8 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
   порядок поставки экранов. Сверяться заново.
 - [documentation/04-development-rules.md](./documentation/04-development-rules.md) —
   обязательные правила (кратко — ниже).
+- [documentation/tasks/status.md](./documentation/tasks/status.md) —
+  какие этапы и задачи выполнены. Сверяться заново.
 - [documentation/tasks/task-writing-guidelines.md](./documentation/tasks/task-writing-guidelines.md) —
   формат задач. Декомпозиция этапов 0–8 —
   [этап 0](./documentation/tasks/step-0/README.md),

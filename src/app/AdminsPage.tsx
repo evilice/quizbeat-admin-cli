@@ -30,6 +30,7 @@ import type { StaffRole } from '../stores/parse-access-token.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
 import { CreateAdminDialog } from './CreateAdminDialog.tsx';
 import { ErrorMessages } from './ErrorMessages.tsx';
+import { ResetPasswordDialog } from './ResetPasswordDialog.tsx';
 
 type RoleFilter = 'all' | StaffRole;
 type ActivityFilter = 'all' | 'active' | 'inactive';
@@ -56,6 +57,8 @@ export const AdminsPage = observer(function AdminsPage() {
   const [listVersion, setListVersion] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
   const [deactivateTarget, setDeactivateTarget] = useState<Admin | null>(null);
+  const [resetTarget, setResetTarget] = useState<Admin | null>(null);
+  const [passwordResetConfirmed, setPasswordResetConfirmed] = useState(false);
   const [actionPending, setActionPending] = useState(false);
 
   useEffect(() => {
@@ -180,6 +183,16 @@ export const AdminsPage = observer(function AdminsPage() {
     }
   }
 
+  function handlePasswordReset(adminId: string) {
+    if (adminId === session.id) {
+      session.forgetRefresh();
+    }
+    setResetTarget(null);
+    setPasswordResetConfirmed(true);
+    setMessages([]);
+    reloadList();
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box
@@ -251,6 +264,14 @@ export const AdminsPage = observer(function AdminsPage() {
         }}
       />
 
+      <ResetPasswordDialog
+        admin={resetTarget}
+        onClose={() => {
+          setResetTarget(null);
+        }}
+        onReset={handlePasswordReset}
+      />
+
       <Dialog
         open={deactivateTarget !== null}
         onClose={() => {
@@ -289,6 +310,10 @@ export const AdminsPage = observer(function AdminsPage() {
       </Dialog>
 
       <ErrorMessages messages={messages} />
+
+      {passwordResetConfirmed ? (
+        <Typography color="success.main">Пароль задан</Typography>
+      ) : null}
 
       {showEmpty ? <Typography>{EMPTY_LIST_MESSAGE}</Typography> : null}
 
@@ -338,25 +363,36 @@ export const AdminsPage = observer(function AdminsPage() {
                   {admin.isActive ? 'активен' : 'неактивен'}
                 </TableCell>
                 <TableCell>
-                  {admin.isActive ? (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     <Button
                       disabled={actionPending}
                       onClick={() => {
-                        setDeactivateTarget(admin);
+                        setPasswordResetConfirmed(false);
+                        setResetTarget(admin);
                       }}
                     >
-                      Деактивировать
+                      Сбросить пароль
                     </Button>
-                  ) : (
-                    <Button
-                      disabled={actionPending}
-                      onClick={() => {
-                        void handleActivate(admin);
-                      }}
-                    >
-                      Активировать
-                    </Button>
-                  )}
+                    {admin.isActive ? (
+                      <Button
+                        disabled={actionPending}
+                        onClick={() => {
+                          setDeactivateTarget(admin);
+                        }}
+                      >
+                        Деактивировать
+                      </Button>
+                    ) : (
+                      <Button
+                        disabled={actionPending}
+                        onClick={() => {
+                          void handleActivate(admin);
+                        }}
+                      >
+                        Активировать
+                      </Button>
+                    )}
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}

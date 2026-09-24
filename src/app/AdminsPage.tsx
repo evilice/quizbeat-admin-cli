@@ -22,6 +22,7 @@ import {
 } from '../stores/admins-store.ts';
 import type { StaffRole } from '../stores/parse-access-token.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
+import { CreateAdminDialog } from './CreateAdminDialog.tsx';
 import { ErrorMessages } from './ErrorMessages.tsx';
 
 type RoleFilter = 'all' | StaffRole;
@@ -43,6 +44,8 @@ export const AdminsPage = observer(function AdminsPage() {
   const [result, setResult] = useState<PaginatedAdmins | null>(null);
   const [messages, setMessages] = useState<readonly string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listVersion, setListVersion] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +92,7 @@ export const AdminsPage = observer(function AdminsPage() {
     return () => {
       cancelled = true;
     };
-  }, [admins, search, roleFilter, activityFilter, page]);
+  }, [admins, search, roleFilter, activityFilter, page, listVersion]);
 
   const hasError = messages.length > 0;
   const items = result?.items ?? [];
@@ -151,7 +154,26 @@ export const AdminsPage = observer(function AdminsPage() {
             <MenuItem value="inactive">Только неактивные</MenuItem>
           </Select>
         </FormControl>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setCreateOpen(true);
+          }}
+        >
+          Создать
+        </Button>
       </Box>
+
+      <CreateAdminDialog
+        open={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+        }}
+        onCreated={() => {
+          setCreateOpen(false);
+          setListVersion((current) => current + 1);
+        }}
+      />
 
       <ErrorMessages messages={messages} />
 

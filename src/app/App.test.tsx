@@ -101,10 +101,11 @@ describe('роль в оболочке и пункт сотрудников', ()
 
     render(shell(store, '/'));
 
-    expect(screen.getByText(sub)).toBeTruthy();
-    expect(store.session.id).toBe(sub);
     const link = screen.getByRole('link', { name: 'Сотрудники' });
     expect(link.getAttribute('href')).toBe('/admins');
+    openAccount();
+    expect(screen.getByText(sub)).toBeTruthy();
+    expect(store.session.id).toBe(sub);
 
     fireEvent.click(link);
 
@@ -129,6 +130,7 @@ describe('роль в оболочке и пункт сотрудников', ()
 
     render(shell(store, '/admins'));
 
+    openAccount();
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
@@ -174,9 +176,7 @@ describe('смена своего пароля', () => {
       role: 'ADMIN',
       type: 'staff',
     });
-    const fetchMock = stubFetch(
-      () => new Response(null, { status: 204 }),
-    );
+    const fetchMock = stubFetch(() => new Response(null, { status: 204 }));
     const storage = createMemoryStorage();
     const store = new RootStore(storage);
     store.session.setPair(access, 'refresh-1', 'admin@example.com');
@@ -200,7 +200,8 @@ describe('смена своего пароля', () => {
     expect(storage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
     expect(store.session.refreshToken).toBeNull();
     expect(store.session.accessToken).toBe(access);
-    expect(screen.getByRole('button', { name: 'Выйти' })).toBeTruthy();
+    openAccount();
+    expect(screen.getByRole('menuitem', { name: 'Выход' })).toBeTruthy();
     expect(
       (screen.getByLabelText(/текущий пароль/i) as HTMLInputElement).value,
     ).toBe('');
@@ -261,7 +262,8 @@ describe('смена своего пароля', () => {
 
     render(shell(store, '/'));
 
-    const link = screen.getByRole('link', { name: 'Сменить пароль' });
+    openAccount();
+    const link = screen.getByRole('menuitem', { name: 'Смена пароля' });
     expect(link.getAttribute('href')).toBe('/password');
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
   });
@@ -299,8 +301,10 @@ describe('логин, восстановление и выход', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
-      expect(screen.getByText('admin@example.com')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Аккаунт' })).toBeTruthy();
     });
+    openAccount();
+    expect(screen.getByText('admin@example.com')).toBeTruthy();
     expect(screen.queryByLabelText(/email/i)).toBeNull();
     expect(screen.queryByLabelText(/пароль/i)).toBeNull();
     expect(
@@ -384,8 +388,10 @@ describe('логин, восстановление и выход', () => {
     expect(screen.queryByLabelText(/email/i)).toBeNull();
 
     await waitFor(() => {
-      expect(screen.getByText('saved@example.com')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Аккаунт' })).toBeTruthy();
     });
+    openAccount();
+    expect(screen.getByText('saved@example.com')).toBeTruthy();
 
     const refreshCalls = fetchMock.mock.calls.filter((call) =>
       String(call[0]).endsWith('/auth/staff/refresh'),
@@ -415,9 +421,7 @@ describe('логин, восстановление и выход', () => {
       if (String(url).endsWith('/auth/staff/logout')) {
         return Promise.resolve(new Response(null, { status: 204 }));
       }
-      return Promise.resolve(
-        jsonResponse(500, { message: 'unexpected' }),
-      );
+      return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -434,10 +438,10 @@ describe('логин, восстановление и выход', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Выйти' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Аккаунт' })).toBeTruthy();
     });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Выйти' }));
+    openAccount();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Выход' }));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/email/i)).toBeTruthy();
@@ -456,6 +460,10 @@ describe('логин, восстановление и выход', () => {
     expect(refreshCalls).toHaveLength(0);
   });
 });
+
+function openAccount(): void {
+  fireEvent.click(screen.getByRole('button', { name: 'Аккаунт' }));
+}
 
 function renderAt(path: string): void {
   render(shell(newRootStore(), path));

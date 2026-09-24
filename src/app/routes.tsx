@@ -1,12 +1,8 @@
 import type { RouteObject } from 'react-router';
+import { AdminsPage } from './AdminsPage.tsx';
 import { AppShell } from './AppShell.tsx';
-import {
-  AdminsPage,
-  HomePage,
-  LoginRedirect,
-  MissingPage,
-} from './pages.tsx';
 import { ChangePasswordPage } from './ChangePasswordPage.tsx';
+import { HomePage, LoginRedirect, MissingPage } from './pages.tsx';
 
 export const routes: RouteObject[] = [
   {

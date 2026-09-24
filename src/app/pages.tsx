@@ -5,14 +5,6 @@ export function HomePage() {
   return <Typography>Рабочие экраны появятся на следующих этапах.</Typography>;
 }
 
-export function AdminsPage() {
-  return (
-    <Typography>
-      Раздел сотрудников появится на следующем этапе.
-    </Typography>
-  );
-}
-
 export function MissingPage() {
   return <Typography>Такого адреса нет.</Typography>;
 }

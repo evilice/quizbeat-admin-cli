@@ -86,7 +86,7 @@ describe('оболочка', () => {
 });
 
 describe('роль в оболочке и пункт сотрудников', () => {
-  it('SUPER_ADMIN видит пункт, переход на /admins показывает заглушку без fetch, id в шапке равен sub', () => {
+  it('SUPER_ADMIN видит пункт, переход на /admins вызывает GET /admins, id в шапке равен sub', async () => {
     const sub = 'super-1';
     const access = makeAccessToken({
       sub,
@@ -94,7 +94,12 @@ describe('роль в оболочке и пункт сотрудников', ()
       type: 'staff',
     });
     const fetchMock = stubFetch(() =>
-      jsonResponse(500, { message: 'unexpected' }),
+      jsonResponse(200, {
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+      }),
     );
     const store = newRootStore();
     store.session.setPair(access, 'refresh-1', 'super@example.com');
@@ -109,36 +114,83 @@ describe('роль в оболочке и пункт сотрудников', ()
 
     fireEvent.click(link);
 
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+    const listCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes('/admins'),
+    );
+    expect(listCalls.length).toBeGreaterThanOrEqual(1);
+    expect(String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/admins`)).toBe(
+      true,
+    );
     expect(
-      screen.getByText('Раздел сотрудников появится на следующем этапе.'),
-    ).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledTimes(0);
+      screen.queryByText('Раздел сотрудников появится на следующем этапе.'),
+    ).toBeNull();
   });
 
-  it('ADMIN пункт не видит, прямой заход на /admins — та же заглушка без fetch, id в шапке равен sub', () => {
+  it('ADMIN пункт не видит', () => {
     const sub = 'admin-2';
     const access = makeAccessToken({
       sub,
       role: 'ADMIN',
       type: 'staff',
     });
+    stubFetch(() =>
+      jsonResponse(200, {
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+      }),
+    );
+    const store = newRootStore();
+    store.session.setPair(access, 'refresh-1', 'admin@example.com');
+
+    render(shell(store, '/'));
+
+    openAccount();
+    expect(screen.getByText(sub)).toBeTruthy();
+    expect(store.session.id).toBe(sub);
+    expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+  });
+
+  it('открытие /admins под ADMIN вызывает GET /admins, показывает message отказа без строк списка, id равен sub', async () => {
+    const sub = 'admin-2';
+    const access = makeAccessToken({
+      sub,
+      role: 'ADMIN',
+      type: 'staff',
+    });
+    const forbidMessage = 'Forbidden resource';
     const fetchMock = stubFetch(() =>
-      jsonResponse(500, { message: 'unexpected' }),
+      jsonResponse(403, {
+        statusCode: 403,
+        message: forbidMessage,
+        error: 'Forbidden',
+        path: '/admins',
+        timestamp: '2026-09-24T00:00:00.000Z',
+      }),
     );
     const store = newRootStore();
     store.session.setPair(access, 'refresh-1', 'admin@example.com');
 
     render(shell(store, '/admins'));
 
+    await waitFor(() => {
+      expect(screen.getByText(forbidMessage)).toBeTruthy();
+    });
     openAccount();
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
+    expect(store.session.accessToken).toBe(access);
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
-    expect(
-      screen.getByText('Раздел сотрудников появится на следующем этапе.'),
-    ).toBeTruthy();
-    expect(screen.queryByText(/доступ запрещён/i)).toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(0);
+    expect(screen.queryByText('Никого не найдено')).toBeNull();
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[0]).startsWith(`${apiBaseUrl}/admins`)).toBe(
+      true,
+    );
   });
 });
 

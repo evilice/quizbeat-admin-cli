@@ -1,0 +1,208 @@
+import {
+  Box,
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { observer } from 'mobx-react-lite';
+import { useEffect, useState } from 'react';
+import { ApiError } from '../api/api-error.ts';
+import {
+  type ListAdminsParams,
+  type PaginatedAdmins,
+} from '../stores/admins-store.ts';
+import type { StaffRole } from '../stores/parse-access-token.ts';
+import { useRootStore } from '../stores/root-store-context.tsx';
+import { ErrorMessages } from './ErrorMessages.tsx';
+
+type RoleFilter = 'all' | StaffRole;
+type ActivityFilter = 'all' | 'active' | 'inactive';
+
+const ROLE_LABELS: Record<StaffRole, string> = {
+  ADMIN: 'Админ',
+  SUPER_ADMIN: 'Супер-админ',
+};
+
+const EMPTY_LIST_MESSAGE = 'Никого не найдено';
+
+export const AdminsPage = observer(function AdminsPage() {
+  const { admins } = useRootStore();
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState<PaginatedAdmins | null>(null);
+  const [messages, setMessages] = useState<readonly string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    setMessages([]);
+
+    const params: ListAdminsParams = { page };
+    if (search !== '') {
+      params.search = search;
+    }
+    if (roleFilter !== 'all') {
+      params.role = roleFilter;
+    }
+    if (activityFilter === 'active') {
+      params.isActive = true;
+    } else if (activityFilter === 'inactive') {
+      params.isActive = false;
+    }
+
+    void admins
+      .list(params)
+      .then((pageResult) => {
+        if (cancelled) {
+          return;
+        }
+        setResult(pageResult);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
+        setResult(null);
+        if (error instanceof ApiError) {
+          setMessages(error.messages);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [admins, search, roleFilter, activityFilter, page]);
+
+  const hasError = messages.length > 0;
+  const items = result?.items ?? [];
+  const total = result?.total ?? 0;
+  const limit = result?.limit ?? 20;
+  const currentPage = result?.page ?? page;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const showEmpty =
+    !loading && !hasError && result !== null && items.length === 0;
+  const showTable = !hasError && items.length > 0;
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 2,
+          alignItems: 'flex-start',
+        }}
+      >
+        <TextField
+          label="Поиск по email"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
+        />
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel id="admins-role-filter-label">Роль</InputLabel>
+          <Select
+            labelId="admins-role-filter-label"
+            label="Роль"
+            value={roleFilter}
+            onChange={(event) => {
+              setRoleFilter(event.target.value as RoleFilter);
+              setPage(1);
+            }}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="ADMIN">{ROLE_LABELS.ADMIN}</MenuItem>
+            <MenuItem value="SUPER_ADMIN">{ROLE_LABELS.SUPER_ADMIN}</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl sx={{ minWidth: 220 }}>
+          <InputLabel id="admins-activity-filter-label">Активность</InputLabel>
+          <Select
+            labelId="admins-activity-filter-label"
+            label="Активность"
+            value={activityFilter}
+            onChange={(event) => {
+              setActivityFilter(event.target.value as ActivityFilter);
+              setPage(1);
+            }}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="active">Только активные</MenuItem>
+            <MenuItem value="inactive">Только неактивные</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
+      <ErrorMessages messages={messages} />
+
+      {showEmpty ? <Typography>{EMPTY_LIST_MESSAGE}</Typography> : null}
+
+      {showTable ? (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Email</TableCell>
+              <TableCell>Роль</TableCell>
+              <TableCell>Статус</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((admin) => (
+              <TableRow key={admin.id}>
+                <TableCell>{admin.email}</TableCell>
+                <TableCell>{ROLE_LABELS[admin.role]}</TableCell>
+                <TableCell>
+                  {admin.isActive ? 'активен' : 'неактивен'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : null}
+
+      {showTable || (!hasError && result !== null && total > 0) ? (
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Button
+            disabled={currentPage <= 1 || loading}
+            onClick={() => {
+              setPage((current) => Math.max(1, current - 1));
+            }}
+          >
+            Предыдущая страница
+          </Button>
+          <Typography>
+            Страница {currentPage} из {totalPages}
+          </Typography>
+          <Button
+            disabled={currentPage >= totalPages || loading}
+            onClick={() => {
+              setPage((current) => current + 1);
+            }}
+          >
+            Следующая страница
+          </Button>
+        </Box>
+      ) : null}
+    </Box>
+  );
+});

@@ -1,6 +1,11 @@
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -17,6 +22,7 @@ import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
 import { ApiError } from '../api/api-error.ts';
 import {
+  type Admin,
   type ListAdminsParams,
   type PaginatedAdmins,
 } from '../stores/admins-store.ts';
@@ -35,8 +41,11 @@ const ROLE_LABELS: Record<StaffRole, string> = {
 
 const EMPTY_LIST_MESSAGE = 'Никого не найдено';
 
+const DEACTIVATE_CONFIRM_TEXT =
+  'Учётка перестанет входить и продлевать сессию. Уже выданный access доживёт до своего TTL. Активировать снова можно.';
+
 export const AdminsPage = observer(function AdminsPage() {
-  const { admins } = useRootStore();
+  const { admins, session } = useRootStore();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
@@ -46,6 +55,8 @@ export const AdminsPage = observer(function AdminsPage() {
   const [loading, setLoading] = useState(false);
   const [listVersion, setListVersion] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState<Admin | null>(null);
+  const [actionPending, setActionPending] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,7 +113,72 @@ export const AdminsPage = observer(function AdminsPage() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const showEmpty =
     !loading && !hasError && result !== null && items.length === 0;
-  const showTable = !hasError && items.length > 0;
+  // Таблицаца остаётся при ошибке действия (409): result не сбрасываем.
+  // При 403 списка result = null, items пусты — таблицы нет.
+  const showTable = items.length > 0;
+
+  function reloadList() {
+    setListVersion((current) => current + 1);
+  }
+
+  async function handleRoleChange(admin: Admin, nextRole: StaffRole) {
+    if (nextRole === admin.role || actionPending) {
+      return;
+    }
+    setActionPending(true);
+    setMessages([]);
+    try {
+      await admins.update(admin.id, { role: nextRole });
+      reloadList();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setMessages(error.messages);
+      }
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function handleActivate(admin: Admin) {
+    if (actionPending) {
+      return;
+    }
+    setActionPending(true);
+    setMessages([]);
+    try {
+      await admins.update(admin.id, { isActive: true });
+      reloadList();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setMessages(error.messages);
+      }
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function handleConfirmDeactivate() {
+    if (deactivateTarget === null || actionPending) {
+      return;
+    }
+    const targetId = deactivateTarget.id;
+    setActionPending(true);
+    setMessages([]);
+    try {
+      await admins.deactivate(targetId);
+      if (targetId === session.id) {
+        session.forgetRefresh();
+      }
+      setDeactivateTarget(null);
+      reloadList();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setMessages(error.messages);
+      }
+    } finally {
+      setActionPending(false);
+    }
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -171,9 +247,46 @@ export const AdminsPage = observer(function AdminsPage() {
         }}
         onCreated={() => {
           setCreateOpen(false);
-          setListVersion((current) => current + 1);
+          reloadList();
         }}
       />
+
+      <Dialog
+        open={deactivateTarget !== null}
+        onClose={() => {
+          if (!actionPending) {
+            setDeactivateTarget(null);
+          }
+        }}
+      >
+        <DialogTitle>
+          Деактивировать {deactivateTarget?.email ?? ''}?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>{DEACTIVATE_CONFIRM_TEXT}</DialogContentText>
+          <ErrorMessages messages={messages} />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeactivateTarget(null);
+            }}
+            disabled={actionPending}
+          >
+            Отмена
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => {
+              void handleConfirmDeactivate();
+            }}
+            disabled={actionPending}
+          >
+            Деактивировать
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <ErrorMessages messages={messages} />
 
@@ -186,15 +299,64 @@ export const AdminsPage = observer(function AdminsPage() {
               <TableCell>Email</TableCell>
               <TableCell>Роль</TableCell>
               <TableCell>Статус</TableCell>
+              <TableCell>Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {items.map((admin) => (
               <TableRow key={admin.id}>
                 <TableCell>{admin.email}</TableCell>
-                <TableCell>{ROLE_LABELS[admin.role]}</TableCell>
+                <TableCell>
+                  {admin.isActive ? (
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                      <InputLabel id={`admin-role-${admin.id}`}>
+                        Роль сотрудника
+                      </InputLabel>
+                      <Select
+                        labelId={`admin-role-${admin.id}`}
+                        label="Роль сотрудника"
+                        value={admin.role}
+                        disabled={actionPending}
+                        onChange={(event) => {
+                          void handleRoleChange(
+                            admin,
+                            event.target.value as StaffRole,
+                          );
+                        }}
+                      >
+                        <MenuItem value="ADMIN">{ROLE_LABELS.ADMIN}</MenuItem>
+                        <MenuItem value="SUPER_ADMIN">
+                          {ROLE_LABELS.SUPER_ADMIN}
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
+                  ) : (
+                    ROLE_LABELS[admin.role]
+                  )}
+                </TableCell>
                 <TableCell>
                   {admin.isActive ? 'активен' : 'неактивен'}
+                </TableCell>
+                <TableCell>
+                  {admin.isActive ? (
+                    <Button
+                      disabled={actionPending}
+                      onClick={() => {
+                        setDeactivateTarget(admin);
+                      }}
+                    >
+                      Деактивировать
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={actionPending}
+                      onClick={() => {
+                        void handleActivate(admin);
+                      }}
+                    >
+                      Активировать
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

@@ -333,6 +333,315 @@ describe('создание сотрудника', () => {
   });
 });
 
+describe('роль, деактивация и активация', () => {
+  const LAST_SUPER_ADMIN_MESSAGE =
+    'Cannot deactivate or demote the last active SUPER_ADMIN';
+
+  it('подтверждённая деактивация шлёт DELETE и не шлёт PATCH с isActive: false; отмена не шлёт ничего', async () => {
+    const admin = sampleAdmin({
+      id: 'other-1',
+      email: 'other@example.com',
+      role: 'ADMIN',
+      isActive: true,
+    });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET';
+      if (method === 'DELETE') {
+        return Promise.resolve(
+          jsonResponse(200, { ...admin, isActive: false }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [admin],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderAdmins();
+
+    await waitFor(() => {
+      expect(screen.getByText('other@example.com')).toBeTruthy();
+    });
+    const callsAfterLoad = fetchMock.mock.calls.length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    expect(fetchMock.mock.calls.length).toBe(callsAfterLoad);
+    expect(mutationCalls(fetchMock)).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Деактивировать',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(deleteCalls(fetchMock)).toHaveLength(1);
+    });
+    expect(String(deleteCalls(fetchMock)[0]?.[0])).toContain(
+      `/admins/${admin.id}`,
+    );
+    expect(
+      patchBodies(fetchMock).some(
+        (body) =>
+          typeof body === 'object' &&
+          body !== null &&
+          'isActive' in body &&
+          (body as { isActive: unknown }).isActive === false,
+      ),
+    ).toBe(false);
+  });
+
+  it('активация шлёт PATCH с boolean true', async () => {
+    const admin = sampleAdmin({
+      id: 'off-1',
+      email: 'off@example.com',
+      role: 'ADMIN',
+      isActive: false,
+    });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'PATCH') {
+        return Promise.resolve(
+          jsonResponse(200, { ...admin, isActive: true }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [admin],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderAdmins();
+
+    await waitFor(() => {
+      expect(screen.getByText('off@example.com')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Активировать' }));
+
+    await waitFor(() => {
+      expect(patchBodies(fetchMock)).toHaveLength(1);
+    });
+    expect(patchBodies(fetchMock)[0]).toEqual({ isActive: true });
+    expect(deleteCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it('409 показывает текст про последнего супер-админа, подпись роли в строке не меняется', async () => {
+    const admin = sampleAdmin({
+      id: 'super-1',
+      email: 'super@example.com',
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'PATCH') {
+        return Promise.resolve(
+          jsonResponse(409, {
+            statusCode: 409,
+            message: LAST_SUPER_ADMIN_MESSAGE,
+            error: 'Conflict',
+            path: `/admins/${admin.id}`,
+            timestamp: '2026-09-24T00:00:00.000Z',
+          }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [admin],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderAdmins();
+
+    await waitFor(() => {
+      expect(screen.getByText('super@example.com')).toBeTruthy();
+    });
+
+    const row = screen.getByText('super@example.com').closest('tr');
+    expect(row).toBeTruthy();
+    fireEvent.mouseDown(
+      within(row as HTMLElement).getByLabelText('Роль сотрудника'),
+    );
+    fireEvent.click(screen.getByRole('option', { name: 'Админ' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(LAST_SUPER_ADMIN_MESSAGE)).toBeTruthy();
+    });
+    expect(
+      within(row as HTMLElement).getByText('Супер-админ'),
+    ).toBeTruthy();
+    expect(within(row as HTMLElement).queryByText('Админ')).toBeNull();
+  });
+
+  it('DELETE + 409 показывает текст про последнего супер-админа, подпись роли в строке не меняется', async () => {
+    const admin = sampleAdmin({
+      id: 'super-1',
+      email: 'super@example.com',
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(
+          jsonResponse(409, {
+            statusCode: 409,
+            message: LAST_SUPER_ADMIN_MESSAGE,
+            error: 'Conflict',
+            path: `/admins/${admin.id}`,
+            timestamp: '2026-09-24T00:00:00.000Z',
+          }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [admin],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderAdmins();
+
+    await waitFor(() => {
+      expect(screen.getByText('super@example.com')).toBeTruthy();
+    });
+
+    const row = screen.getByText('super@example.com').closest('tr');
+    expect(row).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Деактивировать',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('dialog')).getByText(LAST_SUPER_ADMIN_MESSAGE),
+      ).toBeTruthy();
+    });
+    expect(screen.getByText('активен')).toBeTruthy();
+    expect(
+      within(row as HTMLElement).getByText('Супер-админ'),
+    ).toBeTruthy();
+  });
+
+  it('DELETE по своему id вызывает forgetRefresh, access на месте, запроса /auth/staff/refresh нет', async () => {
+    const selfId = 'viewer-1';
+    const admin = sampleAdmin({
+      id: selfId,
+      email: 'viewer@example.com',
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET';
+      if (method === 'DELETE') {
+        return Promise.resolve(
+          jsonResponse(200, { ...admin, isActive: false }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [admin],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { store } = renderAdmins();
+    const accessBefore = store.session.accessToken;
+
+    await waitFor(() => {
+      expect(screen.getByText('viewer@example.com')).toBeTruthy();
+    });
+    expect(store.session.refreshToken).toBe('refresh-1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Деактивировать',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(store.session.refreshToken).toBeNull();
+    });
+    expect(store.session.accessToken).toBe(accessBefore);
+    expect(
+      fetchMock.mock.calls.some((call) =>
+        String(call[0]).includes('/auth/staff/refresh'),
+      ),
+    ).toBe(false);
+  });
+
+  it('успешный PATCH роли forgetRefresh не вызывает', async () => {
+    const admin = sampleAdmin({
+      id: 'viewer-1',
+      email: 'viewer@example.com',
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'PATCH') {
+        return Promise.resolve(
+          jsonResponse(200, { ...admin, role: 'ADMIN' }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [admin],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { store } = renderAdmins();
+
+    await waitFor(() => {
+      expect(screen.getByText('viewer@example.com')).toBeTruthy();
+    });
+
+    const row = screen.getByText('viewer@example.com').closest('tr');
+    fireEvent.mouseDown(
+      within(row as HTMLElement).getByLabelText('Роль сотрудника'),
+    );
+    fireEvent.click(screen.getByRole('option', { name: 'Админ' }));
+
+    await waitFor(() => {
+      expect(patchBodies(fetchMock)).toHaveLength(1);
+    });
+    expect(patchBodies(fetchMock)[0]).toEqual({ role: 'ADMIN' });
+    expect(store.session.refreshToken).toBe('refresh-1');
+    expect(store.session.role).toBe('SUPER_ADMIN');
+  });
+});
+
 function openCreateDialog() {
   fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
   expect(screen.getByRole('dialog')).toBeTruthy();
@@ -351,9 +660,31 @@ function getListCalls(fetchMock: ReturnType<typeof vi.fn>) {
   });
 }
 
+function mutationCalls(fetchMock: ReturnType<typeof vi.fn>) {
+  return fetchMock.mock.calls.filter((call) => {
+    const method = (call[1] as RequestInit | undefined)?.method ?? 'GET';
+    return method !== 'GET';
+  });
+}
+
+function deleteCalls(fetchMock: ReturnType<typeof vi.fn>) {
+  return fetchMock.mock.calls.filter(
+    (call) => (call[1] as RequestInit | undefined)?.method === 'DELETE',
+  );
+}
+
 function postBodies(fetchMock: ReturnType<typeof vi.fn>): unknown[] {
   return fetchMock.mock.calls
     .filter((call) => (call[1] as RequestInit | undefined)?.method === 'POST')
+    .map((call) => {
+      const body = (call[1] as RequestInit).body;
+      return typeof body === 'string' ? (JSON.parse(body) as unknown) : body;
+    });
+}
+
+function patchBodies(fetchMock: ReturnType<typeof vi.fn>): unknown[] {
+  return fetchMock.mock.calls
+    .filter((call) => (call[1] as RequestInit | undefined)?.method === 'PATCH')
     .map((call) => {
       const body = (call[1] as RequestInit).body;
       return typeof body === 'string' ? (JSON.parse(body) as unknown) : body;
@@ -372,11 +703,12 @@ function renderAdmins({
     'viewer@example.com',
   );
   const router = createMemoryRouter(routes, { initialEntries: ['/admins'] });
-  return render(
+  const view = render(
     <AppProviders store={store}>
       <RouterProvider router={router} />
     </AppProviders>,
   );
+  return { ...view, store };
 }
 
 function sampleAdmin(overrides: {

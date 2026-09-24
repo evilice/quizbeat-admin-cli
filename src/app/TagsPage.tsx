@@ -1,6 +1,11 @@
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Table,
   TableBody,
   TableCell,
@@ -24,6 +29,9 @@ import { TagFormDialog } from './TagFormDialog.tsx';
 
 const EMPTY_LIST_MESSAGE = 'Ничего не найдено';
 
+const DELETE_CONFIRM_TEXT =
+  'Тег удаляется безвозвратно. Композиции, на которых он был, теряют с ним связь и сами не удаляются. Вернуть тег нельзя.';
+
 export const TagsPage = observer(function TagsPage() {
   const { tags } = useRootStore();
   const [search, setSearch] = useState('');
@@ -34,6 +42,8 @@ export const TagsPage = observer(function TagsPage() {
   const [listVersion, setListVersion] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Tag | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null);
+  const [actionPending, setActionPending] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +110,40 @@ export const TagsPage = observer(function TagsPage() {
     setEditTarget(null);
   }
 
+  async function handleConfirmDelete() {
+    if (deleteTarget === null || actionPending) {
+      return;
+    }
+    const targetId = deleteTarget.id;
+    setActionPending(true);
+    setMessages([]);
+    try {
+      await tags.remove(targetId);
+      setDeleteTarget(null);
+      reloadList();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setMessages(error.messages);
+        if (error.status === 404) {
+          setDeleteTarget(null);
+          setLoading(true);
+          try {
+            const pageResult = await tags.list({ page, search });
+            setResult(pageResult);
+          } catch (listError) {
+            if (listError instanceof ApiError) {
+              setMessages(listError.messages);
+            }
+          } finally {
+            setLoading(false);
+          }
+        }
+      }
+    } finally {
+      setActionPending(false);
+    }
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box
@@ -134,6 +178,51 @@ export const TagsPage = observer(function TagsPage() {
         }}
       />
 
+      <Dialog
+        open={deleteTarget !== null}
+        onClose={() => {
+          if (!actionPending) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <DialogTitle>Удалить {deleteTarget?.code ?? ''}?</DialogTitle>
+        <DialogContent>
+          <DialogContentText component="div">
+            <Typography component="p" sx={{ m: 0 }}>
+              Название (ru): {translationName(deleteTarget, 'ru')}
+            </Typography>
+            <Typography component="p" sx={{ m: 0 }}>
+              Название (en): {translationName(deleteTarget, 'en')}
+            </Typography>
+            <Typography component="p" sx={{ mt: 1, mb: 0 }}>
+              {DELETE_CONFIRM_TEXT}
+            </Typography>
+          </DialogContentText>
+          <ErrorMessages messages={messages} />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeleteTarget(null);
+            }}
+            disabled={actionPending}
+          >
+            Отмена
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => {
+              void handleConfirmDelete();
+            }}
+            disabled={actionPending}
+          >
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <ErrorMessages messages={messages} />
 
       {showEmpty ? <Typography>{EMPTY_LIST_MESSAGE}</Typography> : null}
@@ -155,13 +244,24 @@ export const TagsPage = observer(function TagsPage() {
                 <TableCell>{translationName(tag, 'ru')}</TableCell>
                 <TableCell>{translationName(tag, 'en')}</TableCell>
                 <TableCell>
-                  <Button
-                    onClick={() => {
-                      openEdit(tag);
-                    }}
-                  >
-                    Изменить
-                  </Button>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Button
+                      disabled={actionPending}
+                      onClick={() => {
+                        openEdit(tag);
+                      }}
+                    >
+                      Изменить
+                    </Button>
+                    <Button
+                      disabled={actionPending}
+                      onClick={() => {
+                        setDeleteTarget(tag);
+                      }}
+                    >
+                      Удалить
+                    </Button>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -196,6 +296,12 @@ export const TagsPage = observer(function TagsPage() {
   );
 });
 
-function translationName(tag: Tag, locale: TagLocale): string {
+function translationName(
+  tag: Tag | null,
+  locale: TagLocale,
+): string {
+  if (tag === null) {
+    return '';
+  }
   return tag.translations.find((item) => item.locale === locale)?.name ?? '';
 }

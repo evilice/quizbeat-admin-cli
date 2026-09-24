@@ -502,6 +502,232 @@ describe('создание и правка тега', () => {
   });
 });
 
+describe('удаление тега', () => {
+  const TAG_ID = '550e8400-e29b-41d4-a716-446655440000';
+  const TAG = sampleTag({
+    id: TAG_ID,
+    code: 'rock',
+    translations: [
+      { locale: 'ru', name: 'Рок' },
+      { locale: 'en', name: 'Rock' },
+    ],
+  });
+
+  it('отмена не вызывает fetch, строка остаётся', async () => {
+    const fetchMock = stubListWithTag(TAG);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+    const callsAfterLoad = fetchMock.mock.calls.length;
+
+    openDeleteDialog('rock');
+    expect(screen.getByText('Рок')).toBeTruthy();
+    expect(screen.getByText('Rock')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    expect(fetchMock.mock.calls.length).toBe(callsAfterLoad);
+    expect(deleteCalls(fetchMock)).toHaveLength(0);
+    expect(screen.getByText('rock')).toBeTruthy();
+  });
+
+  it('согласие шлёт DELETE на путь с uuid строки и не шлёт тело', async () => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [TAG],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+
+    openDeleteDialog('rock');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(deleteCalls(fetchMock)).toHaveLength(1);
+    });
+
+    const [url, init] = deleteCalls(fetchMock)[0]!;
+    expect(new URL(String(url)).pathname).toBe(`/tags/${TAG_ID}`);
+    expect(init?.body).toBeUndefined();
+  });
+
+  it('пустой 204 убирает подтверждение и вызывает повторное чтение списка', async () => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [TAG],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+    expect(getListCalls(fetchMock)).toHaveLength(1);
+
+    openDeleteDialog('rock');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    await waitFor(() => {
+      expect(getListCalls(fetchMock)).toHaveLength(2);
+    });
+  });
+
+  it('до ответа сервера строка в таблице на месте', async () => {
+    let resolveDelete!: (value: Response) => void;
+    const deletePromise = new Promise<Response>((resolve) => {
+      resolveDelete = resolve;
+    });
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return deletePromise;
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [TAG],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+
+    openDeleteDialog('rock');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(deleteCalls(fetchMock)).toHaveLength(1);
+    });
+    expect(screen.getByText('rock')).toBeTruthy();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    resolveDelete(new Response(null, { status: 204 }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+  });
+
+  it('404 показывает message и запрашивает список заново', async () => {
+    const notFoundMessage = 'Tag not found';
+    let listCount = 0;
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(
+          jsonResponse(404, {
+            statusCode: 404,
+            message: notFoundMessage,
+            error: 'Not Found',
+            path: `/tags/${TAG_ID}`,
+            timestamp: '2026-09-24T00:00:00.000Z',
+          }),
+        );
+      }
+      listCount += 1;
+      if (listCount === 1) {
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: [TAG],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [],
+          total: 0,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+    expect(getListCalls(fetchMock)).toHaveLength(1);
+
+    openDeleteDialog('rock');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(screen.getByText(notFoundMessage)).toBeTruthy();
+    });
+    await waitFor(() => {
+      expect(getListCalls(fetchMock)).toHaveLength(2);
+    });
+  });
+});
+
+function openDeleteDialog(code: string) {
+  const row = screen.getByText(code).closest('tr');
+  expect(row).toBeTruthy();
+  fireEvent.click(
+    within(row as HTMLElement).getByRole('button', { name: 'Удалить' }),
+  );
+  expect(screen.getByRole('dialog')).toBeTruthy();
+}
+
+function confirmDeleteDialog() {
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+}
+
+function stubListWithTag(tag: ReturnType<typeof sampleTag>) {
+  return stubFetch(() =>
+    jsonResponse(200, {
+      items: [tag],
+      total: 1,
+      page: 1,
+      limit: 20,
+    }),
+  );
+}
+
+function deleteCalls(fetchMock: ReturnType<typeof vi.fn>) {
+  return fetchMock.mock.calls.filter(
+    (call) => (call[1] as RequestInit | undefined)?.method === 'DELETE',
+  );
+}
+
 function openCreateDialog() {
   fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
   expect(screen.getByRole('dialog')).toBeTruthy();

@@ -85,8 +85,8 @@ describe('оболочка', () => {
   });
 });
 
-describe('роль в оболочке и пункт сотрудников', () => {
-  it('SUPER_ADMIN видит пункт, переход на /admins вызывает GET /admins, id в шапке равен sub', async () => {
+describe('роль в оболочке и пункты меню', () => {
+  it('SUPER_ADMIN видит «Теги» и «Сотрудники», переход на /tags вызывает GET /tags, id в шапке равен sub', async () => {
     const sub = 'super-1';
     const access = makeAccessToken({
       sub,
@@ -106,37 +106,36 @@ describe('роль в оболочке и пункт сотрудников', ()
 
     render(shell(store, '/'));
 
-    const link = screen.getByRole('link', { name: 'Сотрудники' });
-    expect(link.getAttribute('href')).toBe('/admins');
+    const tagsLink = screen.getByRole('link', { name: 'Теги' });
+    expect(tagsLink.getAttribute('href')).toBe('/tags');
+    const adminsLink = screen.getByRole('link', { name: 'Сотрудники' });
+    expect(adminsLink.getAttribute('href')).toBe('/admins');
     openAccount();
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
 
-    fireEvent.click(link);
+    fireEvent.click(tagsLink);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
     });
     const listCalls = fetchMock.mock.calls.filter((call) =>
-      String(call[0]).includes('/admins'),
+      String(call[0]).includes('/tags'),
     );
     expect(listCalls.length).toBeGreaterThanOrEqual(1);
-    expect(String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/admins`)).toBe(
+    expect(String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/tags`)).toBe(
       true,
     );
-    expect(
-      screen.queryByText('Раздел сотрудников появится на следующем этапе.'),
-    ).toBeNull();
   });
 
-  it('ADMIN пункт не видит', () => {
+  it('ADMIN видит «Теги», не видит «Сотрудники», переход на /tags вызывает GET /tags', async () => {
     const sub = 'admin-2';
     const access = makeAccessToken({
       sub,
       role: 'ADMIN',
       type: 'staff',
     });
-    stubFetch(() =>
+    const fetchMock = stubFetch(() =>
       jsonResponse(200, {
         items: [],
         total: 0,
@@ -149,10 +148,26 @@ describe('роль в оболочке и пункт сотрудников', ()
 
     render(shell(store, '/'));
 
+    expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+    const tagsLink = screen.getByRole('link', { name: 'Теги' });
+    expect(tagsLink.getAttribute('href')).toBe('/tags');
+
     openAccount();
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
-    expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+
+    fireEvent.click(tagsLink);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+    const listCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes('/tags'),
+    );
+    expect(listCalls.length).toBeGreaterThanOrEqual(1);
+    expect(String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/tags`)).toBe(
+      true,
+    );
   });
 
   it('открытие /admins под ADMIN вызывает GET /admins, показывает message отказа без строк списка, id равен sub', async () => {
@@ -180,13 +195,14 @@ describe('роль в оболочке и пункт сотрудников', ()
     await waitFor(() => {
       expect(screen.getByText(forbidMessage)).toBeTruthy();
     });
+    expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Теги' })).toBeTruthy();
+    expect(screen.queryByText('Никого не найдено')).toBeNull();
+    expect(screen.queryByRole('table')).toBeNull();
     openAccount();
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
     expect(store.session.accessToken).toBe(access);
-    expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
-    expect(screen.queryByText('Никого не найдено')).toBeNull();
-    expect(screen.queryByRole('table')).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0]?.[0]).startsWith(`${apiBaseUrl}/admins`)).toBe(
       true,

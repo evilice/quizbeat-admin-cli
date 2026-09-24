@@ -20,6 +20,7 @@ import {
 } from '../stores/tags-store.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
 import { ErrorMessages } from './ErrorMessages.tsx';
+import { TagFormDialog } from './TagFormDialog.tsx';
 
 const EMPTY_LIST_MESSAGE = 'Ничего не найдено';
 
@@ -30,6 +31,9 @@ export const TagsPage = observer(function TagsPage() {
   const [result, setResult] = useState<PaginatedTags | null>(null);
   const [messages, setMessages] = useState<readonly string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listVersion, setListVersion] = useState(0);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Tag | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +69,7 @@ export const TagsPage = observer(function TagsPage() {
     return () => {
       cancelled = true;
     };
-  }, [tags, search, page]);
+  }, [tags, search, page, listVersion]);
 
   const hasError = messages.length > 0;
   const items = result?.items ?? [];
@@ -77,14 +81,56 @@ export const TagsPage = observer(function TagsPage() {
     !loading && !hasError && result !== null && items.length === 0;
   const showTable = items.length > 0;
 
+  function reloadList() {
+    setListVersion((current) => current + 1);
+  }
+
+  function openCreate() {
+    setEditTarget(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(tag: Tag) {
+    setEditTarget(tag);
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    setFormOpen(false);
+    setEditTarget(null);
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <TextField
-        label="Поиск по названию"
-        value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-          setPage(1);
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 2,
+          alignItems: 'flex-start',
+        }}
+      >
+        <TextField
+          label="Поиск по названию"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
+        />
+        <Button variant="contained" onClick={openCreate}>
+          Создать
+        </Button>
+      </Box>
+
+      <TagFormDialog
+        key={formOpen ? (editTarget?.id ?? 'create') : 'closed'}
+        open={formOpen}
+        tag={editTarget}
+        onClose={closeForm}
+        onSaved={() => {
+          closeForm();
+          reloadList();
         }}
       />
 
@@ -99,6 +145,7 @@ export const TagsPage = observer(function TagsPage() {
               <TableCell>Код</TableCell>
               <TableCell>Название (ru)</TableCell>
               <TableCell>Название (en)</TableCell>
+              <TableCell>Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -107,6 +154,15 @@ export const TagsPage = observer(function TagsPage() {
                 <TableCell>{tag.code}</TableCell>
                 <TableCell>{translationName(tag, 'ru')}</TableCell>
                 <TableCell>{translationName(tag, 'en')}</TableCell>
+                <TableCell>
+                  <Button
+                    onClick={() => {
+                      openEdit(tag);
+                    }}
+                  >
+                    Изменить
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

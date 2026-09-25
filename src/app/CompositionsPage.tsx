@@ -23,19 +23,16 @@ import {
   type ListCompositionsParams,
   type PaginatedCompositions,
 } from '../stores/compositions-store.ts';
-import {
-  type Tag,
-  type TagLocale,
-} from '../stores/tags-store.ts';
+import type { Tag } from '../stores/tags-store.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
+import {
+  STATUS_LABELS,
+  tagDisplayName,
+} from './composition-display.ts';
+import { CreateCompositionDialog } from './CreateCompositionDialog.tsx';
 import { ErrorMessages } from './ErrorMessages.tsx';
 
 type StatusFilter = 'all' | CompositionStatus;
-
-const STATUS_LABELS: Record<CompositionStatus, string> = {
-  DRAFT: 'Черновик',
-  PUBLISHED: 'Опубликована',
-};
 
 const EMPTY_LIST_MESSAGE = 'Ничего не найдено';
 
@@ -48,9 +45,11 @@ export const CompositionsPage = observer(function CompositionsPage() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [tagOptions, setTagOptions] = useState<Tag[]>([]);
   const [page, setPage] = useState(1);
+  const [listVersion, setListVersion] = useState(0);
   const [result, setResult] = useState<PaginatedCompositions | null>(null);
   const [messages, setMessages] = useState<readonly string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +115,11 @@ export const CompositionsPage = observer(function CompositionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [compositions, search, statusFilter, selectedTagIds, page]);
+  }, [compositions, search, statusFilter, selectedTagIds, page, listVersion]);
+
+  function reloadList() {
+    setListVersion((current) => current + 1);
+  }
 
   const hasError = messages.length > 0;
   const items = result?.items ?? [];
@@ -199,7 +202,27 @@ export const CompositionsPage = observer(function CompositionsPage() {
             ))}
           </Select>
         </FormControl>
+        <Button
+          variant="contained"
+          onClick={() => {
+            setCreateOpen(true);
+          }}
+        >
+          Создать
+        </Button>
       </Box>
+
+      <CreateCompositionDialog
+        open={createOpen}
+        tagOptions={tagOptions}
+        onClose={() => {
+          setCreateOpen(false);
+        }}
+        onCreated={() => {
+          setCreateOpen(false);
+          reloadList();
+        }}
+      />
 
       <ErrorMessages messages={messages} />
 
@@ -264,11 +287,3 @@ export const CompositionsPage = observer(function CompositionsPage() {
     </Box>
   );
 });
-
-function tagDisplayName(tag: Tag): string {
-  return translationName(tag, 'ru') || tag.code;
-}
-
-function translationName(tag: Tag, locale: TagLocale): string {
-  return tag.translations.find((item) => item.locale === locale)?.name ?? '';
-}

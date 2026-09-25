@@ -17,14 +17,17 @@ import {
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { ApiError } from '../api/api-error.ts';
 import {
+  type Composition,
   type CompositionStatus,
   type ListCompositionsParams,
   type PaginatedCompositions,
 } from '../stores/compositions-store.ts';
 import type { Tag } from '../stores/tags-store.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
+import type { CompositionLocationState } from './CompositionCardPage.tsx';
 import {
   STATUS_LABELS,
   tagDisplayName,
@@ -40,6 +43,7 @@ const TAGS_FILTER_LIMIT = 100;
 
 export const CompositionsPage = observer(function CompositionsPage() {
   const { compositions, tags } = useRootStore();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -119,6 +123,14 @@ export const CompositionsPage = observer(function CompositionsPage() {
 
   function reloadList() {
     setListVersion((current) => current + 1);
+  }
+
+  function openComposition(composition: Composition) {
+    const state: CompositionLocationState = {
+      title: composition.title,
+      author: composition.author,
+    };
+    void navigate(`/compositions/${composition.id}`, { state });
   }
 
   const hasError = messages.length > 0;
@@ -236,6 +248,7 @@ export const CompositionsPage = observer(function CompositionsPage() {
               <TableCell>Автор</TableCell>
               <TableCell>Статус</TableCell>
               <TableCell>Теги</TableCell>
+              <TableCell>Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -254,6 +267,16 @@ export const CompositionsPage = observer(function CompositionsPage() {
                       />
                     ))}
                   </Box>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      openComposition(composition);
+                    }}
+                  >
+                    Изменить
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

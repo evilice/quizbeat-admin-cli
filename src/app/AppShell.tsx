@@ -102,6 +102,9 @@ export const AppShell = observer(function AppShell() {
         >
           <Toolbar />
           <List>
+            <ListItemButton component={Link} to="/compositions">
+              <ListItemText primary="Композиции" />
+            </ListItemButton>
             <ListItemButton component={Link} to="/tags">
               <ListItemText primary="Теги" />
             </ListItemButton>

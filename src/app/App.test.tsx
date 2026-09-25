@@ -86,7 +86,7 @@ describe('оболочка', () => {
 });
 
 describe('роль в оболочке и пункты меню', () => {
-  it('SUPER_ADMIN видит «Теги» и «Сотрудники», переход на /tags вызывает GET /tags, id в шапке равен sub', async () => {
+  it('SUPER_ADMIN видит «Композиции», «Теги» и «Сотрудники», переход на /compositions вызывает GET /compositions, id в шапке равен sub', async () => {
     const sub = 'super-1';
     const access = makeAccessToken({
       sub,
@@ -106,6 +106,8 @@ describe('роль в оболочке и пункты меню', () => {
 
     render(shell(store, '/'));
 
+    const compositionsLink = screen.getByRole('link', { name: 'Композиции' });
+    expect(compositionsLink.getAttribute('href')).toBe('/compositions');
     const tagsLink = screen.getByRole('link', { name: 'Теги' });
     expect(tagsLink.getAttribute('href')).toBe('/tags');
     const adminsLink = screen.getByRole('link', { name: 'Сотрудники' });
@@ -114,21 +116,21 @@ describe('роль в оболочке и пункты меню', () => {
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
 
-    fireEvent.click(tagsLink);
+    fireEvent.click(compositionsLink);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
     });
     const listCalls = fetchMock.mock.calls.filter((call) =>
-      String(call[0]).includes('/tags'),
+      String(call[0]).includes('/compositions'),
     );
     expect(listCalls.length).toBeGreaterThanOrEqual(1);
-    expect(String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/tags`)).toBe(
-      true,
-    );
+    expect(
+      String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/compositions`),
+    ).toBe(true);
   });
 
-  it('ADMIN видит «Теги», не видит «Сотрудники», переход на /tags вызывает GET /tags', async () => {
+  it('ADMIN видит «Композиции» и «Теги», не видит «Сотрудники», переход на /compositions вызывает GET /compositions', async () => {
     const sub = 'admin-2';
     const access = makeAccessToken({
       sub,
@@ -149,6 +151,8 @@ describe('роль в оболочке и пункты меню', () => {
     render(shell(store, '/'));
 
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+    const compositionsLink = screen.getByRole('link', { name: 'Композиции' });
+    expect(compositionsLink.getAttribute('href')).toBe('/compositions');
     const tagsLink = screen.getByRole('link', { name: 'Теги' });
     expect(tagsLink.getAttribute('href')).toBe('/tags');
 
@@ -156,18 +160,18 @@ describe('роль в оболочке и пункты меню', () => {
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
 
-    fireEvent.click(tagsLink);
+    fireEvent.click(compositionsLink);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
     });
     const listCalls = fetchMock.mock.calls.filter((call) =>
-      String(call[0]).includes('/tags'),
+      String(call[0]).includes('/compositions'),
     );
     expect(listCalls.length).toBeGreaterThanOrEqual(1);
-    expect(String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/tags`)).toBe(
-      true,
-    );
+    expect(
+      String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/compositions`),
+    ).toBe(true);
   });
 
   it('открытие /admins под ADMIN вызывает GET /admins, показывает message отказа без строк списка, id равен sub', async () => {
@@ -197,6 +201,7 @@ describe('роль в оболочке и пункты меню', () => {
     });
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Теги' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Композиции' })).toBeTruthy();
     expect(screen.queryByText('Никого не найдено')).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
     openAccount();

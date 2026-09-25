@@ -2,6 +2,11 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -41,6 +46,9 @@ const EMPTY_LIST_MESSAGE = 'Ничего не найдено';
 
 const TAGS_FILTER_LIMIT = 100;
 
+const DELETE_CONFIRM_TEXT =
+  'Композиция исчезнет из списка. Вернуть её из интерфейса нельзя — отдельного восстановления на сервере нет.';
+
 export const CompositionsPage = observer(function CompositionsPage() {
   const { compositions, tags } = useRootStore();
   const navigate = useNavigate();
@@ -54,6 +62,8 @@ export const CompositionsPage = observer(function CompositionsPage() {
   const [messages, setMessages] = useState<readonly string[]>([]);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Composition | null>(null);
+  const [actionPending, setActionPending] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +141,50 @@ export const CompositionsPage = observer(function CompositionsPage() {
       author: composition.author,
     };
     void navigate(`/compositions/${composition.id}`, { state });
+  }
+
+  async function handleConfirmDelete() {
+    if (deleteTarget === null || actionPending) {
+      return;
+    }
+    const targetId = deleteTarget.id;
+    setActionPending(true);
+    setMessages([]);
+    try {
+      await compositions.remove(targetId);
+      setDeleteTarget(null);
+      reloadList();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setMessages(error.messages);
+        if (error.status === 404) {
+          setDeleteTarget(null);
+          setLoading(true);
+          try {
+            const params: ListCompositionsParams = { page };
+            if (search !== '') {
+              params.search = search;
+            }
+            if (statusFilter !== 'all') {
+              params.status = statusFilter;
+            }
+            if (selectedTagIds.length > 0) {
+              params.tagIds = selectedTagIds;
+            }
+            const pageResult = await compositions.list(params);
+            setResult(pageResult);
+          } catch (listError) {
+            if (listError instanceof ApiError) {
+              setMessages(listError.messages);
+            }
+          } finally {
+            setLoading(false);
+          }
+        }
+      }
+    } finally {
+      setActionPending(false);
+    }
   }
 
   const hasError = messages.length > 0;
@@ -236,6 +290,50 @@ export const CompositionsPage = observer(function CompositionsPage() {
         }}
       />
 
+      <Dialog
+        open={deleteTarget !== null}
+        onClose={() => {
+          if (!actionPending) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <DialogTitle>
+          Удалить {deleteTarget?.title ?? ''}?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText component="div">
+            <Typography component="p" sx={{ m: 0 }}>
+              Автор: {deleteTarget?.author ?? ''}
+            </Typography>
+            <Typography component="p" sx={{ mt: 1, mb: 0 }}>
+              {DELETE_CONFIRM_TEXT}
+            </Typography>
+          </DialogContentText>
+          <ErrorMessages messages={messages} />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeleteTarget(null);
+            }}
+            disabled={actionPending}
+          >
+            Отмена
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => {
+              void handleConfirmDelete();
+            }}
+            disabled={actionPending}
+          >
+            Удалить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <ErrorMessages messages={messages} />
 
       {showEmpty ? <Typography>{EMPTY_LIST_MESSAGE}</Typography> : null}
@@ -276,6 +374,14 @@ export const CompositionsPage = observer(function CompositionsPage() {
                     }}
                   >
                     Изменить
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setDeleteTarget(composition);
+                    }}
+                  >
+                    Удалить
                   </Button>
                 </TableCell>
               </TableRow>

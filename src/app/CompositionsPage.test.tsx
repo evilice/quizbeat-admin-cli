@@ -711,6 +711,284 @@ describe('создание композиции', () => {
   });
 });
 
+describe('удаление композиции', () => {
+  const COMPOSITION_ID = '550e8400-e29b-41d4-a716-446655440010';
+  const COMPOSITION = sampleComposition({
+    id: COMPOSITION_ID,
+    title: 'Song One',
+    author: 'Author One',
+  });
+
+  it('отмена не вызывает fetch, строка остаётся', async () => {
+    const fetchMock = stubListFetch({
+      items: [COMPOSITION],
+      total: 1,
+      page: 1,
+      limit: 20,
+    });
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+    const callsAfterLoad = fetchMock.mock.calls.length;
+
+    openDeleteDialog('Song One');
+    expect(within(screen.getByRole('dialog')).getByText(/Author One/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    expect(fetchMock.mock.calls.length).toBe(callsAfterLoad);
+    expect(deleteCalls(fetchMock)).toHaveLength(0);
+    expect(screen.getByText('Song One')).toBeTruthy();
+  });
+
+  it('согласие шлёт DELETE на путь с uuid этой строки и не шлёт PATCH', async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(
+          jsonResponse(200, {
+            ...COMPOSITION,
+            deletedAt: '2026-09-25T12:00:00.000Z',
+          }),
+        );
+      }
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith('/tags')) {
+        return Promise.resolve(
+          jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [COMPOSITION],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+
+    openDeleteDialog('Song One');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(deleteCalls(fetchMock)).toHaveLength(1);
+    });
+
+    const [url, init] = deleteCalls(fetchMock)[0]!;
+    expect(new URL(String(url)).pathname).toBe(
+      `/compositions/${COMPOSITION_ID}`,
+    );
+    expect(init?.method).toBe('DELETE');
+    expect(init?.body).toBeUndefined();
+    expect(
+      fetchMock.mock.calls.filter(
+        (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('ответ 200 с deletedAt убирает подтверждение и вызывает повторное чтение списка', async () => {
+    let listCount = 0;
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(
+          jsonResponse(200, {
+            ...COMPOSITION,
+            deletedAt: '2026-09-25T12:00:00.000Z',
+          }),
+        );
+      }
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith('/tags')) {
+        return Promise.resolve(
+          jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+        );
+      }
+      listCount += 1;
+      if (listCount === 1) {
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: [COMPOSITION],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [],
+          total: 0,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+    expect(getCompositionListCalls(fetchMock)).toHaveLength(1);
+
+    openDeleteDialog('Song One');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    await waitFor(() => {
+      expect(getCompositionListCalls(fetchMock)).toHaveLength(2);
+    });
+    await waitFor(() => {
+      expect(screen.queryByText('Song One')).toBeNull();
+    });
+  });
+
+  it('до ответа сервера строка в таблице на месте', async () => {
+    let resolveDelete!: (value: Response) => void;
+    const deletePromise = new Promise<Response>((resolve) => {
+      resolveDelete = resolve;
+    });
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return deletePromise;
+      }
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith('/tags')) {
+        return Promise.resolve(
+          jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [COMPOSITION],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+
+    openDeleteDialog('Song One');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(deleteCalls(fetchMock)).toHaveLength(1);
+    });
+    expect(screen.getByText('Song One')).toBeTruthy();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    resolveDelete(
+      jsonResponse(200, {
+        ...COMPOSITION,
+        deletedAt: '2026-09-25T12:00:00.000Z',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+  });
+
+  it('404 показывает message и запрашивает список заново', async () => {
+    const notFoundMessage = 'Not Found';
+    let listCount = 0;
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return Promise.resolve(
+          jsonResponse(404, {
+            statusCode: 404,
+            message: notFoundMessage,
+            error: 'Not Found',
+            path: `/compositions/${COMPOSITION_ID}`,
+            timestamp: '2026-09-25T00:00:00.000Z',
+          }),
+        );
+      }
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith('/tags')) {
+        return Promise.resolve(
+          jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+        );
+      }
+      listCount += 1;
+      if (listCount === 1) {
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: [COMPOSITION],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [],
+          total: 0,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+    expect(getCompositionListCalls(fetchMock)).toHaveLength(1);
+
+    openDeleteDialog('Song One');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(screen.getByText(notFoundMessage)).toBeTruthy();
+    });
+    await waitFor(() => {
+      expect(getCompositionListCalls(fetchMock)).toHaveLength(2);
+    });
+  });
+});
+
+function openDeleteDialog(title: string) {
+  const row = screen.getByText(title).closest('tr');
+  expect(row).toBeTruthy();
+  fireEvent.click(
+    within(row as HTMLElement).getByRole('button', { name: 'Удалить' }),
+  );
+  expect(screen.getByRole('dialog')).toBeTruthy();
+}
+
+function confirmDeleteDialog() {
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+}
+
+function deleteCalls(fetchMock: ReturnType<typeof vi.fn>) {
+  return fetchMock.mock.calls.filter(
+    (call) => (call[1] as RequestInit | undefined)?.method === 'DELETE',
+  );
+}
+
 function openCreateDialog() {
   fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
   expect(screen.getByRole('dialog')).toBeTruthy();

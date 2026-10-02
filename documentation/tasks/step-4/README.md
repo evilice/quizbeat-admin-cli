@@ -1,6 +1,6 @@
 # Этап 4 — Композиции: декомпозиция на задачи
 
-Статус этапа: не выполнен. Задачи 1–5 выполнены, приёмка нет. Сводка —
+Статус этапа: выполнен. Сводка —
 [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 4»](../../03-technical-specification.md#этап-4--композиции).
@@ -58,7 +58,7 @@ flowchart TD
 | 3 | Создание композиции | 2 | [03-create-composition.md](./03-create-composition.md) | выполнена |
 | 4 | Карточка: правка названия, автора, статуса и тегов | 2 | [04-composition-card.md](./04-composition-card.md) | выполнена |
 | 5 | Мягкое удаление с подтверждением | 2 | [05-delete-composition.md](./05-delete-composition.md) | выполнена |
-| 6 | Приёмка этапа 4 целиком | 3, 4, 5 | [06-step4-acceptance.md](./06-step4-acceptance.md) | не выполнена |
+| 6 | Приёмка этапа 4 целиком | 3, 4, 5 | [06-step4-acceptance.md](./06-step4-acceptance.md) | выполнена |
 
 ## Почему такой порядок
 

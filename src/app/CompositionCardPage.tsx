@@ -27,6 +27,7 @@ import { AudioUploadBlock } from './AudioUploadBlock.tsx';
 import { ClipsListBlock } from './ClipsListBlock.tsx';
 import { STATUS_LABELS, tagDisplayName } from './composition-display.ts';
 import { ErrorMessages } from './ErrorMessages.tsx';
+import { ImagesBlock } from './ImagesBlock.tsx';
 import { WaveformPointsBlock } from './WaveformPointsBlock.tsx';
 
 export type CompositionLocationState = {
@@ -354,6 +355,7 @@ export const CompositionCardPage = observer(function CompositionCardPage() {
         initialClips={full.clips}
         reloadToken={clipsReloadToken}
       />
+      <ImagesBlock compositionId={full.id} initialImages={full.images} />
     </Box>
   );
 });

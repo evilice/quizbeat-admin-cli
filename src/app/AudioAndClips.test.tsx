@@ -85,7 +85,9 @@ describe('загрузка исходного трека', () => {
     fireEvent.change(screen.getByLabelText('Файл трека'), {
       target: { files: [file] },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Загрузить' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Загрузить$/ }),
+    );
 
     await waitFor(() => {
       expect(
@@ -121,19 +123,26 @@ describe('загрузка исходного трека', () => {
     const file = new File(['audio'], 'track.mp3', { type: 'audio/mpeg' });
     const input = screen.getByLabelText('Файл трека') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: 'Загрузить' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Загрузить$/ }),
+    );
 
     await waitFor(() => {
       expect(audioPosts(fetchMock)).toHaveLength(1);
     });
     expect(input.value).toBe('');
     expect(
-      (screen.getByRole('button', { name: 'Загрузить' }) as HTMLButtonElement)
-        .disabled,
+      (
+        screen.getByRole('button', {
+          name: /^Загрузить$/,
+        }) as HTMLButtonElement
+      ).disabled,
     ).toBe(true);
 
     fireEvent.change(input, { target: { files: [file] } });
-    fireEvent.click(screen.getByRole('button', { name: 'Загрузить' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Загрузить$/ }),
+    );
 
     await waitFor(() => {
       expect(audioPosts(fetchMock)).toHaveLength(2);
@@ -166,7 +175,9 @@ describe('загрузка исходного трека', () => {
           ],
         },
       });
-      fireEvent.click(screen.getByRole('button', { name: 'Загрузить' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Загрузить$/ }),
+      );
       await waitFor(() => {
         expect(screen.getByText(item.message)).toBeTruthy();
       });

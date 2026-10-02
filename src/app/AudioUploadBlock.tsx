@@ -3,6 +3,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { ApiError } from '../api/api-error.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
 import { ErrorMessages } from './ErrorMessages.tsx';
+import { visuallyHiddenInputSx } from './visually-hidden-input.ts';
 
 const HINT =
   'Можно загрузить mp3, wav или flac. Ориентир размера — 200 МБ. Тип и размер проверяет сервер.';
@@ -98,17 +99,7 @@ export function AudioUploadBlock({
             accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac"
             aria-label="Файл трека"
             onChange={handleFileChange}
-            sx={{
-              clip: 'rect(0 0 0 0)',
-              clipPath: 'inset(50%)',
-              height: 1,
-              overflow: 'hidden',
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              whiteSpace: 'nowrap',
-              width: 1,
-            }}
+            sx={visuallyHiddenInputSx}
           />
         </Button>
         <Button

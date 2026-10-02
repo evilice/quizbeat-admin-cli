@@ -23,8 +23,11 @@ import {
 } from '../stores/compositions-store.ts';
 import type { Tag } from '../stores/tags-store.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
+import { AudioUploadBlock } from './AudioUploadBlock.tsx';
+import { ClipsListBlock } from './ClipsListBlock.tsx';
 import { STATUS_LABELS, tagDisplayName } from './composition-display.ts';
 import { ErrorMessages } from './ErrorMessages.tsx';
+import { WaveformPointsBlock } from './WaveformPointsBlock.tsx';
 
 export type CompositionLocationState = {
   title?: string;
@@ -53,6 +56,7 @@ export const CompositionCardPage = observer(function CompositionCardPage() {
   const [tagOptions, setTagOptions] = useState<Tag[]>([]);
   const [saveMessages, setSaveMessages] = useState<readonly string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [clipsReloadToken, setClipsReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,6 +94,7 @@ export const CompositionCardPage = observer(function CompositionCardPage() {
     setSaveMessages([]);
     setFull(null);
     setTagsTouched(false);
+    setClipsReloadToken(0);
 
     void compositions
       .full(id)
@@ -174,6 +179,23 @@ export const CompositionCardPage = observer(function CompositionCardPage() {
     }
   }
 
+  function handleAudioUploaded(durationSec: number) {
+    setFull((current) =>
+      current === null
+        ? null
+        : {
+            ...current,
+            originalAudioDurationSec: durationSec,
+            originalAudioUrl: null,
+          },
+    );
+    setClipsReloadToken((value) => value + 1);
+  }
+
+  function handlePointsCreated() {
+    setClipsReloadToken((value) => value + 1);
+  }
+
   const headerTitle = full?.title ?? locationState?.title;
   const headerAuthor = full?.author ?? locationState?.author;
 
@@ -217,102 +239,121 @@ export const CompositionCardPage = observer(function CompositionCardPage() {
   }
 
   return (
-    <Box
-      component="form"
-      data-testid="composition-card-form"
-      data-clips-count={String(full.clips.length)}
-      data-images-count={String(full.images.length)}
-      data-notes-count={String(full.notes.length)}
-      data-original-audio-url={full.originalAudioUrl ?? ''}
-      onSubmit={(event) => {
-        void handleSubmit(event);
-      }}
-      sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 480 }}
-    >
-      <Typography variant="h5" component="h1">
-        {title}
-        {author !== '' ? ` — ${author}` : ''}
-      </Typography>
-      <TextField
-        label="Название"
-        value={title}
-        onChange={(event) => {
-          setTitle(event.target.value);
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <Box
+        component="form"
+        data-testid="composition-card-form"
+        data-clips-count={String(full.clips.length)}
+        data-images-count={String(full.images.length)}
+        data-notes-count={String(full.notes.length)}
+        data-original-audio-url={full.originalAudioUrl ?? ''}
+        onSubmit={(event) => {
+          void handleSubmit(event);
         }}
-        autoComplete="off"
-        fullWidth
-      />
-      <TextField
-        label="Автор"
-        value={author}
-        onChange={(event) => {
-          setAuthor(event.target.value);
-        }}
-        autoComplete="off"
-        fullWidth
-      />
-      <FormControl fullWidth>
-        <InputLabel id="composition-card-status-label">Статус</InputLabel>
-        <Select
-          labelId="composition-card-status-label"
-          label="Статус"
-          value={status}
+        sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 480 }}
+      >
+        <Typography variant="h5" component="h1">
+          {title}
+          {author !== '' ? ` — ${author}` : ''}
+        </Typography>
+        <TextField
+          label="Название"
+          value={title}
           onChange={(event) => {
-            setStatus(event.target.value as CompositionStatus);
+            setTitle(event.target.value);
           }}
-        >
-          <MenuItem value="DRAFT">{STATUS_LABELS.DRAFT}</MenuItem>
-          <MenuItem value="PUBLISHED">{STATUS_LABELS.PUBLISHED}</MenuItem>
-        </Select>
-      </FormControl>
-      <FormControl fullWidth>
-        <InputLabel id="composition-card-tags-label">Теги</InputLabel>
-        <Select
-          labelId="composition-card-tags-label"
-          label="Теги"
-          multiple
-          value={selectedTagIds}
-          input={<OutlinedInput label="Теги" />}
+          autoComplete="off"
+          fullWidth
+        />
+        <TextField
+          label="Автор"
+          value={author}
           onChange={(event) => {
-            const value = event.target.value;
-            setSelectedTagIds(
-              typeof value === 'string' ? value.split(',') : value,
-            );
-            setTagsTouched(true);
+            setAuthor(event.target.value);
           }}
-          renderValue={(selected) => (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {selected.map((tagId) => {
-                const tag =
-                  tagOptions.find((item) => item.id === tagId) ??
-                  full.tags.find((item) => item.id === tagId);
-                return (
-                  <Chip
-                    key={tagId}
-                    size="small"
-                    label={tag ? tagDisplayName(tag) : tagId}
-                  />
-                );
-              })}
-            </Box>
-          )}
-        >
-          {tagOptions.map((tag) => (
-            <MenuItem key={tag.id} value={tag.id}>
-              {tagDisplayName(tag)}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      <ErrorMessages messages={saveMessages} />
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button type="submit" variant="contained" disabled={saving}>
-          Сохранить
-        </Button>
-        <Button component={Link} to="/compositions" disabled={saving}>
-          К списку
-        </Button>
+          autoComplete="off"
+          fullWidth
+        />
+        <FormControl fullWidth>
+          <InputLabel id="composition-card-status-label">Статус</InputLabel>
+          <Select
+            labelId="composition-card-status-label"
+            label="Статус"
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value as CompositionStatus);
+            }}
+          >
+            <MenuItem value="DRAFT">{STATUS_LABELS.DRAFT}</MenuItem>
+            <MenuItem value="PUBLISHED">{STATUS_LABELS.PUBLISHED}</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl fullWidth>
+          <InputLabel id="composition-card-tags-label">Теги</InputLabel>
+          <Select
+            labelId="composition-card-tags-label"
+            label="Теги"
+            multiple
+            value={selectedTagIds}
+            input={<OutlinedInput label="Теги" />}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSelectedTagIds(
+                typeof value === 'string' ? value.split(',') : value,
+              );
+              setTagsTouched(true);
+            }}
+            renderValue={(selected) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((tagId) => {
+                  const tag =
+                    tagOptions.find((item) => item.id === tagId) ??
+                    full.tags.find((item) => item.id === tagId);
+                  return (
+                    <Chip
+                      key={tagId}
+                      size="small"
+                      label={tag ? tagDisplayName(tag) : tagId}
+                    />
+                  );
+                })}
+              </Box>
+            )}
+          >
+            {tagOptions.map((tag) => (
+              <MenuItem key={tag.id} value={tag.id}>
+                {tagDisplayName(tag)}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <ErrorMessages messages={saveMessages} />
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button type="submit" variant="contained" disabled={saving}>
+            Сохранить
+          </Button>
+          <Button component={Link} to="/compositions" disabled={saving}>
+            К списку
+          </Button>
+        </Box>
       </Box>
+      <AudioUploadBlock
+        compositionId={full.id}
+        originalAudioUrl={full.originalAudioUrl}
+        originalAudioDurationSec={full.originalAudioDurationSec}
+        onUploaded={handleAudioUploaded}
+      />
+      <WaveformPointsBlock
+        compositionId={full.id}
+        originalAudioUrl={full.originalAudioUrl}
+        originalAudioDurationSec={full.originalAudioDurationSec}
+        onPointsCreated={handlePointsCreated}
+      />
+      <ClipsListBlock
+        compositionId={full.id}
+        initialClips={full.clips}
+        reloadToken={clipsReloadToken}
+      />
     </Box>
   );
 });

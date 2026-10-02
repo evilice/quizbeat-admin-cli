@@ -8,6 +8,15 @@ import {
 } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('wavesurfer.js', () => ({
+  default: {
+    create: () => ({
+      on: () => undefined,
+      destroy: () => undefined,
+    }),
+  },
+}));
 import { makeAccessToken } from '../stores/make-access-token.ts';
 import { RootStore } from '../stores/root-store.ts';
 import type { SessionStorage } from '../stores/session-store.ts';
@@ -33,9 +42,9 @@ describe('карточка композиции', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Название')).toBeTruthy();
     });
-    expect(
-      (screen.getByLabelText('Название') as HTMLInputElement).value,
-    ).toBe('Song One');
+    expect((screen.getByLabelText('Название') as HTMLInputElement).value).toBe(
+      'Song One',
+    );
 
     const fullCalls = getFullCalls(fetchMock);
     expect(fullCalls).toHaveLength(1);
@@ -71,9 +80,9 @@ describe('карточка композиции', () => {
       expect(screen.getByText('Композиция не найдена')).toBeTruthy();
     });
     expect(
-      screen.getByRole('link', { name: 'К списку композиций' }).getAttribute(
-        'href',
-      ),
+      screen
+        .getByRole('link', { name: 'К списку композиций' })
+        .getAttribute('href'),
     ).toBe('/compositions');
     expect(screen.queryByLabelText('Загрузка композиции')).toBeNull();
     expect(screen.queryByLabelText('Название')).toBeNull();
@@ -314,40 +323,42 @@ describe('карточка композиции', () => {
   });
 
   it('со строки списка «Изменить» открывает карточку с мгновенным заголовком', async () => {
-    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-      const parsed = new URL(String(url));
-      const method = init?.method ?? 'GET';
-      if (parsed.pathname.endsWith('/tags') && method === 'GET') {
-        return Promise.resolve(
-          jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
-        );
-      }
-      if (
-        parsed.pathname === `/compositions/${COMPOSITION_ID}/full` &&
-        method === 'GET'
-      ) {
-        return Promise.resolve(
-          jsonResponse(200, sampleCompositionFull({ title: 'Loaded Title' })),
-        );
-      }
-      if (parsed.pathname.endsWith('/compositions') && method === 'GET') {
-        return Promise.resolve(
-          jsonResponse(200, {
-            items: [
-              sampleComposition({
-                id: COMPOSITION_ID,
-                title: 'List Title',
-                author: 'List Author',
-              }),
-            ],
-            total: 1,
-            page: 1,
-            limit: 20,
-          }),
-        );
-      }
-      return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
-    });
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) => {
+        const parsed = new URL(String(url));
+        const method = init?.method ?? 'GET';
+        if (parsed.pathname.endsWith('/tags') && method === 'GET') {
+          return Promise.resolve(
+            jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+          );
+        }
+        if (
+          parsed.pathname === `/compositions/${COMPOSITION_ID}/full` &&
+          method === 'GET'
+        ) {
+          return Promise.resolve(
+            jsonResponse(200, sampleCompositionFull({ title: 'Loaded Title' })),
+          );
+        }
+        if (parsed.pathname.endsWith('/compositions') && method === 'GET') {
+          return Promise.resolve(
+            jsonResponse(200, {
+              items: [
+                sampleComposition({
+                  id: COMPOSITION_ID,
+                  title: 'List Title',
+                  author: 'List Author',
+                }),
+              ],
+              total: 1,
+              page: 1,
+              limit: 20,
+            }),
+          );
+        }
+        return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
+      });
     vi.stubGlobal('fetch', fetchMock);
 
     const store = new RootStore(createMemoryStorage());
@@ -435,59 +446,64 @@ function stubCardFetch({
   patchResponse?: ReturnType<typeof sampleComposition>;
   patchBody?: unknown;
 } = {}) {
-  const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-    const parsed = new URL(String(url));
-    const method = init?.method ?? 'GET';
+  const fetchMock = vi
+    .fn()
+    .mockImplementation((url: string, init?: RequestInit) => {
+      const parsed = new URL(String(url));
+      const method = init?.method ?? 'GET';
 
-    if (method === 'PATCH' && parsed.pathname === `/compositions/${COMPOSITION_ID}`) {
-      if (patchStatus >= 400) {
-        return Promise.resolve(jsonResponse(patchStatus, patchBody));
-      }
-      return Promise.resolve(
-        jsonResponse(
-          200,
-          patchResponse ??
-            sampleComposition({
-              title: full.title,
-              author: full.author,
-              status: full.status,
-              tags: full.tags,
-            }),
-        ),
-      );
-    }
-
-    if (parsed.pathname.endsWith('/tags') && method === 'GET') {
-      return Promise.resolve(
-        jsonResponse(200, {
-          items: tags,
-          total: tags.length,
-          page: 1,
-          limit: 100,
-        }),
-      );
-    }
-
-    if (
-      parsed.pathname === `/compositions/${COMPOSITION_ID}/full` &&
-      method === 'GET'
-    ) {
-      if (fullStatus === 404) {
+      if (
+        method === 'PATCH' &&
+        parsed.pathname === `/compositions/${COMPOSITION_ID}`
+      ) {
+        if (patchStatus >= 400) {
+          return Promise.resolve(jsonResponse(patchStatus, patchBody));
+        }
         return Promise.resolve(
-          jsonResponse(404, {
-            statusCode: 404,
-            message: 'Not Found',
-            error: 'Not Found',
-            path: `/compositions/${COMPOSITION_ID}/full`,
-            timestamp: '2026-09-25T00:00:00.000Z',
+          jsonResponse(
+            200,
+            patchResponse ??
+              sampleComposition({
+                title: full.title,
+                author: full.author,
+                status: full.status,
+                tags: full.tags,
+              }),
+          ),
+        );
+      }
+
+      if (parsed.pathname.endsWith('/tags') && method === 'GET') {
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: tags,
+            total: tags.length,
+            page: 1,
+            limit: 100,
           }),
         );
       }
-      return Promise.resolve(jsonResponse(200, full));
-    }
 
-    return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
-  });
+      if (
+        parsed.pathname === `/compositions/${COMPOSITION_ID}/full` &&
+        method === 'GET'
+      ) {
+        if (fullStatus === 404) {
+          return Promise.resolve(
+            jsonResponse(404, {
+              statusCode: 404,
+              message: 'Not Found',
+              error: 'Not Found',
+              path: `/compositions/${COMPOSITION_ID}/full`,
+              timestamp: '2026-09-25T00:00:00.000Z',
+            }),
+          );
+        }
+        return Promise.resolve(jsonResponse(200, full));
+      }
+
+      return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
+    });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
@@ -539,11 +555,13 @@ function patchBodies(fetchMock: ReturnType<typeof vi.fn>) {
     });
 }
 
-function sampleTag(overrides: {
-  id?: string;
-  code?: string;
-  translations?: { locale: 'ru' | 'en'; name: string }[];
-} = {}) {
+function sampleTag(
+  overrides: {
+    id?: string;
+    code?: string;
+    translations?: { locale: 'ru' | 'en'; name: string }[];
+  } = {},
+) {
   return {
     id: overrides.id ?? 'tag-id',
     code: overrides.code ?? 'rock',
@@ -555,13 +573,15 @@ function sampleTag(overrides: {
   };
 }
 
-function sampleComposition(overrides: {
-  id?: string;
-  title?: string;
-  author?: string;
-  status?: 'DRAFT' | 'PUBLISHED';
-  tags?: ReturnType<typeof sampleTag>[];
-} = {}) {
+function sampleComposition(
+  overrides: {
+    id?: string;
+    title?: string;
+    author?: string;
+    status?: 'DRAFT' | 'PUBLISHED';
+    tags?: ReturnType<typeof sampleTag>[];
+  } = {},
+) {
   return {
     id: overrides.id ?? COMPOSITION_ID,
     title: overrides.title ?? 'Song One',

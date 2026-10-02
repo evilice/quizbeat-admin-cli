@@ -25,6 +25,12 @@ export type JsonRequest = {
   isNonTokenUnauthorized?: (error: ApiError) => boolean;
 };
 
+export type FormRequest = {
+  method: string;
+  body: FormData;
+  auth?: boolean;
+};
+
 export type CreateApiClientOptions = {
   /** Общий single-flight refresh. `false` — refresh-токена нет, исходный 401. */
   refresh?: () => Promise<boolean>;
@@ -37,6 +43,10 @@ export type ApiClient = {
   requestJson<T = unknown>(
     path: string,
     options: JsonRequest,
+  ): Promise<T | undefined>;
+  requestForm<T = unknown>(
+    path: string,
+    options: FormRequest,
   ): Promise<T | undefined>;
 };
 
@@ -68,6 +78,17 @@ export function createApiClient(
         requestOptions.body === undefined
           ? undefined
           : JSON.stringify(requestOptions.body),
+    }) as Promise<T | undefined>;
+  }
+
+  function requestForm<T = unknown>(
+    path: string,
+    requestOptions: FormRequest,
+  ): Promise<T | undefined> {
+    return request(path, {
+      method: requestOptions.method,
+      body: requestOptions.body,
+      auth: requestOptions.auth,
     }) as Promise<T | undefined>;
   }
 
@@ -144,5 +165,5 @@ export function createApiClient(
     throw error;
   }
 
-  return { request, requestJson };
+  return { request, requestJson, requestForm };
 }

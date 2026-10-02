@@ -1,4 +1,5 @@
 import { AdminsStore } from './admins-store.ts';
+import { AudioClipsStore } from './audio-clips-store.ts';
 import { CompositionsStore } from './compositions-store.ts';
 import { SessionStore, type SessionStorage } from './session-store.ts';
 import { TagsStore } from './tags-store.ts';
@@ -9,6 +10,7 @@ export class RootStore {
   readonly admins: AdminsStore;
   readonly tags: TagsStore;
   readonly compositions: CompositionsStore;
+  readonly audioClips: AudioClipsStore;
   readonly api: ApiClient;
 
   constructor(storage: SessionStorage) {
@@ -17,5 +19,6 @@ export class RootStore {
     this.admins = new AdminsStore(this.api);
     this.tags = new TagsStore(this.api);
     this.compositions = new CompositionsStore(this.api);
+    this.audioClips = new AudioClipsStore(this.api);
   }
 }

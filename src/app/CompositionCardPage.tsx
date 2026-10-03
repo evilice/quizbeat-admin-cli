@@ -28,6 +28,7 @@ import { ClipsListBlock } from './ClipsListBlock.tsx';
 import { STATUS_LABELS, tagDisplayName } from './composition-display.ts';
 import { ErrorMessages } from './ErrorMessages.tsx';
 import { ImagesBlock } from './ImagesBlock.tsx';
+import { NotesBlock } from './NotesBlock.tsx';
 import { WaveformPointsBlock } from './WaveformPointsBlock.tsx';
 
 export type CompositionLocationState = {
@@ -356,6 +357,7 @@ export const CompositionCardPage = observer(function CompositionCardPage() {
         reloadToken={clipsReloadToken}
       />
       <ImagesBlock compositionId={full.id} initialImages={full.images} />
+      <NotesBlock compositionId={full.id} initialNotes={full.notes} />
     </Box>
   );
 });

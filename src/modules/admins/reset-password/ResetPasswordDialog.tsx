@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import type { Admin } from '../admins-store.ts';
+import { useLastAdmin } from '../use-last-admin.ts';
 import { useResetPassword } from './use-reset-password.ts';
 
 type ResetPasswordDialogProps = {
@@ -31,6 +32,8 @@ export const ResetPasswordDialog = ({
     handleSubmit,
   } = useResetPassword(admin, onClose, onReset);
 
+  const shownAdmin = useLastAdmin(admin);
+
   return (
     <Dialog open={admin !== null} onClose={handleClose} fullWidth maxWidth="xs">
       <Box
@@ -39,7 +42,7 @@ export const ResetPasswordDialog = ({
           void handleSubmit(event);
         }}
       >
-        <DialogTitle>Сбросить пароль {admin?.email ?? ''}</DialogTitle>
+        <DialogTitle>Сбросить пароль {shownAdmin?.email ?? ''}</DialogTitle>
         <DialogContent
           sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}
         >

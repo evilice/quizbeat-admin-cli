@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@mui/material';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
+import { useLastAdmin } from '../use-last-admin.ts';
 import { DEACTIVATE_CONFIRM_TEXT } from '../admin-display.ts';
 import type { Admin } from '../admins-store.ts';
 
@@ -25,9 +26,11 @@ export const DeactivateAdminDialog = ({
   onClose,
   onConfirm,
 }: DeactivateAdminDialogProps) => {
+  const shownAdmin = useLastAdmin(admin);
+
   return (
     <Dialog open={admin !== null} onClose={onClose}>
-      <DialogTitle>Деактивировать {admin?.email ?? ''}?</DialogTitle>
+      <DialogTitle>Деактивировать {shownAdmin?.email ?? ''}?</DialogTitle>
       <DialogContent>
         <DialogContentText>{DEACTIVATE_CONFIRM_TEXT}</DialogContentText>
         <ErrorMessages messages={messages} />

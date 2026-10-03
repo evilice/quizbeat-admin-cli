@@ -1,4 +1,3 @@
-import { makeAutoObservable } from 'mobx';
 import type { ApiClient } from '../../shared/api/api-client.ts';
 import { ApiError } from '../../shared/api/api-error.ts';
 import type { StaffRole } from '../session/parse-access-token.ts';
@@ -44,13 +43,6 @@ export class AdminsStore {
 
   constructor(api: ApiClient) {
     this.api = api;
-    makeAutoObservable(
-      this,
-      {
-        api: false,
-      },
-      { autoBind: true },
-    );
   }
 
   async list(params: ListAdminsParams = {}): Promise<PaginatedAdmins> {
@@ -81,17 +73,9 @@ export class AdminsStore {
   }
 
   async update(id: string, input: UpdateAdminInput): Promise<Admin> {
-    const body: { role?: StaffRole; isActive?: boolean } = {};
-    if (input.role !== undefined) {
-      body.role = input.role;
-    }
-    if (input.isActive !== undefined) {
-      body.isActive = input.isActive;
-    }
-
     const admin = await this.api.requestJson<Admin>(`/admins/${id}`, {
       method: 'PATCH',
-      body,
+      body: { role: input.role, isActive: input.isActive },
     });
     if (admin === undefined) {
       throw new ApiError(null, ['Пустой ответ правки сотрудника']);

@@ -7,7 +7,7 @@ import {
   Select,
   TextField,
 } from '@mui/material';
-import { ROLE_LABELS } from '../admin-display.ts';
+import { ROLE_LABELS, STAFF_ROLES } from '../admin-display.ts';
 import type { ActivityFilter, RoleFilter } from './use-admins-list.ts';
 
 type AdminsFiltersProps = {
@@ -47,27 +47,30 @@ export const AdminsFilters = ({
       />
       <FormControl sx={{ minWidth: 180 }}>
         <InputLabel id="admins-role-filter-label">Роль</InputLabel>
-        <Select
+        <Select<RoleFilter>
           labelId="admins-role-filter-label"
           label="Роль"
           value={roleFilter}
           onChange={(event) => {
-            onRoleFilterChange(event.target.value as RoleFilter);
+            onRoleFilterChange(event.target.value);
           }}
         >
           <MenuItem value="all">Все</MenuItem>
-          <MenuItem value="ADMIN">{ROLE_LABELS.ADMIN}</MenuItem>
-          <MenuItem value="SUPER_ADMIN">{ROLE_LABELS.SUPER_ADMIN}</MenuItem>
+          {STAFF_ROLES.map((staffRole) => (
+            <MenuItem key={staffRole} value={staffRole}>
+              {ROLE_LABELS[staffRole]}
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
       <FormControl sx={{ minWidth: 220 }}>
         <InputLabel id="admins-activity-filter-label">Активность</InputLabel>
-        <Select
+        <Select<ActivityFilter>
           labelId="admins-activity-filter-label"
           label="Активность"
           value={activityFilter}
           onChange={(event) => {
-            onActivityFilterChange(event.target.value as ActivityFilter);
+            onActivityFilterChange(event.target.value);
           }}
         >
           <MenuItem value="all">Все</MenuItem>

@@ -17,6 +17,16 @@ export class ApiError extends Error {
   }
 }
 
+const UNEXPECTED_ERROR_MESSAGE = 'Непредвиденная ошибка';
+
+/** Тексты для показа пользователю: ответ сервера или общая заглушка. */
+export function messagesFromError(error: unknown): readonly string[] {
+  if (error instanceof ApiError && error.messages.length > 0) {
+    return error.messages;
+  }
+  return [UNEXPECTED_ERROR_MESSAGE];
+}
+
 export function errorFromResponse(status: number, raw: string): ApiError {
   const trimmed = raw.trim();
   if (trimmed === '') {

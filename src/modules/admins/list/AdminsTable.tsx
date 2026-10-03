@@ -12,7 +12,11 @@ import {
   TableRow,
 } from '@mui/material';
 import type { StaffRole } from '../../session/parse-access-token.ts';
-import { ROLE_LABELS, adminStatusLabel } from '../admin-display.ts';
+import {
+  ROLE_LABELS,
+  STAFF_ROLES,
+  adminStatusLabel,
+} from '../admin-display.ts';
 import type { Admin } from '../admins-store.ts';
 
 type AdminsTableProps = {
@@ -85,17 +89,20 @@ const AdminRow = ({
             <InputLabel id={`admin-role-${admin.id}`}>
               Роль сотрудника
             </InputLabel>
-            <Select
+            <Select<StaffRole>
               labelId={`admin-role-${admin.id}`}
               label="Роль сотрудника"
               value={admin.role}
               disabled={actionPending}
               onChange={(event) => {
-                void onRoleChange(admin, event.target.value as StaffRole);
+                void onRoleChange(admin, event.target.value);
               }}
             >
-              <MenuItem value="ADMIN">{ROLE_LABELS.ADMIN}</MenuItem>
-              <MenuItem value="SUPER_ADMIN">{ROLE_LABELS.SUPER_ADMIN}</MenuItem>
+              {STAFF_ROLES.map((staffRole) => (
+                <MenuItem key={staffRole} value={staffRole}>
+                  {ROLE_LABELS[staffRole]}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         ) : (

@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import type { StaffRole } from '../../session/parse-access-token.ts';
-import { ROLE_LABELS } from '../admin-display.ts';
+import { ROLE_LABELS, STAFF_ROLES } from '../admin-display.ts';
 import { useCreateAdmin } from './use-create-admin.ts';
 
 type CreateAdminDialogProps = {
@@ -75,16 +75,19 @@ export const CreateAdminDialog = ({
           />
           <FormControl fullWidth>
             <InputLabel id="create-admin-role-label">Роль</InputLabel>
-            <Select
+            <Select<StaffRole>
               labelId="create-admin-role-label"
               label="Роль"
               value={role}
               onChange={(event) => {
-                setRole(event.target.value as StaffRole);
+                setRole(event.target.value);
               }}
             >
-              <MenuItem value="ADMIN">{ROLE_LABELS.ADMIN}</MenuItem>
-              <MenuItem value="SUPER_ADMIN">{ROLE_LABELS.SUPER_ADMIN}</MenuItem>
+              {STAFF_ROLES.map((staffRole) => (
+                <MenuItem key={staffRole} value={staffRole}>
+                  {ROLE_LABELS[staffRole]}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <ErrorMessages messages={messages} />

@@ -19,7 +19,7 @@ export const AdminsPage = observer(() => {
     onRoleFilterChange,
     onActivityFilterChange,
     messages,
-    passwordResetConfirmed,
+    notice,
     showEmpty,
     showTable,
     items,
@@ -80,8 +80,10 @@ export const AdminsPage = observer(() => {
 
       <ErrorMessages messages={messages} />
 
-      {passwordResetConfirmed ? (
-        <Typography color="success.main">Пароль задан</Typography>
+      {notice !== null ? (
+        <Typography role="status" color="success.main">
+          {notice}
+        </Typography>
       ) : null}
 
       {showEmpty ? <Typography>{EMPTY_ADMINS_MESSAGE}</Typography> : null}

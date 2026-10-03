@@ -4,7 +4,7 @@ import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
 import { EMPTY_ADMINS_MESSAGE } from './admin-display.ts';
 import { CreateAdminDialog } from './create/CreateAdminDialog.tsx';
 import { AdminsFilters } from './list/AdminsFilters.tsx';
-import { AdminsPagination } from '../../shared/ui/ListPagination.tsx';
+import { ListPagination } from '../../shared/ui/ListPagination.tsx';
 import { AdminsTable } from './list/AdminsTable.tsx';
 import { DeactivateAdminDialog } from './list/DeactivateAdminDialog.tsx';
 import { useAdminsList } from './list/use-admins-list.ts';
@@ -100,7 +100,7 @@ export const AdminsPage = observer(() => {
       ) : null}
 
       {showPagination ? (
-        <AdminsPagination
+        <ListPagination
           currentPage={currentPage}
           totalPages={totalPages}
           loading={loading}

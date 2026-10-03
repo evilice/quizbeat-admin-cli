@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from '@mui/material';
 
-type AdminsPaginationProps = {
+type ListPaginationProps = {
   currentPage: number;
   totalPages: number;
   loading: boolean;
@@ -8,13 +8,13 @@ type AdminsPaginationProps = {
   onNext: () => void;
 };
 
-export const AdminsPagination = ({
+export const ListPagination = ({
   currentPage,
   totalPages,
   loading,
   onPrevious,
   onNext,
-}: AdminsPaginationProps) => {
+}: ListPaginationProps) => {
   return (
     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
       <Button disabled={currentPage <= 1 || loading} onClick={onPrevious}>

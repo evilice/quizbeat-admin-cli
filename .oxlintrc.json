@@ -45,7 +45,8 @@
         "src/modules/admins/AdminsPage.tsx",
         "src/modules/admins/admin-display.ts",
         "src/modules/admins/use-last-admin.ts",
-        "src/shared/hooks/**"
+        "src/shared/hooks/**",
+        "src/shared/ui/ListPagination.tsx"
       ],
       "rules": {
         "func-style": ["error", "expression"]

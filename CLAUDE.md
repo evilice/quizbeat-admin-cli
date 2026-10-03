@@ -56,7 +56,7 @@ src/
   app/                 # провайдеры, тема, роутер, шапка
   shared/
     api/               # один HTTP-клиент и разбор ошибки
-    ui/                # ErrorMessages, скрытый file input
+    ui/                # ErrorMessages, пагинация списка, скрытый file input
     hooks/             # хуки без привязки к домену (дебаунс)
     store/             # RootStore и useRootStore
     testing/           # makeAccessToken, только тесты

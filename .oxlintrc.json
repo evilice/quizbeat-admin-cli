@@ -44,7 +44,9 @@
         "src/modules/admins/{list,create,reset-password}/**",
         "src/modules/admins/AdminsPage.tsx",
         "src/modules/admins/admin-display.ts",
-        "src/modules/admins/use-last-admin.ts",
+        "src/modules/tags/{list,form}/**",
+        "src/modules/tags/TagsPage.tsx",
+        "src/modules/tags/tags-display.ts",
         "src/shared/hooks/**",
         "src/shared/ui/ListPagination.tsx"
       ],

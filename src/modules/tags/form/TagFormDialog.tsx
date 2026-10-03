@@ -7,15 +7,9 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material';
-import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
-import {
-  type Tag,
-  type TagLocale,
-  type TagTranslation,
-} from '../tags-store.ts';
-import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
+import type { Tag } from '../tags-store.ts';
+import { useTagForm } from './use-tag-form.ts';
 
 type TagFormDialogProps = {
   open: boolean;
@@ -24,79 +18,26 @@ type TagFormDialogProps = {
   onSaved: () => void;
 };
 
-export function TagFormDialog({
+export const TagFormDialog = ({
   open,
   tag,
   onClose,
   onSaved,
-}: TagFormDialogProps) {
-  const { tags } = useRootStore();
-  const [code, setCode] = useState(tag?.code ?? '');
-  const [nameRu, setNameRu] = useState(
-    tag !== null ? translationName(tag, 'ru') : '',
-  );
-  const [nameEn, setNameEn] = useState(
-    tag !== null ? translationName(tag, 'en') : '',
-  );
-  const [messages, setMessages] = useState<readonly string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
+}: TagFormDialogProps) => {
+  const {
+    code,
+    setCode,
+    nameRu,
+    setNameRu,
+    nameEn,
+    setNameEn,
+    messages,
+    submitting,
+    handleClose,
+    handleSubmit,
+  } = useTagForm(tag, onClose, onSaved);
 
   const isEdit = tag !== null;
-
-  function resetForm() {
-    setCode('');
-    setNameRu('');
-    setNameEn('');
-    setMessages([]);
-  }
-
-  function handleClose() {
-    if (submitting) {
-      return;
-    }
-    resetForm();
-    onClose();
-  }
-
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (code === '') {
-      setMessages(['Укажите код']);
-      return;
-    }
-    if (nameRu === '') {
-      setMessages(['Укажите название (ru)']);
-      return;
-    }
-    if (nameEn === '') {
-      setMessages(['Укажите название (en)']);
-      return;
-    }
-
-    const translations: TagTranslation[] = [
-      { locale: 'ru', name: nameRu },
-      { locale: 'en', name: nameEn },
-    ];
-
-    setSubmitting(true);
-    setMessages([]);
-    try {
-      if (tag === null) {
-        await tags.create({ code, translations });
-      } else {
-        await tags.update(tag.id, { code, translations });
-      }
-      resetForm();
-      onSaved();
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
@@ -151,8 +92,4 @@ export function TagFormDialog({
       </Box>
     </Dialog>
   );
-}
-
-function translationName(tag: Tag, locale: TagLocale): string {
-  return tag.translations.find((item) => item.locale === locale)?.name ?? '';
-}
+};

@@ -57,7 +57,7 @@ src/
   shared/
     api/               # один HTTP-клиент и разбор ошибки
     ui/                # ErrorMessages, пагинация списка, скрытый file input
-    hooks/             # хуки без привязки к домену (дебаунс)
+    hooks/             # хуки без привязки к домену (дебаунс, последнее значение)
     store/             # RootStore и useRootStore
     testing/           # makeAccessToken, только тесты
   modules/

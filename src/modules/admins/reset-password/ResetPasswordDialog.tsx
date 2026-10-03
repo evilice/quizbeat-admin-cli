@@ -7,9 +7,9 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material';
+import { useLastValue } from '../../../shared/hooks/use-last-value.ts';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import type { Admin } from '../admins-store.ts';
-import { useLastAdmin } from '../use-last-admin.ts';
 import { useResetPassword } from './use-reset-password.ts';
 
 type ResetPasswordDialogProps = {
@@ -32,7 +32,7 @@ export const ResetPasswordDialog = ({
     handleSubmit,
   } = useResetPassword(admin, onClose, onReset);
 
-  const shownAdmin = useLastAdmin(admin);
+  const shownAdmin = useLastValue(admin);
 
   return (
     <Dialog open={admin !== null} onClose={handleClose} fullWidth maxWidth="xs">

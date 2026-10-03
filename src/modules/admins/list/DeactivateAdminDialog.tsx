@@ -6,8 +6,8 @@ import {
   DialogContentText,
   DialogTitle,
 } from '@mui/material';
+import { useLastValue } from '../../../shared/hooks/use-last-value.ts';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
-import { useLastAdmin } from '../use-last-admin.ts';
 import { DEACTIVATE_CONFIRM_TEXT } from '../admin-display.ts';
 import type { Admin } from '../admins-store.ts';
 
@@ -26,7 +26,7 @@ export const DeactivateAdminDialog = ({
   onClose,
   onConfirm,
 }: DeactivateAdminDialogProps) => {
-  const shownAdmin = useLastAdmin(admin);
+  const shownAdmin = useLastValue(admin);
 
   return (
     <Dialog open={admin !== null} onClose={onClose}>

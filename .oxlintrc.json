@@ -26,6 +26,16 @@
           }
         ]
       }
+    ],
+    "typescript/no-restricted-types": [
+      "error",
+      {
+        "types": {
+          "React.FormEvent": {
+            "message": "Обработчик отправки типизируется SubmitEvent (правила разработки, раздел 11)."
+          }
+        }
+      }
     ]
   },
   "overrides": [

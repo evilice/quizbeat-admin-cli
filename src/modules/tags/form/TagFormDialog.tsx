@@ -8,10 +8,14 @@ import {
   TextField,
 } from '@mui/material';
 import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../shared/api/api-error.ts';
-import { type Tag, type TagLocale, type TagTranslation } from './tags-store.ts';
-import { useRootStore } from '../../shared/store/root-store-context.tsx';
-import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
+import { ApiError } from '../../../shared/api/api-error.ts';
+import {
+  type Tag,
+  type TagLocale,
+  type TagTranslation,
+} from '../tags-store.ts';
+import { useRootStore } from '../../../shared/store/root-store-context.tsx';
+import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 
 type TagFormDialogProps = {
   open: boolean;

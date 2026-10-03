@@ -8,11 +8,11 @@ import {
 } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { makeAccessToken } from '../../shared/testing/make-access-token.ts';
-import { RootStore } from '../../shared/store/root-store.ts';
-import type { SessionStorage } from '../session/session-store.ts';
-import { AppProviders } from '../../app/App.tsx';
-import { routes } from '../../app/routes.tsx';
+import { makeAccessToken } from '../../../shared/testing/make-access-token.ts';
+import { RootStore } from '../../../shared/store/root-store.ts';
+import type { SessionStorage } from '../../session/session-store.ts';
+import { AppProviders } from '../../../app/App.tsx';
+import { routes } from '../../../app/routes.tsx';
 
 afterEach(() => {
   cleanup();

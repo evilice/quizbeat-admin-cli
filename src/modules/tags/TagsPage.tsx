@@ -25,7 +25,7 @@ import {
 } from './tags-store.ts';
 import { useRootStore } from '../../shared/store/root-store-context.tsx';
 import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
-import { TagFormDialog } from './TagFormDialog.tsx';
+import { TagFormDialog } from './form/TagFormDialog.tsx';
 
 const EMPTY_LIST_MESSAGE = 'Ничего не найдено';
 

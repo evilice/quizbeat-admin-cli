@@ -1,6 +1,6 @@
 import { Box, Button, TextField } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { useState, type FormEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { ApiError } from '../../shared/api/api-error.ts';
 import { normalizeEmail } from './normalize-email.ts';
 import { useRootStore } from '../../shared/store/root-store-context.tsx';
@@ -19,7 +19,7 @@ export const LoginPage = observer(function LoginPage({
   );
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = normalizeEmail(email);
     if (normalized === undefined) {

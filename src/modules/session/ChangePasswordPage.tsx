@@ -1,6 +1,6 @@
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { useState, type FormEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { ApiError } from '../../shared/api/api-error.ts';
 import { useRootStore } from '../../shared/store/root-store-context.tsx';
 import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
@@ -21,7 +21,7 @@ export const ChangePasswordPage = observer(function ChangePasswordPage() {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setSuccess(false);
 

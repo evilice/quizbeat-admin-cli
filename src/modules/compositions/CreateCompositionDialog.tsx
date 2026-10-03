@@ -13,7 +13,7 @@ import {
   Select,
   TextField,
 } from '@mui/material';
-import { useState, type FormEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { ApiError } from '../../shared/api/api-error.ts';
 import type { CompositionStatus } from './compositions-store.ts';
 import type { Tag } from '../../modules/tags/tags-store.ts';
@@ -58,7 +58,7 @@ export function CreateCompositionDialog({
     onClose();
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (title === '') {

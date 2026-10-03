@@ -11,18 +11,10 @@ import {
   Select,
   TextField,
 } from '@mui/material';
-import { useState, type FormEvent } from 'react';
-import { ApiError } from '../../shared/api/api-error.ts';
-import type { StaffRole } from '../session/parse-access-token.ts';
-import { useRootStore } from '../../shared/store/root-store-context.tsx';
-import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
-
-const MIN_PASSWORD_LENGTH = 8;
-
-const ROLE_LABELS: Record<StaffRole, string> = {
-  ADMIN: 'Админ',
-  SUPER_ADMIN: 'Супер-админ',
-};
+import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
+import type { StaffRole } from '../../session/parse-access-token.ts';
+import { ROLE_LABELS } from '../admin-display.ts';
+import { useCreateAdmin } from './use-create-admin.ts';
 
 type CreateAdminDialogProps = {
   open: boolean;
@@ -30,62 +22,23 @@ type CreateAdminDialogProps = {
   onCreated: () => void;
 };
 
-export function CreateAdminDialog({
+export const CreateAdminDialog = ({
   open,
   onClose,
   onCreated,
-}: CreateAdminDialogProps) {
-  const { admins } = useRootStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<StaffRole>('ADMIN');
-  const [messages, setMessages] = useState<readonly string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-
-  function resetForm() {
-    setEmail('');
-    setPassword('');
-    setRole('ADMIN');
-    setMessages([]);
-  }
-
-  function handleClose() {
-    if (submitting) {
-      return;
-    }
-    resetForm();
-    onClose();
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (email.trim() === '') {
-      setMessages(['Укажите email']);
-      return;
-    }
-
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setMessages([
-        `Пароль должен быть не короче ${MIN_PASSWORD_LENGTH} символов`,
-      ]);
-      return;
-    }
-
-    setSubmitting(true);
-    setMessages([]);
-    try {
-      await admins.create({ email: email.trim(), password, role });
-      resetForm();
-      onCreated();
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
+}: CreateAdminDialogProps) => {
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    role,
+    setRole,
+    messages,
+    submitting,
+    handleClose,
+    handleSubmit,
+  } = useCreateAdmin(onClose, onCreated);
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
@@ -147,4 +100,4 @@ export function CreateAdminDialog({
       </Box>
     </Dialog>
   );
-}
+};

@@ -7,7 +7,7 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material';
-import { useState, type FormEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { ApiError } from '../../../shared/api/api-error.ts';
 import type { CompositionNote, NoteTranslation } from './notes-store.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
@@ -55,7 +55,7 @@ export function NoteFormDialog({
     onClose();
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (textRu === '') {

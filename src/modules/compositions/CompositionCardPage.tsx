@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type SubmitEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { ApiError } from '../../shared/api/api-error.ts';
 import {
@@ -135,7 +135,7 @@ export const CompositionCardPage = observer(function CompositionCardPage() {
     };
   }, [compositions, id]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (id === undefined || id === '' || full === null) {

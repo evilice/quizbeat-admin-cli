@@ -11,7 +11,7 @@ import {
   type ListAdminsParams,
   type PaginatedAdmins,
 } from '../admins-store.ts';
-import { useDebouncedValue } from './use-debounced-value.ts';
+import { useDebouncedValue } from '../../../shared/hooks/use-debounced-value.ts';
 
 export type RoleFilter = 'all' | StaffRole;
 export type ActivityFilter = 'all' | 'active' | 'inactive';

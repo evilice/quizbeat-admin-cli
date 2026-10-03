@@ -102,17 +102,17 @@ export const AppShell = observer(function AppShell() {
         >
           <Toolbar />
           <List>
+            {session.role === 'SUPER_ADMIN' ? (
+              <ListItemButton component={Link} to="/admins">
+                <ListItemText primary="Сотрудники" />
+              </ListItemButton>
+            ) : null}
             <ListItemButton component={Link} to="/compositions">
               <ListItemText primary="Композиции" />
             </ListItemButton>
             <ListItemButton component={Link} to="/tags">
               <ListItemText primary="Теги" />
             </ListItemButton>
-            {session.role === 'SUPER_ADMIN' ? (
-              <ListItemButton component={Link} to="/admins">
-                <ListItemText primary="Сотрудники" />
-              </ListItemButton>
-            ) : null}
           </List>
         </Drawer>
       ) : null}

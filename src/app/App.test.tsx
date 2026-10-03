@@ -106,12 +106,18 @@ describe('роль в оболочке и пункты меню', () => {
 
     render(shell(store, '/'));
 
-    const compositionsLink = screen.getByRole('link', { name: 'Композиции' });
-    expect(compositionsLink.getAttribute('href')).toBe('/compositions');
-    const tagsLink = screen.getByRole('link', { name: 'Теги' });
-    expect(tagsLink.getAttribute('href')).toBe('/tags');
-    const adminsLink = screen.getByRole('link', { name: 'Сотрудники' });
-    expect(adminsLink.getAttribute('href')).toBe('/admins');
+    const navLinks = screen.getAllByRole('link');
+    expect(navLinks.map((link) => link.textContent)).toEqual([
+      'Сотрудники',
+      'Композиции',
+      'Теги',
+    ]);
+    const adminsLink = navLinks[0];
+    expect(adminsLink?.getAttribute('href')).toBe('/admins');
+    const compositionsLink = navLinks[1];
+    expect(compositionsLink?.getAttribute('href')).toBe('/compositions');
+    const tagsLink = navLinks[2];
+    expect(tagsLink?.getAttribute('href')).toBe('/tags');
     openAccount();
     expect(screen.getByText(sub)).toBeTruthy();
     expect(store.session.id).toBe(sub);
@@ -151,10 +157,15 @@ describe('роль в оболочке и пункты меню', () => {
     render(shell(store, '/'));
 
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
-    const compositionsLink = screen.getByRole('link', { name: 'Композиции' });
-    expect(compositionsLink.getAttribute('href')).toBe('/compositions');
-    const tagsLink = screen.getByRole('link', { name: 'Теги' });
-    expect(tagsLink.getAttribute('href')).toBe('/tags');
+    const navLinks = screen.getAllByRole('link');
+    expect(navLinks.map((link) => link.textContent)).toEqual([
+      'Композиции',
+      'Теги',
+    ]);
+    const compositionsLink = navLinks[0];
+    expect(compositionsLink?.getAttribute('href')).toBe('/compositions');
+    const tagsLink = navLinks[1];
+    expect(tagsLink?.getAttribute('href')).toBe('/tags');
 
     openAccount();
     expect(screen.getByText(sub)).toBeTruthy();

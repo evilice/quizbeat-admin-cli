@@ -177,6 +177,38 @@ describe('загрузка исходного трека', () => {
     }
   });
 
+  it('404 загрузки трека показывает message на блоке и не уводит с карточки', async () => {
+    const fetchMock = stubCardFetch({
+      full: sampleFull(),
+      audioStatus: 404,
+      audioMessage: 'Not Found',
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Файл трека')).toBeTruthy();
+    });
+    fireEvent.change(screen.getByLabelText('Файл трека'), {
+      target: {
+        files: [new File(['x'], 'track.mp3', { type: 'audio/mpeg' })],
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Загрузить$/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Not Found')).toBeTruthy();
+    });
+    expect(screen.getByTestId('composition-card-form')).toBeTruthy();
+    expect(screen.getByText('Трек не загружен')).toBeTruthy();
+    expect(screen.queryByText('Композиция не найдена')).toBeNull();
+    expect(screen.queryByText('Войти')).toBeNull();
+    expect(
+      fetchMock.mock.calls.some((call) =>
+        String(call[0]).includes('/auth/staff/'),
+      ),
+    ).toBe(false);
+  });
+
   it('originalAudioUrl: null — трек не загружен, без GET .../audio и без ухода на логин', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull() });
     renderCard();

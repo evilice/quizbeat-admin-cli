@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { AppProviders } from './app/App.tsx';
 import { routes } from './app/routes.tsx';
-import { RootStore } from './stores/root-store.ts';
+import { RootStore } from './shared/store/root-store.ts';
 
 const rootElement = document.getElementById('root');
 if (rootElement === null) {

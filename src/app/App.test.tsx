@@ -10,15 +10,15 @@ import {
 import type { ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiBaseUrl } from '../api/api-base-url.ts';
-import { makeAccessToken } from '../stores/make-access-token.ts';
-import { RootStore } from '../stores/root-store.ts';
-import { useRootStore } from '../stores/root-store-context.tsx';
+import { apiBaseUrl } from '../shared/api/api-base-url.ts';
+import { makeAccessToken } from '../shared/testing/make-access-token.ts';
+import { RootStore } from '../shared/store/root-store.ts';
+import { useRootStore } from '../shared/store/root-store-context.tsx';
 import {
   EMAIL_KEY,
   REFRESH_TOKEN_KEY,
   type SessionStorage,
-} from '../stores/session-store.ts';
+} from '../modules/session/session-store.ts';
 import { AppProviders } from './App.tsx';
 import { routes } from './routes.tsx';
 
@@ -220,9 +220,9 @@ describe('роль в оболочке и пункты меню', () => {
     expect(store.session.id).toBe(sub);
     expect(store.session.accessToken).toBe(access);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0]?.[0]).startsWith(`${apiBaseUrl}/admins`)).toBe(
-      true,
-    );
+    expect(
+      String(fetchMock.mock.calls[0]?.[0]).startsWith(`${apiBaseUrl}/admins`),
+    ).toBe(true);
   });
 });
 

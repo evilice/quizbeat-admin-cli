@@ -15,9 +15,9 @@ import {
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router';
-import { ApiError } from '../api/api-error.ts';
-import { useRootStore } from '../stores/root-store-context.tsx';
-import { LoginPage } from './LoginPage.tsx';
+import { ApiError } from '../shared/api/api-error.ts';
+import { useRootStore } from '../shared/store/root-store-context.tsx';
+import { LoginPage } from '../modules/session/LoginPage.tsx';
 
 const drawerWidth = 240;
 
@@ -126,7 +126,9 @@ export const AppShell = observer(function AppShell() {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Box sx={{ px: 2, py: 1 }}>
-          <Typography><b>{session.email}</b></Typography>
+          <Typography>
+            <b>{session.email}</b>
+          </Typography>
         </Box>
         <MenuItem
           component={Link}

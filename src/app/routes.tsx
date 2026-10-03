@@ -1,11 +1,11 @@
 import type { RouteObject } from 'react-router';
-import { AdminsPage } from './AdminsPage.tsx';
+import { AdminsPage } from '../modules/admins/AdminsPage.tsx';
 import { AppShell } from './AppShell.tsx';
-import { ChangePasswordPage } from './ChangePasswordPage.tsx';
-import { CompositionCardPage } from './CompositionCardPage.tsx';
-import { CompositionsPage } from './CompositionsPage.tsx';
+import { ChangePasswordPage } from '../modules/session/ChangePasswordPage.tsx';
+import { CompositionCardPage } from '../modules/compositions/CompositionCardPage.tsx';
+import { CompositionsPage } from '../modules/compositions/CompositionsPage.tsx';
 import { HomePage, LoginRedirect, MissingPage } from './pages.tsx';
-import { TagsPage } from './TagsPage.tsx';
+import { TagsPage } from '../modules/tags/TagsPage.tsx';
 
 export const routes: RouteObject[] = [
   {

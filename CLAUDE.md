@@ -41,6 +41,39 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
 | формат     | `npm run format` |
 | сборка     | `npm run build`  |
 
+## Раскладка `src`
+
+Файлы группируются по домену. Общее — в `shared`, оболочка — в `app`.
+Стор лежит рядом со своим экраном. Корневой стор — общий, он в `shared`.
+Аудио, картинки и заметки — вложенные каталоги модуля композиций, не
+отдельные модули верхнего уровня.
+
+```text
+src/
+  main.tsx
+  app/                 # провайдеры, тема, роутер, шапка
+  shared/
+    api/               # один HTTP-клиент и разбор ошибки
+    ui/                # ErrorMessages, скрытый file input
+    store/             # RootStore и useRootStore
+    testing/           # makeAccessToken, только тесты
+  modules/
+    session/
+    admins/
+    tags/
+    compositions/
+      audio/
+      images/
+      notes/
+```
+
+Экраны берут стор через `useRootStore` из `shared/store/root-store-context.tsx`
+и не импортируют класс `RootStore`: контекст зависит от него только типом,
+иначе цикл `shared/store` → модуль → `shared/store`. Типы отрезка, картинки
+и заметки живут во вложенном модуле; `CompositionFull` собирает их через
+`import type`. Исторические задачи этапов 0–8 описывают пути на момент
+выполнения и не совпадают с этой раскладкой.
+
 ## Документация — куда смотреть
 
 - [documentation/01-project-overview.md](./documentation/01-project-overview.md)

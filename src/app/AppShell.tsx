@@ -126,10 +126,7 @@ export const AppShell = observer(function AppShell() {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Box sx={{ px: 2, py: 1 }}>
-          <Typography>{session.email}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {session.id}
-          </Typography>
+          <Typography><b>{session.email}</b></Typography>
         </Box>
         <MenuItem
           component={Link}

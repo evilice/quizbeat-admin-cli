@@ -1,7 +1,6 @@
 # Этап 5 — Аудио и отрезки: декомпозиция на задачи
 
-Статус этапа: не выполнен (задачи 1–5 выполнены, приёмка не закрыта).
-Сводка — [status.md](../status.md).
+Статус этапа: выполнен. Сводка — [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 5»](../../03-technical-specification.md#этап-5--аудио-и-отрезки).
 Карта вызовов — [аудио и отрезки](../../02-staff-api.md#6-аудио-и-отрезки).
@@ -58,7 +57,7 @@ flowchart TD
 | 3 | Волновая форма и разметка точек, отправка `points` | 2 | [03-waveform-and-points.md](./03-waveform-and-points.md) | выполнена |
 | 4 | Список отрезков, опрос, прослушивание `DONE`, явный `FAILED` | 1, 2 | [04-clips-list-and-poll.md](./04-clips-list-and-poll.md) | выполнена |
 | 5 | Удаление и перегенерация отрезка | 4 | [05-clip-delete-and-regenerate.md](./05-clip-delete-and-regenerate.md) | выполнена |
-| 6 | Приёмка этапа 5 целиком | 3, 4, 5 | [06-step5-acceptance.md](./06-step5-acceptance.md) | не выполнена |
+| 6 | Приёмка этапа 5 целиком | 3, 4, 5 | [06-step5-acceptance.md](./06-step5-acceptance.md) | выполнена |
 
 ## Почему такой порядок
 

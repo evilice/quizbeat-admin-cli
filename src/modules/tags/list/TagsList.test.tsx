@@ -196,6 +196,19 @@ describe('экран списка тегов', () => {
     expect(screen.queryByText('Ничего не найдено')).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
   });
+
+  it('ошибка без текста загрузки показывает общую заглушку', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('', { status: 500 })),
+    );
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('Непредвиденная ошибка')).toBeTruthy();
+    });
+    expect(screen.queryByText('Ничего не найдено')).toBeNull();
+  });
 });
 
 describe('удаление тега', () => {
@@ -398,6 +411,41 @@ describe('удаление тега', () => {
     await waitFor(() => {
       expect(getListCalls(fetchMock)).toHaveLength(2);
     });
+  });
+
+  it('ошибка без текста удаления показывает общую заглушку, диалог остаётся', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.method === 'DELETE') {
+          return Promise.resolve(new Response('', { status: 500 }));
+        }
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: [TAG],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+
+    openDeleteDialog('rock');
+    confirmDeleteDialog();
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('dialog')).getByText('Непредвиденная ошибка'),
+      ).toBeTruthy();
+    });
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(getListCalls(fetchMock)).toHaveLength(1);
   });
 });
 

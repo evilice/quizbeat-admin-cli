@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { tagTranslationName } from '../tags-display.ts';
 import type { Tag, TagTranslation } from '../tags-store.ts';
@@ -67,9 +67,7 @@ export const useTagForm = (
       resetForm();
       onSaved();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setSubmitting(false);
     }

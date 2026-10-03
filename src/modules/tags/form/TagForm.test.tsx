@@ -269,6 +269,49 @@ describe('создание и правка тега', () => {
     });
   });
 
+  it('ошибка без текста сохранения показывает общую заглушку, диалог остаётся', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          return Promise.resolve(new Response('', { status: 500 }));
+        }
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: [sampleTag()],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+
+    openCreateDialog();
+    fireEvent.change(screen.getByLabelText('Код'), {
+      target: { value: 'jazz' },
+    });
+    fireEvent.change(screen.getByLabelText('Название (ru)'), {
+      target: { value: 'Джаз' },
+    });
+    fireEvent.change(screen.getByLabelText('Название (en)'), {
+      target: { value: 'Jazz' },
+    });
+    submitCreateDialog();
+
+    await waitFor(() => {
+      expect(screen.getByText('Непредвиденная ошибка')).toBeTruthy();
+    });
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByLabelText('Код')).toHaveProperty('value', 'jazz');
+    expect(getListCalls(fetchMock)).toHaveLength(1);
+  });
+
   it('409 с текстом про занятый код показывает строку и не запрашивает список заново', async () => {
     const conflictMessage = 'Tag with this code already exists';
     const fetchMock = vi

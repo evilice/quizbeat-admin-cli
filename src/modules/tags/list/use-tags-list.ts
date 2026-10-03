@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type { ListTagsParams, PaginatedTags, Tag } from '../tags-store.ts';
 
@@ -7,13 +7,6 @@ type ListState = {
   key: string;
   result: PaginatedTags | null;
   messages: readonly string[];
-};
-
-const listMessagesFrom = (error: unknown): readonly string[] => {
-  if (error instanceof ApiError) {
-    return error.messages;
-  }
-  return [];
 };
 
 export const useTagsList = () => {
@@ -49,7 +42,7 @@ export const useTagsList = () => {
           setListState({
             key: requestKey,
             result: null,
-            messages: listMessagesFrom(error),
+            messages: messagesFromError(error),
           });
         }
       });
@@ -139,25 +132,21 @@ export const useTagsList = () => {
       setDeleteTarget(null);
       reloadList();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setActionMessages(error.messages);
-        if (error.status === 404) {
-          setDeleteTarget(null);
-          setRefreshing(true);
-          try {
-            const pageResult = await tags.list({ page, search });
-            setListState({
-              key: requestKey,
-              result: pageResult,
-              messages: [],
-            });
-          } catch (listError) {
-            if (listError instanceof ApiError) {
-              setActionMessages(listError.messages);
-            }
-          } finally {
-            setRefreshing(false);
-          }
+      setActionMessages(messagesFromError(error));
+      if (error instanceof ApiError && error.status === 404) {
+        setDeleteTarget(null);
+        setRefreshing(true);
+        try {
+          const pageResult = await tags.list({ page, search });
+          setListState({
+            key: requestKey,
+            result: pageResult,
+            messages: [],
+          });
+        } catch (listError) {
+          setActionMessages(messagesFromError(listError));
+        } finally {
+          setRefreshing(false);
         }
       }
     } finally {

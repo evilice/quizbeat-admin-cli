@@ -3,9 +3,6 @@ import {
   Box,
   Drawer,
   IconButton,
-  List,
-  ListItemButton,
-  ListItemText,
   Menu,
   MenuItem,
   SvgIcon,
@@ -13,53 +10,23 @@ import {
   Typography,
 } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router';
-import { ApiError } from '../shared/api/api-error.ts';
-import { useRootStore } from '../shared/store/root-store-context.tsx';
 import { LoginPage } from '../modules/session/LoginPage.tsx';
+import { useAppShell } from './use-app-shell.ts';
+import { PagesMenu } from './components/PagesMenu.tsx';
 
 const drawerWidth = 240;
 
 export const AppShell = observer(function AppShell() {
-  const { session } = useRootStore();
-  const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null);
-  const [restorePending, setRestorePending] = useState(
-    () => hasRefresh(session.refreshToken) && !hasAccess(session.accessToken),
-  );
-  const [restoreMessages, setRestoreMessages] = useState<
-    readonly string[] | null
-  >(null);
-
-  useEffect(() => {
-    if (!hasRefresh(session.refreshToken) || hasAccess(session.accessToken)) {
-      setRestorePending(false);
-      return;
-    }
-
-    let cancelled = false;
-    void session
-      .restore()
-      .catch((error: unknown) => {
-        if (cancelled) {
-          return;
-        }
-        if (error instanceof ApiError && error.status !== 401) {
-          setRestoreMessages(error.messages);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setRestorePending(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
-
-  const signedIn = hasAccess(session.accessToken);
+  const {
+    pathname,
+    signedIn,
+    accountAnchor,
+    session,
+    restorePending,
+    restoreMessages,
+    setAccountAnchor,
+  } = useAppShell();
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -101,19 +68,7 @@ export const AppShell = observer(function AppShell() {
           }}
         >
           <Toolbar />
-          <List>
-            {session.role === 'SUPER_ADMIN' ? (
-              <ListItemButton component={Link} to="/admins">
-                <ListItemText primary="Сотрудники" />
-              </ListItemButton>
-            ) : null}
-            <ListItemButton component={Link} to="/compositions">
-              <ListItemText primary="Композиции" />
-            </ListItemButton>
-            <ListItemButton component={Link} to="/tags">
-              <ListItemText primary="Теги" />
-            </ListItemButton>
-          </List>
+          <PagesMenu session={session} pathname={pathname} />
         </Drawer>
       ) : null}
       <Menu
@@ -159,11 +114,3 @@ export const AppShell = observer(function AppShell() {
     </Box>
   );
 });
-
-function hasRefresh(token: string | null): boolean {
-  return token !== null && token !== '';
-}
-
-function hasAccess(token: string | null): boolean {
-  return token !== null && token !== '';
-}

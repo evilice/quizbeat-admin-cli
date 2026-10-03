@@ -217,6 +217,7 @@ describe('роль в оболочке и пункты меню', () => {
     expect(screen.getByRole('link', { name: 'Композиции' })).toBeTruthy();
     expect(screen.queryByText('Никого не найдено')).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
+    expect(currentNavLabel()).toBeNull();
     openAccount();
     expect(screen.getByText('admin@example.com')).toBeTruthy();
     expect(screen.queryByText(sub)).toBeNull();
@@ -226,6 +227,45 @@ describe('роль в оболочке и пункты меню', () => {
     expect(
       String(fetchMock.mock.calls[0]?.[0]).startsWith(`${apiBaseUrl}/admins`),
     ).toBe(true);
+  });
+
+  it('подсвечивает пункт меню открытого раздела, в том числе карточку композиции', () => {
+    const store = newRootStore();
+    store.session.setPair(
+      makeAccessToken({
+        sub: 'super-1',
+        role: 'SUPER_ADMIN',
+        type: 'staff',
+      }),
+      'refresh-1',
+      'super@example.com',
+    );
+    stubFetch(() => jsonResponse(200, {}));
+
+    render(shell(store, '/'));
+    expect(currentNavLabel()).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: 'Теги' }));
+    expect(currentNavLabel()).toBe('Теги');
+    cleanup();
+
+    render(shell(store, '/tags'));
+    expect(currentNavLabel()).toBe('Теги');
+    cleanup();
+
+    render(shell(store, '/compositions'));
+    expect(currentNavLabel()).toBe('Композиции');
+    cleanup();
+
+    render(shell(store, '/compositions/comp-1'));
+    expect(currentNavLabel()).toBe('Композиции');
+    cleanup();
+
+    render(shell(store, '/admins'));
+    expect(currentNavLabel()).toBe('Сотрудники');
+    cleanup();
+
+    render(shell(store, '/password'));
+    expect(currentNavLabel()).toBeNull();
   });
 });
 
@@ -547,6 +587,17 @@ describe('логин, восстановление и выход', () => {
     expect(refreshCalls).toHaveLength(0);
   });
 });
+
+function currentNavLabel(): string | null {
+  const current = screen
+    .getAllByRole('link')
+    .find(
+      (link) =>
+        link.getAttribute('aria-current') === 'page' &&
+        link.classList.contains('Mui-selected'),
+    );
+  return current?.textContent ?? null;
+}
 
 function openAccount(): void {
   fireEvent.click(screen.getByRole('button', { name: 'Аккаунт' }));

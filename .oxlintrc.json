@@ -8,9 +8,38 @@
     "react/rules-of-hooks": "error",
     "react/only-export-components": [
       "warn",
-      { "allowConstantExport": true, "allowExportNames": ["useRootStore"] }
+      {
+        "allowConstantExport": true,
+        "allowExportNames": ["useRootStore"]
+      }
     ],
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-floating-promises": "error"
-  }
+    "@typescript-eslint/no-floating-promises": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "react",
+            "importNames": ["FormEvent"],
+            "message": "Обработчик отправки типизируется SubmitEvent (правила разработки, раздел 11)."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/modules/admins/{list,create,reset-password}/**",
+        "src/modules/admins/AdminsPage.tsx",
+        "src/modules/admins/admin-display.ts",
+        "src/modules/admins/use-last-admin.ts",
+        "src/shared/hooks/**"
+      ],
+      "rules": {
+        "func-style": ["error", "expression"]
+      }
+    }
+  ]
 }

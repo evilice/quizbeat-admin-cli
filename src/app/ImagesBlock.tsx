@@ -36,7 +36,7 @@ import type { CompositionImage } from '../stores/compositions-store.ts';
 import { MAX_IMAGE_FILES } from '../stores/images-store.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
 import { ErrorMessages } from './ErrorMessages.tsx';
-import { imagesInOrder, mergeImages, nextImageIds } from './image-order.ts';
+import { imagesInOrder, nextImageIds } from './image-order.ts';
 import { visuallyHiddenInputSx } from './visually-hidden-input.ts';
 
 const HINT =
@@ -84,20 +84,13 @@ export function ImagesBlock({
     setBusy(true);
     setMessages([]);
     try {
-      const uploaded = await imagesStore.uploadImages(compositionId, files);
-      setImages((current) => mergeImages(current, uploaded));
+      await imagesStore.uploadImages(compositionId, files);
       setFiles([]);
       if (fileInputRef.current !== null) {
         fileInputRef.current.value = '';
       }
-      try {
-        const listed = await imagesStore.listImages(compositionId);
-        setImages(listed);
-      } catch (error) {
-        if (error instanceof ApiError) {
-          setMessages(error.messages);
-        }
-      }
+      const listed = await imagesStore.listImages(compositionId);
+      setImages(listed);
     } catch (error) {
       if (error instanceof ApiError) {
         setMessages(error.messages);
@@ -145,8 +138,11 @@ export function ImagesBlock({
     const imageId = deleteTarget.id;
     setBusy(true);
     setMessages([]);
+    let removed = false;
     try {
       await imagesStore.removeImage(compositionId, imageId);
+      removed = true;
+      setDeleteTarget(null);
     } catch (error) {
       if (error instanceof ApiError) {
         setMessages(error.messages);
@@ -155,9 +151,19 @@ export function ImagesBlock({
       return;
     }
 
-    setImages((current) => current.filter((image) => image.id !== imageId));
-    setDeleteTarget(null);
-    setBusy(false);
+    try {
+      const listed = await imagesStore.listImages(compositionId);
+      setImages(listed);
+    } catch (error) {
+      if (removed) {
+        setImages((current) => current.filter((image) => image.id !== imageId));
+      }
+      if (error instanceof ApiError) {
+        setMessages(error.messages);
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   function handlePreviewError(imageId: string) {

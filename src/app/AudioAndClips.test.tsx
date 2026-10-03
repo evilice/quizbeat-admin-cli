@@ -85,9 +85,7 @@ describe('загрузка исходного трека', () => {
     fireEvent.change(screen.getByLabelText('Файл трека'), {
       target: { files: [file] },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: /^Загрузить$/ }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /^Загрузить$/ }));
 
     await waitFor(() => {
       expect(
@@ -123,9 +121,7 @@ describe('загрузка исходного трека', () => {
     const file = new File(['audio'], 'track.mp3', { type: 'audio/mpeg' });
     const input = screen.getByLabelText('Файл трека') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
-    fireEvent.click(
-      screen.getByRole('button', { name: /^Загрузить$/ }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /^Загрузить$/ }));
 
     await waitFor(() => {
       expect(audioPosts(fetchMock)).toHaveLength(1);
@@ -140,9 +136,7 @@ describe('загрузка исходного трека', () => {
     ).toBe(true);
 
     fireEvent.change(input, { target: { files: [file] } });
-    fireEvent.click(
-      screen.getByRole('button', { name: /^Загрузить$/ }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /^Загрузить$/ }));
 
     await waitFor(() => {
       expect(audioPosts(fetchMock)).toHaveLength(2);
@@ -175,9 +169,7 @@ describe('загрузка исходного трека', () => {
           ],
         },
       });
-      fireEvent.click(
-        screen.getByRole('button', { name: /^Загрузить$/ }),
-      );
+      fireEvent.click(screen.getByRole('button', { name: /^Загрузить$/ }));
       await waitFor(() => {
         expect(screen.getByText(item.message)).toBeTruthy();
       });
@@ -201,6 +193,57 @@ describe('загрузка исходного трека', () => {
     expect(fullGets(fetchMock)).toHaveLength(1);
     expect(screen.queryByLabelText('Старт, с')).toBeNull();
     expect(screen.queryByText('Войти')).toBeNull();
+  });
+
+  it('после POST .../audio прежний originalAudioUrl не используется, в сети есть GET .../audio', async () => {
+    const oldUrl = 'https://example.com/old-original.mp3';
+    const fresh = 'https://example.com/fresh-original.mp3';
+    const clip = sampleClip({
+      status: 'DONE',
+      fileUrl: 'https://example.com/kept-clip.mp3',
+    });
+    const fetchMock = stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: oldUrl,
+        originalAudioDurationSec: 40,
+        clips: [clip],
+      }),
+      audioUpload: { originalAudioDurationSec: 55 },
+      audioUrl: { url: fresh },
+      clips: [clip],
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('audio-waveform').getAttribute('data-audio-url'),
+      ).toBe(oldUrl);
+    });
+    expect(audioGets(fetchMock)).toHaveLength(0);
+
+    const file = new File(['audio'], 'next.mp3', { type: 'audio/mpeg' });
+    fireEvent.change(screen.getByLabelText('Файл трека'), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Загрузить$/ }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('audio-waveform').getAttribute('data-audio-url'),
+      ).toBe(fresh);
+    });
+    expect(audioGets(fetchMock)).toHaveLength(1);
+    expect(
+      screen.getByTestId('audio-upload-block').getAttribute('data-duration'),
+    ).toBe('55');
+    expect(
+      screen
+        .getByTestId('composition-card-form')
+        .getAttribute('data-original-audio-url'),
+    ).not.toBe(oldUrl);
+    expect(
+      screen.getByLabelText(`Прослушать ${CLIP_ID}`).getAttribute('src'),
+    ).toBe('https://example.com/kept-clip.mp3');
   });
 });
 
@@ -265,6 +308,72 @@ describe('волна и точки', () => {
     ]);
     expect(Number.isInteger(body.points[0]?.startTimeSec)).toBe(true);
     expect(fullGets(fetchMock)).toHaveLength(1);
+  });
+
+  it('POST .../clips из одного отрезка не оставляет на экране только его', async () => {
+    const existingId = '33333333-3333-3333-3333-333333333333';
+    const createdId = '44444444-4444-4444-4444-444444444444';
+    const existing = sampleClip({
+      id: existingId,
+      status: 'DONE',
+      fileUrl: 'https://example.com/existing.mp3',
+      startTimeSec: 4,
+    });
+    const createdOnly = sampleClip({
+      id: createdId,
+      status: 'PENDING',
+      startTimeSec: 2,
+    });
+    delete createdOnly.fileUrl;
+    const listedExisting = sampleClip({
+      id: existingId,
+      status: 'DONE',
+      fileUrl: 'https://example.com/existing-fresh.mp3',
+      startTimeSec: 4,
+    });
+    const listedCreated = sampleClip({
+      id: createdId,
+      status: 'PENDING',
+      startTimeSec: 2,
+    });
+    delete listedCreated.fileUrl;
+    const fetchMock = stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: AUDIO_URL,
+        originalAudioDurationSec: 30,
+        clips: [existing],
+      }),
+      clipsAfterCreate: [createdOnly],
+      clips: [listedExisting, listedCreated],
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(`Прослушать ${existingId}`).getAttribute('src'),
+      ).toBe('https://example.com/existing.mp3');
+    });
+    expect(clipGets(fetchMock)).toHaveLength(0);
+
+    fireEvent.change(screen.getByLabelText('Старт, с'), {
+      target: { value: '2' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить точку' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить точки' }));
+
+    await waitFor(() => {
+      expect(clipPosts(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(clipGets(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(`Прослушать ${existingId}`).getAttribute('src'),
+      ).toBe('https://example.com/existing-fresh.mp3');
+    });
+    expect(screen.getByText('В очереди')).toBeTruthy();
+    expect(screen.queryByLabelText(`Прослушать ${createdId}`)).toBeNull();
   });
 
   it('точка за границей длительности и пустой черновик не вызывают fetch', async () => {
@@ -552,6 +661,57 @@ describe('список отрезков и опрос', () => {
     ).toBeNull();
   });
 
+  it('опрос заменяет clips целиком и не оставляет fileUrl из первого снимка', async () => {
+    vi.useFakeTimers();
+    const otherId = '33333333-3333-3333-3333-333333333333';
+    const oldUrl = 'https://example.com/old-clip.mp3';
+    const newUrl = 'https://example.com/new-clip.mp3';
+    const freshPendingUrl = 'https://example.com/fresh-pending.mp3';
+    const pending = sampleClip({ id: CLIP_ID, status: 'PENDING' });
+    delete pending.fileUrl;
+    const done = sampleClip({
+      id: otherId,
+      status: 'DONE',
+      fileUrl: oldUrl,
+      startTimeSec: 3,
+    });
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        jsonResponse(200, [
+          sampleClip({
+            id: CLIP_ID,
+            status: 'DONE',
+            fileUrl: freshPendingUrl,
+          }),
+          sampleClip({
+            id: otherId,
+            status: 'DONE',
+            fileUrl: newUrl,
+            startTimeSec: 3,
+          }),
+        ]),
+      ),
+    );
+    renderClips([pending, done], fetchMock);
+
+    expect(
+      screen.getByLabelText(`Прослушать ${otherId}`).getAttribute('src'),
+    ).toBe(oldUrl);
+    expect(screen.queryByLabelText(`Прослушать ${CLIP_ID}`)).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(
+      screen.getByLabelText(`Прослушать ${otherId}`).getAttribute('src'),
+    ).toBe(newUrl);
+    expect(
+      screen.getByLabelText(`Прослушать ${CLIP_ID}`).getAttribute('src'),
+    ).toBe(freshPendingUrl);
+    expect(clipGets(fetchMock)).toHaveLength(1);
+  });
+
   it('строка не-DONE не читает fileUrl', () => {
     const pending = sampleClip({ status: 'PENDING' });
     delete pending.fileUrl;
@@ -617,6 +777,101 @@ describe('удаление и перегенерация отрезка', () => 
     expect(String(deleted?.[0])).not.toBe(
       `${apiBaseUrl}/compositions/${COMPOSITION_ID}`,
     );
+  });
+
+  it('после DELETE отрезка удалённого id нет, список перечитан своим GET', async () => {
+    const otherId = '33333333-3333-3333-3333-333333333333';
+    const freshUrl = 'https://example.com/remaining-fresh.mp3';
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET';
+      const pathname = new URL(String(url)).pathname;
+      if (method === 'DELETE' && pathname.endsWith(`/clips/${CLIP_ID}`)) {
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      if (method === 'GET' && pathname.endsWith('/clips')) {
+        return Promise.resolve(
+          jsonResponse(200, [
+            sampleClip({
+              id: otherId,
+              status: 'DONE',
+              fileUrl: freshUrl,
+              startTimeSec: 7,
+            }),
+          ]),
+        );
+      }
+      return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
+    });
+    renderClips(
+      [
+        sampleClip({ status: 'DONE' }),
+        sampleClip({
+          id: otherId,
+          status: 'DONE',
+          fileUrl: 'https://example.com/remaining-old.mp3',
+          startTimeSec: 7,
+        }),
+      ],
+      fetchMock,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: `Удалить отрезок ${CLIP_ID}` }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => {
+      expect(clipGets(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', { name: `Удалить отрезок ${CLIP_ID}` }),
+      ).toBeNull();
+    });
+    expect(
+      screen.getByLabelText(`Прослушать ${otherId}`).getAttribute('src'),
+    ).toBe(freshUrl);
+  });
+
+  it('протухшая fileUrl готового отрезка заменяется ответом GET .../clips', async () => {
+    const freshUrl = 'https://example.com/clip-refreshed.mp3';
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        jsonResponse(200, [
+          sampleClip({
+            status: 'DONE',
+            fileUrl: freshUrl,
+          }),
+        ]),
+      ),
+    );
+    renderClips(
+      [
+        sampleClip({
+          status: 'DONE',
+          fileUrl: 'https://example.com/clip-stale.mp3',
+        }),
+      ],
+      fetchMock,
+    );
+
+    const audio = screen.getByLabelText(`Прослушать ${CLIP_ID}`);
+    expect(audio.getAttribute('src')).toBe(
+      'https://example.com/clip-stale.mp3',
+    );
+    expect(clipGets(fetchMock)).toHaveLength(0);
+
+    fireEvent.error(audio);
+
+    await waitFor(() => {
+      expect(clipGets(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(`Прослушать ${CLIP_ID}`).getAttribute('src'),
+      ).toBe(freshUrl);
+    });
   });
 
   it('204 убирает строку, даже если повторный список упал', async () => {

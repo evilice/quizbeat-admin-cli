@@ -30,9 +30,14 @@ const COMPOSITION_ID = '11111111-1111-1111-1111-111111111111';
 const IMAGE_A = '22222222-2222-2222-2222-222222222222';
 const IMAGE_B = '33333333-3333-3333-3333-333333333333';
 const IMAGE_C = '44444444-4444-4444-4444-444444444444';
+const IMAGE_D = '55555555-5555-5555-5555-555555555555';
+const IMAGE_E = '66666666-6666-6666-6666-666666666666';
 const FILE_URL_A = 'https://example.com/a.jpg';
 const FILE_URL_B = 'https://example.com/b.png';
 const FILE_URL_C = 'https://example.com/c.webp';
+const FILE_URL_A_FRESH = 'https://example.com/a-fresh.jpg';
+const FILE_URL_D = 'https://example.com/d.jpg';
+const FILE_URL_E = 'https://example.com/e.png';
 const MISMATCH =
   'imageIds must contain exactly the current set of composition image ids, without duplicates, omissions or unknown ids';
 
@@ -141,6 +146,68 @@ describe('изображения на карточке', () => {
     );
     expect(fullGets(fetchMock)).toHaveLength(1);
     expect(screen.queryByText('Войти')).toBeNull();
+  });
+
+  it('частичный POST .../images не затирает уже показанные', async () => {
+    const initial = [
+      sampleImage({ id: IMAGE_A, fileUrl: FILE_URL_A, order: 0 }),
+      sampleImage({ id: IMAGE_B, fileUrl: FILE_URL_B, order: 1 }),
+      sampleImage({ id: IMAGE_C, fileUrl: FILE_URL_C, order: 2 }),
+    ];
+    const uploaded = [
+      sampleImage({ id: IMAGE_D, fileUrl: FILE_URL_D, order: 3 }),
+      sampleImage({ id: IMAGE_E, fileUrl: FILE_URL_E, order: 4 }),
+    ];
+    const listed = [
+      sampleImage({ id: IMAGE_A, fileUrl: FILE_URL_A_FRESH, order: 0 }),
+      sampleImage({ id: IMAGE_B, fileUrl: FILE_URL_B, order: 1 }),
+      sampleImage({ id: IMAGE_C, fileUrl: FILE_URL_C, order: 2 }),
+      ...uploaded,
+    ];
+    const fetchMock = stubCardFetch({
+      full: sampleFull({ images: initial }),
+      uploadBody: uploaded,
+      listBody: listed,
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
+    });
+    expect(imageIdsOnScreen()).toEqual([IMAGE_A, IMAGE_B, IMAGE_C]);
+
+    fireEvent.change(screen.getByLabelText('Файлы изображений'), {
+      target: {
+        files: [
+          new File(['d'], 'd.jpg', { type: 'image/jpeg' }),
+          new File(['e'], 'e.png', { type: 'image/png' }),
+        ],
+      },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Загрузить изображения' }),
+    );
+
+    await waitFor(() => {
+      expect(imageGets(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(imageIdsOnScreen()).toEqual([
+        IMAGE_A,
+        IMAGE_B,
+        IMAGE_C,
+        IMAGE_D,
+        IMAGE_E,
+      ]);
+    });
+    expect(imageIdsOnScreen()).not.toEqual([IMAGE_D, IMAGE_E]);
+    expect(
+      screen.getByTestId(`image-preview-${IMAGE_A}`).getAttribute('src'),
+    ).toBe(FILE_URL_A_FRESH);
+    expect(
+      screen.getByTestId(`image-preview-${IMAGE_A}`).getAttribute('src'),
+    ).not.toBe(FILE_URL_A);
+    expect(imagePosts(fetchMock)).toHaveLength(1);
   });
 
   it('11 файлов в сеть не уходят', async () => {
@@ -320,6 +387,41 @@ describe('изображения на карточке', () => {
     );
     expect((deletionCall[1] as RequestInit).method).toBe('DELETE');
     expect(screen.queryByText('Войти')).toBeNull();
+  });
+
+  it('после DELETE картинки удалённого id нет, список перечитан своим GET', async () => {
+    const fetchMock = stubCardFetch({
+      full: sampleFull({
+        images: [
+          sampleImage({ id: IMAGE_A, fileUrl: FILE_URL_A, order: 0 }),
+          sampleImage({ id: IMAGE_B, fileUrl: FILE_URL_B, order: 1 }),
+        ],
+      }),
+      listBody: [
+        sampleImage({ id: IMAGE_B, fileUrl: FILE_URL_A_FRESH, order: 0 }),
+      ],
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: `Удалить изображение ${IMAGE_A}` }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => {
+      expect(imageGets(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId(`image-preview-${IMAGE_A}`)).toBeNull();
+    });
+    expect(imageIdsOnScreen()).toEqual([IMAGE_B]);
+    expect(
+      screen.getByTestId(`image-preview-${IMAGE_B}`).getAttribute('src'),
+    ).toBe(FILE_URL_A_FRESH);
   });
 
   it('отмена удаления не вызывает fetch', async () => {

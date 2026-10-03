@@ -32,14 +32,3 @@ export function imagesInOrder(
     return [{ ...image, order: index }];
   });
 }
-
-export function mergeImages(
-  current: readonly CompositionImage[],
-  uploaded: readonly CompositionImage[],
-): CompositionImage[] {
-  const byId = new Map(current.map((image) => [image.id, image]));
-  for (const image of uploaded) {
-    byId.set(image.id, image);
-  }
-  return [...byId.values()].sort((left, right) => left.order - right.order);
-}

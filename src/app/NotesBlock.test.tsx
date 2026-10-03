@@ -261,6 +261,113 @@ describe('создание и правка заметки', () => {
     expect(orderPatches(fetchMock)).toHaveLength(0);
   });
 
+  it('PATCH заметки заменяет элемент с тем же id и не подменяет весь список', async () => {
+    const first = sampleNote({
+      id: NOTE_A,
+      order: 0,
+      translations: pair('Старый', 'Old'),
+    });
+    const second = sampleNote({
+      id: NOTE_B,
+      order: 1,
+      translations: pair('Сосед', 'Neighbor'),
+    });
+    const updated = sampleNote({
+      id: NOTE_A,
+      order: 0,
+      translations: pair('Новый', 'Old'),
+    });
+    const fetchMock = stubCardFetch({
+      full: sampleFull({ notes: [first, second] }),
+      updateBody: updated,
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(noteIdsOnScreen()).toEqual([NOTE_A, NOTE_B]);
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: `Изменить заметку ${NOTE_A}` }),
+    );
+    fireEvent.change(
+      within(screen.getByRole('dialog')).getByLabelText('Текст (ru)'),
+      {
+        target: { value: 'Новый' },
+      },
+    );
+    submitDialog('Сохранить');
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`note-text-ru-${NOTE_A}`).textContent).toBe(
+        'Новый',
+      );
+    });
+    expect(noteIdsOnScreen()).toEqual([NOTE_A, NOTE_B]);
+    expect(screen.getByTestId(`note-text-ru-${NOTE_B}`).textContent).toBe(
+      'Сосед',
+    );
+    expect(noteGets(fetchMock)).toHaveLength(0);
+    expect(notePatches(fetchMock)).toHaveLength(1);
+  });
+
+  it('создание не подменяет список одной заметкой: после POST блок берётся из GET', async () => {
+    const existing = sampleNote({
+      id: NOTE_A,
+      order: 0,
+      translations: pair('Уже была', 'Already'),
+    });
+    const created = sampleNote({
+      id: NOTE_NEW,
+      order: 1,
+      translations: pair('Только новая', 'Only new'),
+    });
+    const listed = [
+      sampleNote({
+        id: NOTE_A,
+        order: 0,
+        translations: pair('Уже была свежая', 'Already fresh'),
+      }),
+      sampleNote({
+        id: NOTE_NEW,
+        order: 1,
+        translations: pair('Только новая', 'Only new'),
+      }),
+    ];
+    const fetchMock = stubCardFetch({
+      full: sampleFull({ notes: [existing] }),
+      createBody: created,
+      listBody: listed,
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`note-text-ru-${NOTE_A}`).textContent).toBe(
+        'Уже была',
+      );
+    });
+    openCreateDialog();
+    fireEvent.change(screen.getByLabelText('Текст (ru)'), {
+      target: { value: 'Только новая' },
+    });
+    fireEvent.change(screen.getByLabelText('Текст (en)'), {
+      target: { value: 'Only new' },
+    });
+    submitDialog('Создать');
+
+    await waitFor(() => {
+      expect(noteGets(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId(`note-text-ru-${NOTE_A}`).textContent).toBe(
+        'Уже была свежая',
+      );
+    });
+    expect(noteIdsOnScreen()).toEqual([NOTE_A, NOTE_NEW]);
+    expect(screen.getByTestId(`note-text-ru-${NOTE_NEW}`).textContent).toBe(
+      'Только новая',
+    );
+  });
+
   it('400 создания показывает message и оставляет диалог открытым', async () => {
     stubCardFetch({
       full: sampleFull(),
@@ -445,6 +552,51 @@ describe('удаление заметки', () => {
     );
     expect((deletionCall[1] as RequestInit).method).toBe('DELETE');
     expect(screen.queryByText('Войти')).toBeNull();
+  });
+
+  it('после DELETE заметки удалённого id нет, список перечитан своим GET', async () => {
+    const fetchMock = stubCardFetch({
+      full: sampleFull({
+        notes: [
+          sampleNote({ id: NOTE_A, translations: pair('Уйти', 'Go') }),
+          sampleNote({
+            id: NOTE_B,
+            order: 1,
+            translations: pair('Остаться', 'Stay'),
+          }),
+        ],
+      }),
+      listBody: [
+        sampleNote({
+          id: NOTE_B,
+          order: 0,
+          translations: pair('Остаться свежая', 'Stay fresh'),
+        }),
+      ],
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: `Удалить заметку ${NOTE_A}` }),
+      ).toBeTruthy();
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: `Удалить заметку ${NOTE_A}` }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => {
+      expect(noteGets(fetchMock)).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId(`note-text-ru-${NOTE_A}`)).toBeNull();
+    });
+    expect(noteIdsOnScreen()).toEqual([NOTE_B]);
+    expect(screen.getByTestId(`note-text-ru-${NOTE_B}`).textContent).toBe(
+      'Остаться свежая',
+    );
   });
 
   it('отмена удаления не вызывает fetch', async () => {

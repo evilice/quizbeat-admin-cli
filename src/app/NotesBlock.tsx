@@ -103,27 +103,30 @@ export function NotesBlock({
     const noteId = deleteTarget.id;
     setBusy(true);
     setMessages([]);
+    let removed = false;
     try {
       await notesStore.removeNote(compositionId, noteId);
+      removed = true;
+      setDeleteTarget(null);
     } catch (error) {
       if (error instanceof ApiError) {
         setMessages(error.messages);
       }
-      try {
-        const listed = await notesStore.listNotes(compositionId);
-        setNotes(listed);
-      } catch (reloadError) {
-        if (reloadError instanceof ApiError) {
-          setMessages(reloadError.messages);
-        }
-      }
-      setBusy(false);
-      return;
     }
 
-    setNotes((current) => current.filter((note) => note.id !== noteId));
-    setDeleteTarget(null);
-    setBusy(false);
+    try {
+      const listed = await notesStore.listNotes(compositionId);
+      setNotes(listed);
+    } catch (error) {
+      if (removed) {
+        setNotes((current) => current.filter((note) => note.id !== noteId));
+      }
+      if (error instanceof ApiError) {
+        setMessages(error.messages);
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

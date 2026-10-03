@@ -14,7 +14,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/api-error.ts';
 import type { AudioClip } from '../stores/compositions-store.ts';
 import { useRootStore } from '../stores/root-store-context.tsx';
@@ -43,6 +43,7 @@ export function ClipsListBlock({
   const pollingEnabled = haltedToken !== reloadToken;
   const [deleteTarget, setDeleteTarget] = useState<AudioClip | null>(null);
   const [actionPending, setActionPending] = useState(false);
+  const refreshedClipIds = useRef(new Set<string>());
 
   useEffect(() => {
     if (reloadToken === 0) {
@@ -129,6 +130,23 @@ export function ClipsListBlock({
     }
   }
 
+  function handleClipExpired(clipId: string) {
+    if (refreshedClipIds.current.has(clipId)) {
+      return;
+    }
+    refreshedClipIds.current.add(clipId);
+    void audioClips
+      .listClips(compositionId)
+      .then((next) => {
+        setClips(next);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof ApiError) {
+          setMessages(error.messages);
+        }
+      });
+  }
+
   async function regenerate(clip: AudioClip) {
     setMessages([]);
     setActionPending(true);
@@ -188,7 +206,7 @@ export function ClipsListBlock({
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <ClipPlayback clip={clip} />
+                  <ClipPlayback clip={clip} onExpired={handleClipExpired} />
                 </TableCell>
                 <TableCell>
                   {clip.status === 'DONE' || clip.status === 'FAILED' ? (
@@ -259,12 +277,25 @@ export function ClipsListBlock({
   );
 }
 
-function ClipPlayback({ clip }: { clip: AudioClip }) {
-  if (clip.status !== 'DONE') {
+function ClipPlayback({
+  clip,
+  onExpired,
+}: {
+  clip: AudioClip;
+  onExpired: (clipId: string) => void;
+}) {
+  if (clip.status !== 'DONE' || clip.fileUrl === undefined) {
     return null;
   }
 
   return (
-    <audio controls src={clip.fileUrl} aria-label={`Прослушать ${clip.id}`} />
+    <audio
+      controls
+      src={clip.fileUrl}
+      aria-label={`Прослушать ${clip.id}`}
+      onError={() => {
+        onExpired(clip.id);
+      }}
+    />
   );
 }

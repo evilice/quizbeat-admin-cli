@@ -257,7 +257,7 @@ describe('карточка композиции', () => {
     expect(screen.getByTestId('composition-card-form')).toBeTruthy();
   });
 
-  it('успешный PATCH не затирает уже сохранённые clips / images / notes', async () => {
+  it('успешный PATCH композиции не обнуляет clips / images / notes', async () => {
     const clip = {
       id: 'clip-1',
       difficulty: 'EASY' as const,
@@ -320,6 +320,9 @@ describe('карточка композиции', () => {
     expect(formAfter.getAttribute('data-images-count')).toBe('1');
     expect(formAfter.getAttribute('data-notes-count')).toBe('1');
     expect(formAfter.getAttribute('data-original-audio-url')).toBe(audioUrl);
+    expect(screen.getByText('Готово')).toBeTruthy();
+    expect(screen.getByTestId('image-preview-img-1')).toBeTruthy();
+    expect(screen.getByText('Факт')).toBeTruthy();
   });
 
   it('со строки списка «Изменить» открывает карточку с мгновенным заголовком', async () => {

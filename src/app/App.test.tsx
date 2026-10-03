@@ -86,7 +86,7 @@ describe('оболочка', () => {
 });
 
 describe('роль в оболочке и пункты меню', () => {
-  it('SUPER_ADMIN видит «Композиции», «Теги» и «Сотрудники», переход на /compositions вызывает GET /compositions, id в шапке равен sub', async () => {
+  it('SUPER_ADMIN видит «Композиции», «Теги» и «Сотрудники», переход на /compositions вызывает GET /compositions, в меню аккаунта email', async () => {
     const sub = 'super-1';
     const access = makeAccessToken({
       sub,
@@ -119,7 +119,8 @@ describe('роль в оболочке и пункты меню', () => {
     const tagsLink = navLinks[2];
     expect(tagsLink?.getAttribute('href')).toBe('/tags');
     openAccount();
-    expect(screen.getByText(sub)).toBeTruthy();
+    expect(screen.getByText('super@example.com')).toBeTruthy();
+    expect(screen.queryByText(sub)).toBeNull();
     expect(store.session.id).toBe(sub);
 
     fireEvent.click(compositionsLink);
@@ -168,7 +169,8 @@ describe('роль в оболочке и пункты меню', () => {
     expect(tagsLink?.getAttribute('href')).toBe('/tags');
 
     openAccount();
-    expect(screen.getByText(sub)).toBeTruthy();
+    expect(screen.getByText('admin@example.com')).toBeTruthy();
+    expect(screen.queryByText(sub)).toBeNull();
     expect(store.session.id).toBe(sub);
 
     fireEvent.click(compositionsLink);
@@ -185,7 +187,7 @@ describe('роль в оболочке и пункты меню', () => {
     ).toBe(true);
   });
 
-  it('открытие /admins под ADMIN вызывает GET /admins, показывает message отказа без строк списка, id равен sub', async () => {
+  it('открытие /admins под ADMIN вызывает GET /admins, показывает message отказа без строк списка, в меню аккаунта email', async () => {
     const sub = 'admin-2';
     const access = makeAccessToken({
       sub,
@@ -216,7 +218,8 @@ describe('роль в оболочке и пункты меню', () => {
     expect(screen.queryByText('Никого не найдено')).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
     openAccount();
-    expect(screen.getByText(sub)).toBeTruthy();
+    expect(screen.getByText('admin@example.com')).toBeTruthy();
+    expect(screen.queryByText(sub)).toBeNull();
     expect(store.session.id).toBe(sub);
     expect(store.session.accessToken).toBe(access);
     expect(fetchMock).toHaveBeenCalledTimes(1);

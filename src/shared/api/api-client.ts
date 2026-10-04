@@ -99,12 +99,10 @@ export function createApiClient(
   ): Promise<unknown> {
     const headers = new Headers(requestOptions.headers);
     const useAuth = requestOptions.auth !== false;
+    const sentToken = useAuth ? getAccessToken() : null;
 
-    if (useAuth) {
-      const token = getAccessToken();
-      if (token !== null && token !== '') {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
+    if (sentToken !== null && sentToken !== '') {
+      headers.set('Authorization', `Bearer ${sentToken}`);
     }
 
     let response: Response;
@@ -118,7 +116,12 @@ export function createApiClient(
       throw new ApiError(null, ['Не удалось связаться с сервером']);
     }
 
-    const raw = await response.text();
+    let raw: string;
+    try {
+      raw = await response.text();
+    } catch {
+      throw new ApiError(null, ['Не удалось связаться с сервером']);
+    }
     if (response.ok) {
       if (raw.trim() === '') {
         return undefined;
@@ -142,10 +145,18 @@ export function createApiClient(
         throw error;
       }
 
-      const refreshed = await refresh();
+      // Токен уже заменили, пока шёл запрос: ротацию сделал другой 401,
+      // второй refresh не нужен.
+      const alreadyRotated = getAccessToken() !== sentToken;
 
-      if (!refreshed) {
-        throw error;
+      if (!alreadyRotated) {
+        const refreshed = await refresh();
+
+        if (!refreshed) {
+          // Refresh слать некуда, access мёртв: сессия потеряна.
+          onAuthLost?.();
+          throw error;
+        }
       }
 
       try {

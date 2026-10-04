@@ -8,7 +8,7 @@ import {
   TextField,
 } from '@mui/material';
 import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import type { CompositionNote, NoteTranslation } from './notes-store.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
@@ -58,18 +58,21 @@ export function NoteFormDialog({
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (textRu === '') {
+    const trimmedRu = textRu.trim();
+    const trimmedEn = textEn.trim();
+
+    if (trimmedRu === '') {
       setMessages(['Укажите текст (ru)']);
       return;
     }
-    if (textEn === '') {
+    if (trimmedEn === '') {
       setMessages(['Укажите текст (en)']);
       return;
     }
 
     const translations: NoteTranslation[] = [
-      { locale: 'ru', text: textRu },
-      { locale: 'en', text: textEn },
+      { locale: 'ru', text: trimmedRu },
+      { locale: 'en', text: trimmedEn },
     ];
 
     setSubmitting(true);
@@ -82,9 +85,7 @@ export function NoteFormDialog({
       resetForm();
       onSaved(saved);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setSubmitting(false);
     }

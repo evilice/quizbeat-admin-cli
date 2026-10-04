@@ -279,6 +279,36 @@ describe('загрузка исходного трека', () => {
   });
 });
 
+describe('повторная загрузка трека', () => {
+  it('новый трек той же длительности заново запрашивает ссылку для волны', async () => {
+    const fresh = 'https://example.com/fresh-original.mp3';
+    const fetchMock = stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: null,
+        originalAudioDurationSec: 40,
+      }),
+      audioUpload: { originalAudioDurationSec: 40 },
+      audioUrl: { url: fresh },
+      clips: [],
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(audioGets(fetchMock)).toHaveLength(1);
+    });
+
+    const file = new File(['audio'], 'next.mp3', { type: 'audio/mpeg' });
+    fireEvent.change(screen.getByLabelText('Файл трека'), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Загрузить$/ }));
+
+    await waitFor(() => {
+      expect(audioGets(fetchMock)).toHaveLength(2);
+    });
+  });
+});
+
 describe('волна и точки', () => {
   it('собирает points с целым стартом, допустимой длительностью и сложностью', async () => {
     const fetchMock = stubCardFetch({

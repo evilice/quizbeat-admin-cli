@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { apiBaseUrl } from '../../shared/api/api-base-url.ts';
+import { ApiError } from '../../shared/api/api-error.ts';
 import { makeAccessToken } from '../../shared/testing/make-access-token.ts';
 import {
   EMAIL_KEY,
@@ -564,6 +565,146 @@ describe('SessionStore: login, refresh, logout', () => {
     expect(session.accessToken).toBeNull();
     expect(session.refreshToken).toBeNull();
     expect(session.email).toBe('a@example.com');
+  });
+
+  it('401 без refresh-токена (после смены пароля) завершает сессию', async () => {
+    const storage = createMemoryStorage();
+    const session = new SessionStore(storage);
+    session.setPair(staffAccess('admin-1'), 'refresh-1', 'a@example.com');
+    session.forgetRefresh();
+    const fetchMock = stubFetch(() =>
+      unauthorizedJson('/admins', 'Invalid or missing access token'),
+    );
+
+    await expect(
+      session.api.requestJson('/admins', { method: 'GET' }),
+    ).rejects.toMatchObject({ status: 401 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(session.accessToken).toBeNull();
+    expect(session.email).toBe('a@example.com');
+  });
+
+  it('поздний 401 со старым токеном повторяется с новым без второго refresh', async () => {
+    const oldAccess = staffAccess('admin-1', 'v1');
+    const newAccess = staffAccess('admin-1', 'v2');
+    const session = new SessionStore(createMemoryStorage());
+    session.setPair(oldAccess, 'refresh-old', 'a@example.com');
+
+    let releaseSlow: (() => void) | undefined;
+    const slowGate = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+    let adminCalls = 0;
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async (url: string, init?: RequestInit) => {
+        if (String(url).endsWith('/auth/staff/refresh')) {
+          return jsonResponse(200, {
+            accessToken: newAccess,
+            refreshToken: 'refresh-new',
+          });
+        }
+        const auth = new Headers(init?.headers).get('Authorization');
+        if (auth === `Bearer ${newAccess}`) {
+          return jsonResponse(200, { ok: true });
+        }
+        adminCalls += 1;
+        if (adminCalls === 2) {
+          await slowGate;
+        }
+        return unauthorizedJson('/admins', 'Invalid or missing access token');
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const fast = session.api.requestJson('/admins', { method: 'GET' });
+    const slow = session.api.requestJson('/admins', { method: 'GET' });
+    await fast;
+    releaseSlow?.();
+    await slow;
+
+    const refreshCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).endsWith('/auth/staff/refresh'),
+    );
+    expect(refreshCalls).toHaveLength(1);
+  });
+
+  it('выход во время refresh не возвращает сессию', async () => {
+    const storage = createMemoryStorage();
+    const session = new SessionStore(storage);
+    session.setPair(
+      staffAccess('admin-1', 'v1'),
+      'refresh-old',
+      'a@example.com',
+    );
+
+    let releaseRefresh: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (String(url).endsWith('/auth/staff/refresh')) {
+          await gate;
+          return jsonResponse(200, {
+            accessToken: staffAccess('admin-1', 'v2'),
+            refreshToken: 'refresh-new',
+          });
+        }
+        return new Response(null, { status: 204 });
+      }),
+    );
+
+    const refreshing = session.refreshAccess();
+    await session.logout();
+    releaseRefresh?.();
+    await refreshing;
+
+    expect(session.accessToken).toBeNull();
+    expect(session.refreshToken).toBeNull();
+    expect(storage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+  });
+
+  it('логин с нечитаемым access даёт ошибку и не ставит сессию', async () => {
+    const session = new SessionStore(createMemoryStorage());
+    stubFetch(() =>
+      jsonResponse(200, {
+        accessToken: makeAccessToken({
+          sub: 'x',
+          role: 'ADMIN',
+          type: 'player',
+        }),
+        refreshToken: 'refresh-1',
+      }),
+    );
+
+    await expect(session.login('a@example.com', 'pw')).rejects.toBeInstanceOf(
+      ApiError,
+    );
+    expect(session.accessToken).toBeNull();
+  });
+
+  it('refresh с нечитаемым access стирает токены и бросает ошибку', async () => {
+    const storage = createMemoryStorage();
+    const session = new SessionStore(storage);
+    session.setPair(staffAccess('admin-1'), 'refresh-old', 'a@example.com');
+    stubFetch(() =>
+      jsonResponse(200, {
+        accessToken: makeAccessToken({
+          sub: 'x',
+          role: 'ADMIN',
+          type: 'player',
+        }),
+        refreshToken: 'refresh-new',
+      }),
+    );
+
+    await expect(session.refreshAccess()).rejects.toBeInstanceOf(ApiError);
+
+    expect(session.accessToken).toBeNull();
+    expect(session.refreshToken).toBeNull();
+    expect(storage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
   });
 });
 

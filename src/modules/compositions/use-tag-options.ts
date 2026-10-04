@@ -1,26 +1,51 @@
 import { useEffect, useState } from 'react';
+import { messagesFromError } from '../../shared/api/api-error.ts';
 import { useRootStore } from '../../shared/store/root-store-context.tsx';
 import type { Tag } from '../tags/tags-store.ts';
 
-const TAGS_FILTER_LIMIT = 100;
+const TAGS_PAGE_LIMIT = 100;
+/** Предохранитель от бесконечного цикла при кривом `total`. */
+const MAX_TAG_PAGES = 50;
 
-export const useTagOptions = (): Tag[] => {
+type TagOptions = {
+  tagOptions: Tag[];
+  tagMessages: readonly string[];
+};
+
+export const useTagOptions = (): TagOptions => {
   const { tags } = useRootStore();
-  const [tagOptions, setTagOptions] = useState<Tag[]>([]);
+  const [state, setState] = useState<TagOptions>({
+    tagOptions: [],
+    tagMessages: [],
+  });
 
   useEffect(() => {
     let cancelled = false;
 
-    void tags
-      .list({ limit: TAGS_FILTER_LIMIT })
-      .then((pageResult) => {
+    const loadAll = async (): Promise<Tag[]> => {
+      const all: Tag[] = [];
+      for (let page = 1; page <= MAX_TAG_PAGES; page += 1) {
+        const result = await tags.list({ page, limit: TAGS_PAGE_LIMIT });
+        all.push(...result.items);
+        if (result.items.length === 0 || all.length >= result.total) {
+          break;
+        }
+      }
+      return all;
+    };
+
+    void loadAll()
+      .then((tagOptions) => {
         if (!cancelled) {
-          setTagOptions(pageResult.items);
+          setState({ tagOptions, tagMessages: [] });
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!cancelled) {
-          setTagOptions([]);
+          setState({
+            tagOptions: [],
+            tagMessages: messagesFromError(error),
+          });
         }
       });
 
@@ -29,5 +54,5 @@ export const useTagOptions = (): Tag[] => {
     };
   }, [tags]);
 
-  return tagOptions;
+  return state;
 };

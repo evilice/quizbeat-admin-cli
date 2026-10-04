@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type {
   Composition,
@@ -26,18 +26,21 @@ export const useEditComposition = (
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (title === '') {
+    const trimmedTitle = title.trim();
+    const trimmedAuthor = author.trim();
+
+    if (trimmedTitle === '') {
       setMessages(['Укажите название']);
       return;
     }
-    if (author === '') {
+    if (trimmedAuthor === '') {
       setMessages(['Укажите автора']);
       return;
     }
 
     const input: UpdateCompositionInput = {
-      title,
-      author,
+      title: trimmedTitle,
+      author: trimmedAuthor,
       status,
     };
     if (tagsTouched) {
@@ -55,9 +58,7 @@ export const useEditComposition = (
       setTagsTouched(false);
       onSaved(updated);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setSaving(false);
     }

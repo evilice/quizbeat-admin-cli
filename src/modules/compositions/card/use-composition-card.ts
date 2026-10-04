@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type { Composition, CompositionFull } from '../compositions-store.ts';
 import { useTagOptions } from '../use-tag-options.ts';
@@ -33,13 +33,14 @@ export const useCompositionCard = () => {
   const location = useLocation();
   const locationState = location.state as CompositionLocationState | null;
   const { compositions } = useRootStore();
-  const tagOptions = useTagOptions();
+  const { tagOptions, tagMessages } = useTagOptions();
 
   const [full, setFull] = useState<CompositionFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [loadMessages, setLoadMessages] = useState<readonly string[]>([]);
   const [clipsReloadToken, setClipsReloadToken] = useState(0);
+  const [audioVersion, setAudioVersion] = useState(0);
   const [trackedId, setTrackedId] = useState(id);
   const missingId = id === undefined || id === '';
 
@@ -76,9 +77,7 @@ export const useCompositionCard = () => {
           setNotFound(true);
           return;
         }
-        if (error instanceof ApiError) {
-          setLoadMessages(error.messages);
-        }
+        setLoadMessages(messagesFromError(error));
       })
       .finally(() => {
         if (!cancelled) {
@@ -107,6 +106,7 @@ export const useCompositionCard = () => {
             originalAudioUrl: null,
           },
     );
+    setAudioVersion((value) => value + 1);
     setClipsReloadToken((value) => value + 1);
   };
 
@@ -125,7 +125,9 @@ export const useCompositionCard = () => {
     headerAuthor,
     full: missingId ? null : full,
     tagOptions,
+    tagMessages,
     clipsReloadToken,
+    audioVersion,
     applySaved,
     handleAudioUploaded,
     handlePointsCreated,

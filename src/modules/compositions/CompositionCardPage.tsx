@@ -20,7 +20,9 @@ export const CompositionCardPage = observer(() => {
     headerAuthor,
     full,
     tagOptions,
+    tagMessages,
     clipsReloadToken,
+    audioVersion,
     applySaved,
     handleAudioUploaded,
     handlePointsCreated,
@@ -67,6 +69,7 @@ export const CompositionCardPage = observer(() => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <ErrorMessages messages={tagMessages} />
       <CompositionEditForm
         composition={full}
         tagOptions={tagOptions}
@@ -82,6 +85,7 @@ export const CompositionCardPage = observer(() => {
         compositionId={full.id}
         originalAudioUrl={full.originalAudioUrl}
         originalAudioDurationSec={full.originalAudioDurationSec}
+        audioVersion={audioVersion}
         onPointsCreated={handlePointsCreated}
       />
       <ClipsListBlock

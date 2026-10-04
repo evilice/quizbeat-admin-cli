@@ -139,6 +139,17 @@ describe('createApiClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('обрыв тела ответа даёт ApiError без статуса', async () => {
+    const broken = new Response('x', { status: 200 });
+    vi.spyOn(broken, 'text').mockRejectedValue(new TypeError('terminated'));
+    stubFetch(() => broken);
+    const client = createApiClient(() => null);
+
+    await expect(
+      client.requestJson('/x', { method: 'GET' }),
+    ).rejects.toMatchObject({ status: null });
+  });
+
   it('сетевой отказ не выглядит как HTTP-ошибка', async () => {
     vi.stubGlobal(
       'fetch',

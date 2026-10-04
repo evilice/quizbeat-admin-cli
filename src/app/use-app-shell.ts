@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router';
-import { ApiError } from '../shared/api/api-error.ts';
+import { ApiError, messagesFromError } from '../shared/api/api-error.ts';
 
 import { useRootStore } from '../shared/store/root-store-context';
 
@@ -37,8 +37,8 @@ export const useAppShell = () => {
         if (cancelled) {
           return;
         }
-        if (error instanceof ApiError && error.status !== 401) {
-          setRestoreMessages(error.messages);
+        if (!(error instanceof ApiError && error.status === 401)) {
+          setRestoreMessages(messagesFromError(error));
         }
       })
       .finally(() => {

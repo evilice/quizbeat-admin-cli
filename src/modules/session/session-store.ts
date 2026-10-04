@@ -33,6 +33,8 @@ export class SessionStore {
 
   private readonly storage: SessionStorage;
   #refreshInFlight: Promise<void> | null = null;
+  /** Растёт при каждой потере сессии; refresh из прошлой эпохи не пишется. */
+  #epoch = 0;
 
   constructor(storage: SessionStorage) {
     this.storage = storage;
@@ -54,7 +56,7 @@ export class SessionStore {
   setPair(accessToken: string, refreshToken: string, email?: string): void {
     const parsed = parseAccessToken(accessToken);
     if (parsed === null) {
-      return;
+      throw new ApiError(null, ['Сервер вернул недопустимый токен доступа']);
     }
 
     this.accessToken = accessToken;
@@ -75,6 +77,7 @@ export class SessionStore {
   }
 
   clearTokens(): void {
+    this.#epoch += 1;
     this.accessToken = null;
     this.id = null;
     this.role = null;
@@ -83,6 +86,7 @@ export class SessionStore {
   }
 
   clear(): void {
+    this.#epoch += 1;
     this.accessToken = null;
     this.id = null;
     this.role = null;
@@ -158,21 +162,37 @@ export class SessionStore {
     if (refreshToken === null || refreshToken === '') {
       return;
     }
+    const epoch = this.#epoch;
 
+    let tokens: StaffAuthTokens | undefined;
     try {
-      const tokens = await this.api.requestJson<StaffAuthTokens>(REFRESH_PATH, {
+      tokens = await this.api.requestJson<StaffAuthTokens>(REFRESH_PATH, {
         method: 'POST',
         body: { refreshToken },
         auth: false,
       });
-      if (tokens === undefined) {
-        throw new ApiError(null, ['Пустой ответ refresh']);
-      }
-      this.setPair(tokens.accessToken, tokens.refreshToken);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
+      if (
+        epoch === this.#epoch &&
+        error instanceof ApiError &&
+        error.status === 401
+      ) {
         this.clearTokens();
       }
+      throw error;
+    }
+    if (tokens === undefined) {
+      throw new ApiError(null, ['Пустой ответ refresh']);
+    }
+    if (epoch !== this.#epoch) {
+      // Пока шёл refresh, сессию сбросили (выход, потеря авторизации).
+      return;
+    }
+    try {
+      this.setPair(tokens.accessToken, tokens.refreshToken);
+    } catch (error) {
+      // Сервер уже ротировал refresh, а пара не разобралась: сессии нет.
+      this.clearTokens();
       throw error;
     }
   }

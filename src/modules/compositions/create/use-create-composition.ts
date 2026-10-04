@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type { CompositionStatus } from '../compositions-store.ts';
 
@@ -34,11 +34,14 @@ export const useCreateComposition = (
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (title === '') {
+    const trimmedTitle = title.trim();
+    const trimmedAuthor = author.trim();
+
+    if (trimmedTitle === '') {
       setMessages(['Укажите название']);
       return;
     }
-    if (author === '') {
+    if (trimmedAuthor === '') {
       setMessages(['Укажите автора']);
       return;
     }
@@ -47,17 +50,15 @@ export const useCreateComposition = (
     setMessages([]);
     try {
       await compositions.create({
-        title,
-        author,
+        title: trimmedTitle,
+        author: trimmedAuthor,
         ...(status === 'PUBLISHED' ? { status: 'PUBLISHED' as const } : {}),
         ...(selectedTagIds.length > 0 ? { tagIds: selectedTagIds } : {}),
       });
       resetForm();
       onCreated();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setSubmitting(false);
     }

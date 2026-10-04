@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
+import {
+  SEARCH_DEBOUNCE_MS,
+  useDebouncedValue,
+} from '../../../shared/hooks/use-debounced-value.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type { CompositionLocationState } from '../card/use-composition-card.ts';
 import type {
@@ -41,8 +45,8 @@ const buildParams = (
 export const useCompositionsList = () => {
   const { compositions } = useRootStore();
   const navigate = useNavigate();
-  const tagOptions = useTagOptions();
-  const [search, setSearch] = useState('');
+  const { tagOptions, tagMessages } = useTagOptions();
+  const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -56,6 +60,7 @@ export const useCompositionsList = () => {
   const [deleteTarget, setDeleteTarget] = useState<Composition | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
+  const search = useDebouncedValue(searchInput.trim(), SEARCH_DEBOUNCE_MS);
   const requestKey = JSON.stringify([
     buildParams(search, statusFilter, selectedTagIds, page),
     listVersion,
@@ -79,7 +84,7 @@ export const useCompositionsList = () => {
           setListState({
             key: requestKey,
             result: null,
-            messages: error instanceof ApiError ? error.messages : [],
+            messages: messagesFromError(error),
           });
         }
       });
@@ -119,7 +124,7 @@ export const useCompositionsList = () => {
   };
 
   const onSearchChange = (value: string) => {
-    setSearch(value);
+    setSearchInput(value);
     setPage(1);
     setActionMessages(null);
   };
@@ -190,31 +195,25 @@ export const useCompositionsList = () => {
       setDeleteTarget(null);
       reloadList();
     } catch (error) {
-      if (!(error instanceof ApiError)) {
-        setActionMessages(null);
-      } else {
-        setActionMessages(error.messages);
-        if (error.status === 404) {
-          setDeleteTarget(null);
-          setRefreshing(true);
-          try {
-            const pageResult = await compositions.list(
-              buildParams(search, statusFilter, selectedTagIds, page),
-            );
-            if (requestKeyRef.current === requestKey) {
-              setListState({
-                key: requestKey,
-                result: pageResult,
-                messages: [],
-              });
-            }
-          } catch (listError) {
-            if (listError instanceof ApiError) {
-              setActionMessages(listError.messages);
-            }
-          } finally {
-            setRefreshing(false);
+      setActionMessages(messagesFromError(error));
+      if (error instanceof ApiError && error.status === 404) {
+        setDeleteTarget(null);
+        setRefreshing(true);
+        try {
+          const pageResult = await compositions.list(
+            buildParams(search, statusFilter, selectedTagIds, page),
+          );
+          if (requestKeyRef.current === requestKey) {
+            setListState({
+              key: requestKey,
+              result: pageResult,
+              messages: [],
+            });
           }
+        } catch (listError) {
+          setActionMessages(messagesFromError(listError));
+        } finally {
+          setRefreshing(false);
         }
       }
     } finally {
@@ -223,10 +222,11 @@ export const useCompositionsList = () => {
   };
 
   return {
-    search,
+    search: searchInput,
     statusFilter,
     selectedTagIds,
     tagOptions,
+    tagMessages,
     onSearchChange,
     onStatusFilterChange,
     onTagsFilterChange,

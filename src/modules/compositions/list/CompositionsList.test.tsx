@@ -396,6 +396,23 @@ describe('экран списка композиций', () => {
   });
 });
 
+describe('ошибка списка без текста', () => {
+  it('пустой ответ 500 показывает общую заглушку, а не пустую страницу', async () => {
+    stubFetch((url: string) => {
+      if (new URL(String(url)).pathname.endsWith('/tags')) {
+        return jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 });
+      }
+      return new Response('', { status: 500 });
+    });
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Непредвиденная ошибка')).toBeTruthy();
+    });
+    expect(screen.queryByRole('table')).toBeNull();
+  });
+});
+
 describe('удаление композиции', () => {
   const COMPOSITION_ID = '550e8400-e29b-41d4-a716-446655440010';
   const COMPOSITION = sampleComposition({

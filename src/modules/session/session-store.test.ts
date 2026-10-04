@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ApiError } from '../../shared/api/api-error.ts';
 import { makeAccessToken } from '../../shared/testing/make-access-token.ts';
 import {
   EMAIL_KEY,
@@ -126,11 +127,13 @@ describe('SessionStore', () => {
     });
 
     store.setPair(valid, 'refresh-1', 'a@example.com');
-    store.setPair(
-      makeAccessToken({ sub: 'x', role: 'ADMIN', type: 'player' }),
-      'refresh-bad',
-      'other@example.com',
-    );
+    expect(() =>
+      store.setPair(
+        makeAccessToken({ sub: 'x', role: 'ADMIN', type: 'player' }),
+        'refresh-bad',
+        'other@example.com',
+      ),
+    ).toThrow(ApiError);
 
     expect(store.accessToken).toBe(valid);
     expect(store.refreshToken).toBe('refresh-1');

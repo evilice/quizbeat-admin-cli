@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import type { CompositionNote } from './notes-store.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
@@ -48,9 +48,7 @@ export function NotesBlock({
       const listed = await notesStore.listNotes(compositionId);
       setNotes(listed);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     }
   }
 
@@ -88,9 +86,7 @@ export function NotesBlock({
       setNotes(updated);
     } catch (error) {
       setNotes(previous);
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setBusy(false);
     }
@@ -109,9 +105,7 @@ export function NotesBlock({
       removed = true;
       setDeleteTarget(null);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     }
 
     try {
@@ -121,9 +115,7 @@ export function NotesBlock({
       if (removed) {
         setNotes((current) => current.filter((note) => note.id !== noteId));
       }
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setBusy(false);
     }

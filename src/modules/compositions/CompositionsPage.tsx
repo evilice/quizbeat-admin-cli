@@ -15,6 +15,7 @@ export const CompositionsPage = observer(() => {
     statusFilter,
     selectedTagIds,
     tagOptions,
+    tagMessages,
     onSearchChange,
     onStatusFilterChange,
     onTagsFilterChange,
@@ -68,6 +69,7 @@ export const CompositionsPage = observer(() => {
         onConfirm={confirmDelete}
       />
 
+      <ErrorMessages messages={tagMessages} />
       <ErrorMessages messages={messages} />
 
       {showEmpty ? <Typography>{EMPTY_COMPOSITIONS_MESSAGE}</Typography> : null}

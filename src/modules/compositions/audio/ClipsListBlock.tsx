@@ -14,9 +14,10 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { useEffect, useState } from 'react';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import type { AudioClip } from './audio-clips-store.ts';
+import { useAttemptThrottle } from '../../../shared/hooks/use-attempt-throttle.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import {
   CLIP_STATUS_LABELS,
@@ -26,6 +27,7 @@ import {
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 
 export const CLIPS_POLL_INTERVAL_MS = 2000;
+const URL_REFRESH_INTERVAL_MS = 60_000;
 
 export function ClipsListBlock({
   compositionId,
@@ -43,7 +45,7 @@ export function ClipsListBlock({
   const pollingEnabled = haltedToken !== reloadToken;
   const [deleteTarget, setDeleteTarget] = useState<AudioClip | null>(null);
   const [actionPending, setActionPending] = useState(false);
-  const refreshedClipIds = useRef(new Set<string>());
+  const mayRefreshUrl = useAttemptThrottle(URL_REFRESH_INTERVAL_MS);
 
   useEffect(() => {
     if (reloadToken === 0) {
@@ -60,8 +62,8 @@ export function ClipsListBlock({
         }
       })
       .catch((error: unknown) => {
-        if (!cancelled && error instanceof ApiError) {
-          setMessages(error.messages);
+        if (!cancelled) {
+          setMessages(messagesFromError(error));
           setHaltedToken(reloadToken);
         }
       });
@@ -86,8 +88,8 @@ export function ClipsListBlock({
           }
         })
         .catch((error: unknown) => {
-          if (!cancelled && error instanceof ApiError) {
-            setMessages(error.messages);
+          if (!cancelled) {
+            setMessages(messagesFromError(error));
             setHaltedToken(reloadToken);
           }
         });
@@ -109,9 +111,7 @@ export function ClipsListBlock({
     try {
       await audioClips.removeClip(compositionId, clipId);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
       setActionPending(false);
       return;
     }
@@ -124,26 +124,21 @@ export function ClipsListBlock({
       const next = await audioClips.listClips(compositionId);
       setClips(next);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     }
   }
 
   function handleClipExpired(clipId: string) {
-    if (refreshedClipIds.current.has(clipId)) {
+    if (!mayRefreshUrl(clipId)) {
       return;
     }
-    refreshedClipIds.current.add(clipId);
     void audioClips
       .listClips(compositionId)
       .then((next) => {
         setClips(next);
       })
       .catch((error: unknown) => {
-        if (error instanceof ApiError) {
-          setMessages(error.messages);
-        }
+        setMessages(messagesFromError(error));
       });
   }
 
@@ -157,9 +152,7 @@ export function ClipsListBlock({
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setActionPending(false);
     }

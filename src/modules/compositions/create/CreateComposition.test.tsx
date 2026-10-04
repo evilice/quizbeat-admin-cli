@@ -46,6 +46,29 @@ describe('создание композиции', () => {
     expect(fetchMock.mock.calls.length).toBe(callsBefore);
   });
 
+  it('название из одних пробелов не вызывает fetch', async () => {
+    const fetchMock = stubListFetch();
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+    const callsBefore = fetchMock.mock.calls.length;
+
+    openCreateDialog();
+    const dialog = within(screen.getByRole('dialog'));
+    fireEvent.change(dialog.getByLabelText('Название'), {
+      target: { value: '   ' },
+    });
+    fireEvent.change(dialog.getByLabelText('Автор'), {
+      target: { value: 'Author' },
+    });
+    submitCreateDialog();
+
+    expect(screen.getByText('Укажите название')).toBeTruthy();
+    expect(fetchMock.mock.calls.length).toBe(callsBefore);
+  });
+
   it('пустой автор при заполненном названии не вызывает fetch', async () => {
     const fetchMock = stubListFetch();
     renderCompositions();

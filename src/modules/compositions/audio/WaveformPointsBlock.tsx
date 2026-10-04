@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import {
   AUDIO_CLIP_DURATIONS,
   type AudioClipDifficulty,
@@ -30,16 +30,20 @@ export function WaveformPointsBlock({
   compositionId,
   originalAudioUrl,
   originalAudioDurationSec,
+  audioVersion,
   onPointsCreated,
 }: {
   compositionId: string;
   originalAudioUrl: string | null;
   originalAudioDurationSec: number | null;
+  /** Растёт при каждой загрузке трека: новая дорожка при прежних длительности и ссылке. */
+  audioVersion: number;
   onPointsCreated: () => void;
 }) {
   const { audioClips } = useRootStore();
   const [freshUrl, setFreshUrl] = useState<{
     source: string | null;
+    version: number;
     url: string;
   } | null>(null);
   const [startInput, setStartInput] = useState('0');
@@ -65,33 +69,47 @@ export function WaveformPointsBlock({
       .getAudioUrl(compositionId)
       .then((result) => {
         if (!cancelled) {
-          setFreshUrl({ source: originalAudioUrl, url: result.url });
+          setFreshUrl({
+            source: originalAudioUrl,
+            version: audioVersion,
+            url: result.url,
+          });
         }
       })
       .catch((error: unknown) => {
-        if (!cancelled && error instanceof ApiError) {
-          setMessages(error.messages);
+        if (!cancelled) {
+          setMessages(messagesFromError(error));
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [audioClips, compositionId, originalAudioDurationSec, originalAudioUrl]);
+  }, [
+    audioClips,
+    audioVersion,
+    compositionId,
+    originalAudioDurationSec,
+    originalAudioUrl,
+  ]);
 
   const waveUrl =
-    freshUrl !== null && freshUrl.source === originalAudioUrl
+    freshUrl !== null &&
+    freshUrl.source === originalAudioUrl &&
+    freshUrl.version === audioVersion
       ? freshUrl.url
       : originalAudioUrl;
 
   async function loadFreshUrl() {
     try {
       const result = await audioClips.getAudioUrl(compositionId);
-      setFreshUrl({ source: originalAudioUrl, url: result.url });
+      setFreshUrl({
+        source: originalAudioUrl,
+        version: audioVersion,
+        url: result.url,
+      });
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     }
   }
 
@@ -182,9 +200,7 @@ export function WaveformPointsBlock({
       setDrafts([]);
       onPointsCreated();
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setSubmitting(false);
     }

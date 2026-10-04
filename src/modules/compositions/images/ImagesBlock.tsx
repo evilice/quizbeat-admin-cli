@@ -31,8 +31,9 @@ import {
   type PointerEventHandler,
   type KeyboardEventHandler,
 } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { MAX_IMAGE_FILES, type CompositionImage } from './images-store.ts';
+import { useAttemptThrottle } from '../../../shared/hooks/use-attempt-throttle.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import { imagesInOrder, nextImageIds } from './image-order.ts';
@@ -41,6 +42,7 @@ import { visuallyHiddenInputSx } from '../../../shared/ui/visually-hidden-input.
 const HINT =
   'Можно загрузить jpg, png или webp. Ориентир размера — 10 МБ на файл. Тип и размер проверяет сервер.';
 
+const URL_REFRESH_INTERVAL_MS = 60_000;
 const TOO_MANY = 'За один раз можно загрузить не больше 10 файлов';
 
 export function ImagesBlock({
@@ -52,7 +54,7 @@ export function ImagesBlock({
 }) {
   const { images: imagesStore } = useRootStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const refreshedPreviewIds = useRef(new Set<string>());
+  const mayRefreshUrl = useAttemptThrottle(URL_REFRESH_INTERVAL_MS);
   const [images, setImages] = useState(initialImages);
   const [files, setFiles] = useState<File[]>([]);
   const [messages, setMessages] = useState<readonly string[]>([]);
@@ -91,9 +93,7 @@ export function ImagesBlock({
       const listed = await imagesStore.listImages(compositionId);
       setImages(listed);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setBusy(false);
     }
@@ -122,9 +122,7 @@ export function ImagesBlock({
       setImages(updated);
     } catch (error) {
       setImages(previous);
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setBusy(false);
     }
@@ -143,9 +141,7 @@ export function ImagesBlock({
       removed = true;
       setDeleteTarget(null);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
       setBusy(false);
       return;
     }
@@ -157,28 +153,23 @@ export function ImagesBlock({
       if (removed) {
         setImages((current) => current.filter((image) => image.id !== imageId));
       }
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setBusy(false);
     }
   }
 
   function handlePreviewError(imageId: string) {
-    if (refreshedPreviewIds.current.has(imageId)) {
+    if (!mayRefreshUrl(imageId)) {
       return;
     }
-    refreshedPreviewIds.current.add(imageId);
     void imagesStore
       .listImages(compositionId)
       .then((listed) => {
         setImages(listed);
       })
       .catch((error: unknown) => {
-        if (error instanceof ApiError) {
-          setMessages(error.messages);
-        }
+        setMessages(messagesFromError(error));
       });
   }
 

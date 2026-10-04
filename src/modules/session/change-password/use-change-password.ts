@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -46,9 +46,7 @@ export const useChangePassword = () => {
       setNewPassword('');
       setSuccess(true);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setSubmitting(false);
     }

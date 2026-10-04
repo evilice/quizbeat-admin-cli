@@ -38,31 +38,35 @@ export const useTagForm = (
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (code === '') {
+    const trimmedCode = code.trim();
+    const trimmedNameRu = nameRu.trim();
+    const trimmedNameEn = nameEn.trim();
+
+    if (trimmedCode === '') {
       setMessages(['Укажите код']);
       return;
     }
-    if (nameRu === '') {
+    if (trimmedNameRu === '') {
       setMessages(['Укажите название (ru)']);
       return;
     }
-    if (nameEn === '') {
+    if (trimmedNameEn === '') {
       setMessages(['Укажите название (en)']);
       return;
     }
 
     const translations: TagTranslation[] = [
-      { locale: 'ru', name: nameRu },
-      { locale: 'en', name: nameEn },
+      { locale: 'ru', name: trimmedNameRu },
+      { locale: 'en', name: trimmedNameEn },
     ];
 
     setSubmitting(true);
     setMessages([]);
     try {
       if (tag === null) {
-        await tags.create({ code, translations });
+        await tags.create({ code: trimmedCode, translations });
       } else {
-        await tags.update(tag.id, { code, translations });
+        await tags.update(tag.id, { code: trimmedCode, translations });
       }
       resetForm();
       onSaved();

@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from '@mui/material';
 import { useRef, useState, type ChangeEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import { visuallyHiddenInputSx } from '../../../shared/ui/visually-hidden-input.ts';
@@ -41,9 +41,7 @@ export function AudioUploadBlock({
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setUploading(false);
     }

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
+import {
+  SEARCH_DEBOUNCE_MS,
+  useDebouncedValue,
+} from '../../../shared/hooks/use-debounced-value.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type { ListTagsParams, PaginatedTags, Tag } from '../tags-store.ts';
 
@@ -11,7 +15,7 @@ type ListState = {
 
 export const useTagsList = () => {
   const { tags } = useRootStore();
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [listVersion, setListVersion] = useState(0);
   const [listState, setListState] = useState<ListState | null>(null);
@@ -24,6 +28,7 @@ export const useTagsList = () => {
   const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
+  const search = useDebouncedValue(searchInput.trim(), SEARCH_DEBOUNCE_MS);
   const requestKey = JSON.stringify([page, search, listVersion]);
 
   useEffect(() => {
@@ -74,7 +79,7 @@ export const useTagsList = () => {
   };
 
   const onSearchChange = (value: string) => {
-    setSearch(value);
+    setSearchInput(value);
     setPage(1);
     setActionMessages(null);
   };
@@ -155,7 +160,7 @@ export const useTagsList = () => {
   };
 
   return {
-    search,
+    search: searchInput,
     onSearchChange,
     messages,
     showEmpty,

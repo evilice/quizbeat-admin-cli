@@ -42,6 +42,31 @@ describe('создание и правка тега', () => {
     expect(fetchMock.mock.calls.length).toBe(callsBefore);
   });
 
+  it('код из одних пробелов не вызывает fetch', async () => {
+    const fetchMock = stubListOnlyFetch();
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+    const callsBefore = fetchMock.mock.calls.length;
+
+    openCreateDialog();
+    fireEvent.change(screen.getByLabelText('Код'), {
+      target: { value: '   ' },
+    });
+    fireEvent.change(screen.getByLabelText('Название (ru)'), {
+      target: { value: 'Джаз' },
+    });
+    fireEvent.change(screen.getByLabelText('Название (en)'), {
+      target: { value: 'Jazz' },
+    });
+    submitCreateDialog();
+
+    expect(screen.getByText('Укажите код')).toBeTruthy();
+    expect(fetchMock.mock.calls.length).toBe(callsBefore);
+  });
+
   it('пустое ru при заполненных коде и en не вызывает fetch', async () => {
     const fetchMock = stubListOnlyFetch();
     renderTags();

@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../../shared/api/api-error.ts';
+import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { normalizeEmail } from '../normalize-email.ts';
 
@@ -24,9 +24,7 @@ export const useLogin = (restoreMessages: readonly string[] | null) => {
     try {
       await session.login(normalized, password);
     } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
+      setMessages(messagesFromError(error));
     } finally {
       setSubmitting(false);
     }

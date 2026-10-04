@@ -19,7 +19,15 @@ import { ClipsListBlock } from './ClipsListBlock.tsx';
 import { routes } from '../../../app/routes.tsx';
 
 const waveCreate = vi.hoisted(() => vi.fn());
+const wavePlay = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const wavePause = vi.hoisted(() => vi.fn());
+const waveTimeupdate = vi.hoisted(() => ({
+  handler: undefined as ((currentTime: number) => void) | undefined,
+}));
 const waveErrors = vi.hoisted(() => ({
+  handlers: [] as Array<() => void>,
+}));
+const waveReady = vi.hoisted(() => ({
   handlers: [] as Array<() => void>,
 }));
 
@@ -28,19 +36,59 @@ vi.mock('wavesurfer.js', () => ({
     create: (options: unknown) => {
       waveCreate(options);
       let onError: (() => void) | undefined;
+      let onReady: (() => void) | undefined;
+      let onPlay: (() => void) | undefined;
+      let onPause: (() => void) | undefined;
+      let onTimeupdate: ((currentTime: number) => void) | undefined;
+      let playing = false;
       return {
-        on: (event: string, handler: () => void) => {
+        on: (event: string, handler: (value?: number) => void) => {
           if (event === 'error') {
             onError = handler;
             waveErrors.handlers.push(handler);
           }
+          if (event === 'ready') {
+            onReady = handler;
+            waveReady.handlers.push(handler);
+          }
+          if (event === 'play') {
+            onPlay = handler;
+          }
+          if (event === 'pause') {
+            onPause = handler;
+          }
+          if (event === 'timeupdate') {
+            onTimeupdate = handler as (currentTime: number) => void;
+            waveTimeupdate.handler = onTimeupdate;
+          }
         },
+        play: (start?: number) => {
+          playing = true;
+          const result = wavePlay(start);
+          onPlay?.();
+          return result;
+        },
+        pause: () => {
+          playing = false;
+          wavePause();
+          onPause?.();
+        },
+        isPlaying: () => playing,
         destroy: () => {
           if (onError !== undefined) {
             const failed = onError;
             waveErrors.handlers = waveErrors.handlers.filter(
               (item) => item !== failed,
             );
+          }
+          if (onReady !== undefined) {
+            const ready = onReady;
+            waveReady.handlers = waveReady.handlers.filter(
+              (item) => item !== ready,
+            );
+          }
+          if (waveTimeupdate.handler === onTimeupdate) {
+            waveTimeupdate.handler = undefined;
           }
         },
       };
@@ -61,7 +109,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
   waveCreate.mockClear();
+  wavePlay.mockClear();
+  wavePause.mockClear();
+  waveTimeupdate.handler = undefined;
   waveErrors.handlers = [];
+  waveReady.handlers = [];
 });
 
 describe('загрузка исходного трека', () => {
@@ -480,9 +532,98 @@ describe('волна и точки', () => {
     expect(
       screen.queryByRole('button', { name: 'Отправить точки' }),
     ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Проиграть с точки' }).disabled,
+    ).toBe(true);
     expect(clipPosts(fetchMock)).toHaveLength(0);
     expect(fullGets(fetchMock)).toHaveLength(1);
     expect(audioGets(fetchMock)).toHaveLength(0);
+  });
+
+  it('кнопка проигрывания запускает трек с установленной точки', async () => {
+    stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: AUDIO_URL,
+        originalAudioDurationSec: 30,
+      }),
+    });
+    await renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('audio-waveform')).toBeTruthy();
+    });
+    await act(async () => {
+      for (const handler of waveReady.handlers) {
+        handler();
+      }
+    });
+
+    const playButton = screen.getByRole('button', {
+      name: 'Проиграть с точки',
+    });
+    expect(playButton.disabled).toBe(false);
+    expect(playButton.textContent).toBe('');
+
+    fireEvent.change(screen.getByLabelText('Старт, с'), {
+      target: { value: '12' },
+    });
+    expect(
+      screen.getByTestId('clip-range').getAttribute('data-start-sec'),
+    ).toBe('12');
+    expect(screen.getByTestId('clip-range').getAttribute('data-end-sec')).toBe(
+      '17',
+    );
+    expect(
+      screen.getByTestId('clip-end-marker').getAttribute('data-end-sec'),
+    ).toBe('17');
+
+    fireEvent.mouseDown(screen.getByLabelText('Длительность'));
+    fireEvent.click(screen.getByRole('option', { name: '8 с' }));
+    expect(
+      screen.getByTestId('clip-range').getAttribute('data-start-sec'),
+    ).toBe('12');
+    expect(screen.getByTestId('clip-range').getAttribute('data-end-sec')).toBe(
+      '20',
+    );
+    expect(
+      screen.getByTestId('clip-end-marker').getAttribute('data-end-sec'),
+    ).toBe('20');
+
+    fireEvent.click(playButton);
+    expect(wavePlay).toHaveBeenCalledTimes(1);
+    expect(wavePlay).toHaveBeenCalledWith(12);
+    expect(screen.getByRole('button', { name: 'Пауза' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Пауза' }));
+    expect(wavePause).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole('button', { name: 'Проиграть с точки' }),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Проиграть с точки' }));
+    expect(wavePlay).toHaveBeenCalledTimes(2);
+
+    act(() => {
+      waveTimeupdate.handler?.(19.9);
+    });
+    expect(wavePause).toHaveBeenCalledTimes(1);
+    act(() => {
+      waveTimeupdate.handler?.(20);
+    });
+    expect(wavePause).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getByRole('button', { name: 'Проиграть с точки' }),
+    ).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Старт, с'), {
+      target: { value: '30' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Проиграть с точки' }));
+
+    expect(wavePlay).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getByText('Точка выходит за длительность трека'),
+    ).toBeTruthy();
   });
 
   it('волна берёт originalAudioUrl без GET .../audio; протухшая ссылка обновляется отдельно', async () => {

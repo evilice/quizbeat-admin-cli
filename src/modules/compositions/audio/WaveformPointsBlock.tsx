@@ -6,7 +6,9 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  SvgIcon,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -18,11 +20,36 @@ import {
   type AudioClipPoint,
 } from './audio-clips-store.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
-import { AudioWaveform } from './AudioWaveform.tsx';
+import { AudioWaveform, type AudioWaveformHandle } from './AudioWaveform.tsx';
 import { DIFFICULTY_LABELS, isPointInsideTrack } from './audio-display.ts';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 
 const DIFFICULTIES: readonly AudioClipDifficulty[] = ['EASY', 'MEDIUM', 'HARD'];
+
+const PLAY_ICON_PATH = 'M8 5v14l11-7z';
+const PAUSE_ICON_PATH = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
+
+function clipPlaybackRange(
+  startInput: string,
+  durationSec: number,
+  trackDurationSec: number | null,
+): { startSec: number; endSec: number } | null {
+  if (trackDurationSec === null || trackDurationSec <= 0) {
+    return null;
+  }
+  const startTimeSec = Number(startInput);
+  if (
+    !Number.isInteger(startTimeSec) ||
+    startTimeSec < 0 ||
+    startTimeSec >= trackDurationSec
+  ) {
+    return null;
+  }
+  return {
+    startSec: startTimeSec,
+    endSec: Math.min(startTimeSec + durationSec, trackDurationSec),
+  };
+}
 
 type DraftPoint = AudioClipPoint & { key: string };
 
@@ -52,8 +79,11 @@ export function WaveformPointsBlock({
   const [drafts, setDrafts] = useState<DraftPoint[]>([]);
   const [messages, setMessages] = useState<readonly string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [waveReady, setWaveReady] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const draftKey = useRef(0);
   const autoRefreshUsed = useRef(false);
+  const waveformRef = useRef<AudioWaveformHandle>(null);
 
   useEffect(() => {
     autoRefreshUsed.current = false;
@@ -128,8 +158,46 @@ export function WaveformPointsBlock({
     void loadFreshUrl();
   }
 
+  function handleWaveLoadStart() {
+    setWaveReady(false);
+    setPlaying(false);
+  }
+
   function handleWaveReady() {
     autoRefreshUsed.current = false;
+    setWaveReady(true);
+  }
+
+  function handlePlayingChange(next: boolean) {
+    setPlaying(next);
+  }
+
+  function handleTogglePlayback() {
+    const player = waveformRef.current;
+    if (player === null) {
+      return;
+    }
+    if (playing) {
+      player.pause();
+      return;
+    }
+    if (originalAudioDurationSec === null) {
+      return;
+    }
+    const startTimeSec = Number(startInput);
+    if (!Number.isInteger(startTimeSec) || startTimeSec < 0) {
+      setMessages(['Старт — целое число секунд, не меньше 0']);
+      return;
+    }
+    if (startTimeSec >= originalAudioDurationSec) {
+      setMessages(['Точка выходит за длительность трека']);
+      return;
+    }
+    setMessages([]);
+    void player.playFrom(startTimeSec).catch(() => {
+      setPlaying(false);
+      setMessages(['Не удалось начать воспроизведение']);
+    });
   }
 
   function handlePick(relativeX: number) {
@@ -206,6 +274,13 @@ export function WaveformPointsBlock({
     }
   }
 
+  const clipRange = clipPlaybackRange(
+    startInput,
+    durationSec,
+    originalAudioDurationSec,
+  );
+  const clipEndSec = clipRange?.endSec ?? null;
+
   return (
     <Box
       data-testid="waveform-points-block"
@@ -216,21 +291,92 @@ export function WaveformPointsBlock({
       }
       sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
     >
-      <Typography variant="h6" component="h2">
-        Разметка отрезков
-      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+        }}
+      >
+        <Typography variant="h6" component="h2">
+          Разметка отрезков
+        </Typography>
+        <Tooltip title={playing ? 'Пауза' : 'Проиграть с точки'}>
+          <Box component="span" sx={{ display: 'inline-flex' }}>
+            <IconButton
+              aria-label={playing ? 'Пауза' : 'Проиграть с точки'}
+              disabled={waveUrl === null || !waveReady}
+              onClick={handleTogglePlayback}
+              sx={{
+                border: '2px solid',
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                '&.Mui-disabled': {
+                  borderColor: 'action.disabled',
+                },
+              }}
+            >
+              <SvgIcon>
+                <path d={playing ? PAUSE_ICON_PATH : PLAY_ICON_PATH} />
+              </SvgIcon>
+            </IconButton>
+          </Box>
+        </Tooltip>
+      </Box>
       {originalAudioDurationSec === null ? (
         <Typography>Разметка доступна после загрузки трека</Typography>
       ) : (
         <>
           {waveUrl !== null ? (
             <>
-              <AudioWaveform
-                url={waveUrl}
-                onPick={handlePick}
-                onError={handleWaveError}
-                onReady={handleWaveReady}
-              />
+              <Box sx={{ position: 'relative', width: '100%' }}>
+                <AudioWaveform
+                  ref={waveformRef}
+                  url={waveUrl}
+                  endSec={clipEndSec}
+                  onPick={handlePick}
+                  onError={handleWaveError}
+                  onReady={handleWaveReady}
+                  onLoadStart={handleWaveLoadStart}
+                  onPlayingChange={handlePlayingChange}
+                />
+                {clipRange !== null ? (
+                  <Box
+                    data-testid="clip-range"
+                    data-start-sec={String(clipRange.startSec)}
+                    data-end-sec={String(clipRange.endSec)}
+                    aria-hidden
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: `${(clipRange.startSec / originalAudioDurationSec) * 100}%`,
+                      width: `${((clipRange.endSec - clipRange.startSec) / originalAudioDurationSec) * 100}%`,
+                      height: 80,
+                      bgcolor: '#1565c0',
+                      opacity: 0.45,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                ) : null}
+                {clipEndSec !== null && originalAudioDurationSec > 0 ? (
+                  <Box
+                    data-testid="clip-end-marker"
+                    data-end-sec={String(clipEndSec)}
+                    aria-hidden
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: `${(clipEndSec / originalAudioDurationSec) * 100}%`,
+                      height: 80,
+                      width: 2,
+                      bgcolor: '#c62828',
+                      pointerEvents: 'none',
+                      transform: 'translateX(-1px)',
+                    }}
+                  />
+                ) : null}
+              </Box>
               <Button
                 variant="text"
                 onClick={() => {

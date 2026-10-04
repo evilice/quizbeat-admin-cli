@@ -22,7 +22,7 @@ export function isPointInsideTrack(
   originalAudioDurationSec: number,
 ): boolean {
   return (
-    Number.isInteger(startTimeSec) &&
+    Number.isFinite(startTimeSec) &&
     startTimeSec >= 0 &&
     startTimeSec + durationSec <= originalAudioDurationSec
   );

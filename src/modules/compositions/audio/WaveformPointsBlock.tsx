@@ -22,12 +22,20 @@ import {
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { AudioWaveform, type AudioWaveformHandle } from './AudioWaveform.tsx';
 import { DIFFICULTY_LABELS, isPointInsideTrack } from './audio-display.ts';
+import { PLAY_ICON_PATH } from '../../../shared/ui/ActionIconButton.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 
 const DIFFICULTIES: readonly AudioClipDifficulty[] = ['EASY', 'MEDIUM', 'HARD'];
 
-const PLAY_ICON_PATH = 'M8 5v14l11-7z';
 const PAUSE_ICON_PATH = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
+
+function parseStartSec(startInput: string): number | null {
+  const startTimeSec = Number(startInput);
+  if (!Number.isFinite(startTimeSec) || startTimeSec < 0) {
+    return null;
+  }
+  return startTimeSec;
+}
 
 function clipPlaybackRange(
   startInput: string,
@@ -37,12 +45,8 @@ function clipPlaybackRange(
   if (trackDurationSec === null || trackDurationSec <= 0) {
     return null;
   }
-  const startTimeSec = Number(startInput);
-  if (
-    !Number.isInteger(startTimeSec) ||
-    startTimeSec < 0 ||
-    startTimeSec >= trackDurationSec
-  ) {
+  const startTimeSec = parseStartSec(startInput);
+  if (startTimeSec === null || startTimeSec >= trackDurationSec) {
     return null;
   }
   return {
@@ -184,9 +188,9 @@ export function WaveformPointsBlock({
     if (originalAudioDurationSec === null) {
       return;
     }
-    const startTimeSec = Number(startInput);
-    if (!Number.isInteger(startTimeSec) || startTimeSec < 0) {
-      setMessages(['Старт — целое число секунд, не меньше 0']);
+    const startTimeSec = parseStartSec(startInput);
+    if (startTimeSec === null) {
+      setMessages(['Старт — число секунд, не меньше 0']);
       return;
     }
     if (startTimeSec >= originalAudioDurationSec) {
@@ -204,17 +208,18 @@ export function WaveformPointsBlock({
     if (originalAudioDurationSec === null) {
       return;
     }
-    const start = Math.floor(relativeX * originalAudioDurationSec);
-    setStartInput(String(Math.max(0, start)));
+    const start =
+      Math.round(Math.max(0, relativeX) * originalAudioDurationSec * 100) / 100;
+    setStartInput(String(start));
   }
 
   function addPoint() {
     if (originalAudioDurationSec === null) {
       return;
     }
-    const startTimeSec = Number(startInput);
-    if (!Number.isInteger(startTimeSec) || startTimeSec < 0) {
-      setMessages(['Старт — целое число секунд, не меньше 0']);
+    const startTimeSec = parseStartSec(startInput);
+    if (startTimeSec === null) {
+      setMessages(['Старт — число секунд, не меньше 0']);
       return;
     }
     if (
@@ -397,7 +402,7 @@ export function WaveformPointsBlock({
               onChange={(event) => {
                 setStartInput(event.target.value);
               }}
-              slotProps={{ htmlInput: { step: 1, min: 0 } }}
+              slotProps={{ htmlInput: { step: 'any', min: 0 } }}
             />
             <FormControl sx={{ minWidth: 140 }}>
               <InputLabel id="clip-duration-label">Длительность</InputLabel>

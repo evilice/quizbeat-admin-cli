@@ -323,9 +323,9 @@ describe('карточка композиции', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Аудио' }));
     expect(
-      within(screen.getByRole('tabpanel', { name: 'Аудио' })).getByText(
-        'Готово',
-      ),
+      within(screen.getByRole('tabpanel', { name: 'Аудио' })).getByRole('img', {
+        name: 'Готово',
+      }),
     ).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: 'Изображения' }));
     expect(

@@ -95,7 +95,7 @@ export class AudioClipsStore {
         method: 'POST',
         body: {
           points: points.map((point) => ({
-            startTimeSec: Math.trunc(point.startTimeSec),
+            startTimeSec: point.startTimeSec,
             durationSec: point.durationSec,
             difficulty: point.difficulty,
           })),

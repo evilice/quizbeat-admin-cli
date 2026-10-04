@@ -362,7 +362,7 @@ describe('повторная загрузка трека', () => {
 });
 
 describe('волна и точки', () => {
-  it('собирает points с целым стартом, допустимой длительностью и сложностью', async () => {
+  it('собирает points с дробным стартом, допустимой длительностью и сложностью', async () => {
     const fetchMock = stubCardFetch({
       full: sampleFull({
         originalAudioUrl: AUDIO_URL,
@@ -390,7 +390,7 @@ describe('волна и точки', () => {
     ).toBe('30');
 
     fireEvent.change(screen.getByLabelText('Старт, с'), {
-      target: { value: '2' },
+      target: { value: '2.5' },
     });
     fireEvent.mouseDown(screen.getByLabelText('Длительность'));
     fireEvent.click(screen.getByRole('option', { name: '8 с' }));
@@ -418,9 +418,8 @@ describe('волна и точки', () => {
       }[];
     };
     expect(body.points).toEqual([
-      { startTimeSec: 2, durationSec: 8, difficulty: 'HARD' },
+      { startTimeSec: 2.5, durationSec: 8, difficulty: 'HARD' },
     ]);
-    expect(Number.isInteger(body.points[0]?.startTimeSec)).toBe(true);
     expect(fullGets(fetchMock)).toHaveLength(1);
   });
 
@@ -565,33 +564,33 @@ describe('волна и точки', () => {
     expect(playButton.textContent).toBe('');
 
     fireEvent.change(screen.getByLabelText('Старт, с'), {
-      target: { value: '12' },
+      target: { value: '12.5' },
     });
     expect(
       screen.getByTestId('clip-range').getAttribute('data-start-sec'),
-    ).toBe('12');
+    ).toBe('12.5');
     expect(screen.getByTestId('clip-range').getAttribute('data-end-sec')).toBe(
-      '17',
+      '17.5',
     );
     expect(
       screen.getByTestId('clip-end-marker').getAttribute('data-end-sec'),
-    ).toBe('17');
+    ).toBe('17.5');
 
     fireEvent.mouseDown(screen.getByLabelText('Длительность'));
     fireEvent.click(screen.getByRole('option', { name: '8 с' }));
     expect(
       screen.getByTestId('clip-range').getAttribute('data-start-sec'),
-    ).toBe('12');
+    ).toBe('12.5');
     expect(screen.getByTestId('clip-range').getAttribute('data-end-sec')).toBe(
-      '20',
+      '20.5',
     );
     expect(
       screen.getByTestId('clip-end-marker').getAttribute('data-end-sec'),
-    ).toBe('20');
+    ).toBe('20.5');
 
     fireEvent.click(playButton);
     expect(wavePlay).toHaveBeenCalledTimes(1);
-    expect(wavePlay).toHaveBeenCalledWith(12);
+    expect(wavePlay).toHaveBeenCalledWith(12.5);
     expect(screen.getByRole('button', { name: 'Пауза' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Пауза' }));
@@ -604,11 +603,11 @@ describe('волна и точки', () => {
     expect(wavePlay).toHaveBeenCalledTimes(2);
 
     act(() => {
-      waveTimeupdate.handler?.(19.9);
+      waveTimeupdate.handler?.(20.4);
     });
     expect(wavePause).toHaveBeenCalledTimes(1);
     act(() => {
-      waveTimeupdate.handler?.(20);
+      waveTimeupdate.handler?.(20.5);
     });
     expect(wavePause).toHaveBeenCalledTimes(2);
     expect(
@@ -962,9 +961,7 @@ describe('удаление и перегенерация отрезка', () => 
     });
     renderClips([sampleClip({ status: 'DONE' })], fetchMock);
 
-    fireEvent.click(
-      screen.getByRole('button', { name: `Удалить отрезок ${CLIP_ID}` }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     const dialog = await screen.findByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
 
@@ -1018,9 +1015,7 @@ describe('удаление и перегенерация отрезка', () => 
       fetchMock,
     );
 
-    fireEvent.click(
-      screen.getByRole('button', { name: `Удалить отрезок ${CLIP_ID}` }),
-    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Удалить' })[0]!);
     const dialog = await screen.findByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
 
@@ -1028,9 +1023,9 @@ describe('удаление и перегенерация отрезка', () => 
       expect(clipGets(fetchMock)).toHaveLength(1);
     });
     await waitFor(() => {
-      expect(
-        screen.queryByRole('button', { name: `Удалить отрезок ${CLIP_ID}` }),
-      ).toBeNull();
+      expect(screen.getAllByRole('button', { name: 'Удалить' })).toHaveLength(
+        1,
+      );
     });
     expect(
       screen.getByLabelText(`Прослушать ${otherId}`).getAttribute('src'),
@@ -1077,6 +1072,51 @@ describe('удаление и перегенерация отрезка', () => 
     });
   });
 
+  it('кнопка в действиях проигрывает отрезок и останавливает повторным нажатием', () => {
+    const otherId = '33333333-3333-3333-3333-333333333333';
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() =>
+      Promise.resolve(),
+    );
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause');
+    renderClips(
+      [
+        sampleClip({ status: 'DONE' }),
+        sampleClip({
+          id: otherId,
+          status: 'DONE',
+          fileUrl: 'https://example.com/other-clip.mp3',
+          startTimeSec: 7,
+        }),
+      ],
+      vi.fn(),
+    );
+
+    expect(screen.queryByText('Прослушивание')).toBeNull();
+    expect(
+      screen.getByLabelText(`Прослушать ${CLIP_ID}`).hasAttribute('controls'),
+    ).toBe(false);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Проиграть' })[0]!);
+    expect(screen.getByRole('button', { name: 'Остановить' })).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Проиграть' })).toHaveLength(
+      1,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Проиграть' }));
+    expect(pause).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Остановить' })).toBeTruthy();
+    expect(
+      (screen.getByLabelText(`Прослушать ${CLIP_ID}`) as HTMLAudioElement)
+        .paused,
+    ).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Остановить' }));
+    expect(screen.getAllByRole('button', { name: 'Проиграть' })).toHaveLength(
+      2,
+    );
+    vi.restoreAllMocks();
+  });
+
   it('204 убирает строку, даже если повторный список упал', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET';
@@ -1099,9 +1139,7 @@ describe('удаление и перегенерация отрезка', () => 
     });
     renderClips([sampleClip({ status: 'DONE' })], fetchMock);
 
-    fireEvent.click(
-      screen.getByRole('button', { name: `Удалить отрезок ${CLIP_ID}` }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     const dialog = await screen.findByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
 
@@ -1119,9 +1157,7 @@ describe('удаление и перегенерация отрезка', () => 
     renderClips([sampleClip({ status: 'FAILED' })], fetchMock);
     const before = fetchMock.mock.calls.length;
 
-    fireEvent.click(
-      screen.getByRole('button', { name: `Удалить отрезок ${CLIP_ID}` }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     const dialog = await screen.findByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Отмена' }));
 
@@ -1190,7 +1226,7 @@ describe('удаление и перегенерация отрезка', () => 
     await waitFor(() => {
       expect(screen.getByText(ALREADY_PROCESSING)).toBeTruthy();
     });
-    expect(screen.getByText('Готово')).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Готово' })).toBeTruthy();
   });
 });
 

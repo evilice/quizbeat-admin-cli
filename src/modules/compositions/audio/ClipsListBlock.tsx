@@ -7,14 +7,16 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  SvgIcon,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { messagesFromError } from '../../../shared/api/api-error.ts';
 import type { AudioClip } from './audio-clips-store.ts';
 import { useAttemptThrottle } from '../../../shared/hooks/use-attempt-throttle.ts';
@@ -24,7 +26,17 @@ import {
   DIFFICULTY_LABELS,
   hasUnfinishedClip,
 } from './audio-display.ts';
+import {
+  ActionIconButton,
+  DELETE_ICON_PATH,
+  PLAY_ICON_PATH,
+  STOP_ICON_PATH,
+} from '../../../shared/ui/ActionIconButton.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
+
+const DONE_ICON_PATH = 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
+const REGENERATE_ICON_PATH =
+  'M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z';
 
 export const CLIPS_POLL_INTERVAL_MS = 2000;
 const URL_REFRESH_INTERVAL_MS = 60_000;
@@ -45,6 +57,8 @@ export function ClipsListBlock({
   const pollingEnabled = haltedToken !== reloadToken;
   const [deleteTarget, setDeleteTarget] = useState<AudioClip | null>(null);
   const [actionPending, setActionPending] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const playingIdRef = useRef<string | null>(null);
   const mayRefreshUrl = useAttemptThrottle(URL_REFRESH_INTERVAL_MS);
 
   useEffect(() => {
@@ -101,6 +115,10 @@ export function ClipsListBlock({
     };
   }, [audioClips, clips, compositionId, pollingEnabled, reloadToken]);
 
+  useEffect(() => {
+    playingIdRef.current = playingId;
+  }, [playingId]);
+
   async function confirmDelete() {
     if (deleteTarget === null) {
       return;
@@ -126,6 +144,58 @@ export function ClipsListBlock({
     } catch (error) {
       setMessages(messagesFromError(error));
     }
+  }
+
+  if (
+    playingId !== null &&
+    !clips.some((clip) => clip.id === playingId && clip.status === 'DONE')
+  ) {
+    setPlayingId(null);
+  }
+
+  function setPlayback(clipId: string | null) {
+    playingIdRef.current = clipId;
+    setPlayingId(clipId);
+  }
+
+  function toggleClipPlayback(clipId: string) {
+    const audio = document.getElementById(`clip-audio-${clipId}`);
+    if (!(audio instanceof HTMLAudioElement)) {
+      return;
+    }
+
+    if (playingIdRef.current === clipId) {
+      audio.pause();
+      audio.currentTime = 0;
+      setPlayback(null);
+      return;
+    }
+
+    for (const item of clips) {
+      if (item.id === clipId || item.status !== 'DONE') {
+        continue;
+      }
+      const other = document.getElementById(`clip-audio-${item.id}`);
+      if (other instanceof HTMLAudioElement) {
+        other.pause();
+        other.currentTime = 0;
+      }
+    }
+
+    audio.currentTime = 0;
+    setPlayback(clipId);
+    const started = audio.play();
+    void Promise.resolve(started)
+      .then(() => {
+        if (playingIdRef.current !== clipId) {
+          audio.pause();
+        }
+      })
+      .catch(() => {
+        if (playingIdRef.current === clipId) {
+          setPlayback(null);
+        }
+      });
   }
 
   function handleClipExpired(clipId: string) {
@@ -172,58 +242,103 @@ export function ClipsListBlock({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Старт</TableCell>
               <TableCell>Длительность</TableCell>
               <TableCell>Сложность</TableCell>
               <TableCell>Статус</TableCell>
-              <TableCell>Прослушивание</TableCell>
-              <TableCell>Действия</TableCell>
+              <TableCell align="right">Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {clips.map((clip) => (
               <TableRow key={clip.id}>
-                <TableCell>{clip.startTimeSec} с</TableCell>
                 <TableCell>{clip.durationSec} с</TableCell>
                 <TableCell>{DIFFICULTY_LABELS[clip.difficulty]}</TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {clip.status === 'PENDING' ||
-                    clip.status === 'PROCESSING' ? (
-                      <CircularProgress
-                        size={16}
-                        aria-label={CLIP_STATUS_LABELS[clip.status]}
-                      />
-                    ) : null}
-                    {CLIP_STATUS_LABELS[clip.status]}
-                  </Box>
+                  {clip.status === 'DONE' ? (
+                    <DoneStatusIcon />
+                  ) : (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {clip.status === 'PENDING' ||
+                      clip.status === 'PROCESSING' ? (
+                        <CircularProgress
+                          size={16}
+                          aria-label={CLIP_STATUS_LABELS[clip.status]}
+                        />
+                      ) : null}
+                      {CLIP_STATUS_LABELS[clip.status]}
+                    </Box>
+                  )}
                 </TableCell>
-                <TableCell>
-                  <ClipPlayback clip={clip} onExpired={handleClipExpired} />
-                </TableCell>
-                <TableCell>
-                  {clip.status === 'DONE' || clip.status === 'FAILED' ? (
-                    <Button
-                      size="small"
-                      disabled={actionPending}
-                      onClick={() => {
-                        void regenerate(clip);
-                      }}
-                    >
-                      Перегенерировать
-                    </Button>
-                  ) : null}
-                  <Button
-                    size="small"
-                    color="warning"
-                    disabled={actionPending}
-                    aria-label={`Удалить отрезок ${clip.id}`}
-                    onClick={() => {
-                      setDeleteTarget(clip);
+                <TableCell align="right">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      gap: 0.5,
+                      position: 'relative',
                     }}
                   >
-                    Удалить
-                  </Button>
+                    {clip.status === 'DONE' && clip.fileUrl !== undefined ? (
+                      <>
+                        <audio
+                          id={`clip-audio-${clip.id}`}
+                          src={clip.fileUrl}
+                          preload="none"
+                          aria-label={`Прослушать ${clip.id}`}
+                          onEnded={() => {
+                            if (playingIdRef.current === clip.id) {
+                              setPlayback(null);
+                            }
+                          }}
+                          onError={() => {
+                            if (playingIdRef.current === clip.id) {
+                              setPlayback(null);
+                            }
+                            handleClipExpired(clip.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            width: 0,
+                            height: 0,
+                            opacity: 0,
+                            pointerEvents: 'none',
+                          }}
+                        />
+                        <ActionIconButton
+                          label={
+                            playingId === clip.id ? 'Остановить' : 'Проиграть'
+                          }
+                          path={
+                            playingId === clip.id
+                              ? STOP_ICON_PATH
+                              : PLAY_ICON_PATH
+                          }
+                          disabled={actionPending}
+                          onClick={() => {
+                            toggleClipPlayback(clip.id);
+                          }}
+                        />
+                      </>
+                    ) : null}
+                    {clip.status === 'DONE' || clip.status === 'FAILED' ? (
+                      <ActionIconButton
+                        label="Перегенерировать"
+                        path={REGENERATE_ICON_PATH}
+                        disabled={actionPending}
+                        onClick={() => {
+                          void regenerate(clip);
+                        }}
+                      />
+                    ) : null}
+                    <ActionIconButton
+                      label="Удалить"
+                      path={DELETE_ICON_PATH}
+                      disabled={actionPending}
+                      onClick={() => {
+                        setDeleteTarget(clip);
+                      }}
+                    />
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -270,25 +385,19 @@ export function ClipsListBlock({
   );
 }
 
-function ClipPlayback({
-  clip,
-  onExpired,
-}: {
-  clip: AudioClip;
-  onExpired: (clipId: string) => void;
-}) {
-  if (clip.status !== 'DONE' || clip.fileUrl === undefined) {
-    return null;
-  }
-
+function DoneStatusIcon() {
   return (
-    <audio
-      controls
-      src={clip.fileUrl}
-      aria-label={`Прослушать ${clip.id}`}
-      onError={() => {
-        onExpired(clip.id);
-      }}
-    />
+    <Tooltip title={CLIP_STATUS_LABELS.DONE}>
+      <Box
+        component="span"
+        role="img"
+        aria-label={CLIP_STATUS_LABELS.DONE}
+        sx={{ display: 'inline-flex', color: 'success.main' }}
+      >
+        <SvgIcon fontSize="small">
+          <path d={DONE_ICON_PATH} />
+        </SvgIcon>
+      </Box>
+    </Tooltip>
   );
 }

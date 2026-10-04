@@ -166,9 +166,9 @@ React, без `dangerouslySetInnerHTML`. Уровень 1 (`/code-review` с
   отсутствующему полю. У картинок этапа 6 контракт другой (`fileUrl`
   сразу) — на отрезки его не копировать.
 - **Пустой `points` не отправляется.** Сервер требует хотя бы одну точку
-  (`@ArrayMinSize(1)`). `startTimeSec` — целое ≥ 0; дробные с UI не
-  уходят. `durationSec` только из `1, 2, 3, 5, 8, 13, 21`. Клиент не
-  даёт добавить точку с `startTimeSec + durationSec > originalAudioDurationSec`;
+  (`@ArrayMinSize(1)`). `startTimeSec` — число секунд ≥ 0, дробная
+  часть уходит как есть. `durationSec` только из `1, 2, 3, 5, 8, 13, 21`.
+  Клиент не даёт добавить точку с `startTimeSec + durationSec > originalAudioDurationSec`;
   если сервер всё равно ответил `400` с
   `Point is out of the original audio track duration range` — показать
   `message`. Нет оригинала — `409`

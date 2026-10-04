@@ -49,7 +49,7 @@ describe('AudioClipsStore', () => {
     expect(fetchUrl(fetchMock, 0)).not.toContain('/full');
   });
 
-  it('создание шлёт JSON { points } с целым стартом, допустимой длительностью и сложностью', async () => {
+  it('создание шлёт JSON { points } с дробным стартом, допустимой длительностью и сложностью', async () => {
     const created = [sampleClip({ status: 'PENDING' })];
     delete created[0]?.fileUrl;
     const { audioClips, fetchMock } = createStoreWithSession();
@@ -64,7 +64,7 @@ describe('AudioClipsStore', () => {
       `${apiBaseUrl}/compositions/${COMPOSITION_ID}/clips`,
     );
     expect(requestJson(fetchMock, 0)).toEqual({
-      points: [{ startTimeSec: 4, durationSec: 5, difficulty: 'HARD' }],
+      points: [{ startTimeSec: 4.9, durationSec: 5, difficulty: 'HARD' }],
     });
     expect(result[0]).not.toHaveProperty('fileUrl');
     expect(requestHeaders(fetchMock, 0).get('Content-Type')).toBe(

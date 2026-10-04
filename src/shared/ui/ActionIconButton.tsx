@@ -1,0 +1,40 @@
+import { Box, IconButton, SvgIcon, Tooltip } from '@mui/material';
+
+export const EDIT_ICON_PATH =
+  'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75z';
+
+export const DELETE_ICON_PATH =
+  'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z';
+
+type ActionIconButtonProps = {
+  label: string;
+  path: string;
+  disabled?: boolean;
+  fillRule?: 'evenodd';
+  onClick: () => void;
+};
+
+export const ActionIconButton = ({
+  label,
+  path,
+  disabled = false,
+  fillRule,
+  onClick,
+}: ActionIconButtonProps) => {
+  return (
+    <Tooltip title={label}>
+      <Box component="span" sx={{ display: 'inline-flex' }}>
+        <IconButton
+          aria-label={label}
+          size="small"
+          disabled={disabled}
+          onClick={onClick}
+        >
+          <SvgIcon>
+            <path d={path} fillRule={fillRule} />
+          </SvgIcon>
+        </IconButton>
+      </Box>
+    </Tooltip>
+  );
+};

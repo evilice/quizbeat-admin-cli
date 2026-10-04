@@ -1,12 +1,16 @@
 import {
   Box,
-  Button,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
 } from '@mui/material';
+import {
+  ActionIconButton,
+  DELETE_ICON_PATH,
+  EDIT_ICON_PATH,
+} from '../../../shared/ui/ActionIconButton.tsx';
 import { tagTranslationName } from '../tags-display.ts';
 import type { Tag } from '../tags-store.ts';
 
@@ -30,7 +34,7 @@ export const TagsTable = ({
           <TableCell>Код</TableCell>
           <TableCell>Название (ru)</TableCell>
           <TableCell>Название (en)</TableCell>
-          <TableCell>Действия</TableCell>
+          <TableCell align="right">Действия</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -61,24 +65,24 @@ const TagRow = ({ tag, actionPending, onEdit, onDelete }: TagRowProps) => {
       <TableCell>{tag.code}</TableCell>
       <TableCell>{tagTranslationName(tag, 'ru')}</TableCell>
       <TableCell>{tagTranslationName(tag, 'en')}</TableCell>
-      <TableCell>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          <Button
+      <TableCell align="right">
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+          <ActionIconButton
+            label="Изменить"
+            path={EDIT_ICON_PATH}
             disabled={actionPending}
             onClick={() => {
               onEdit(tag);
             }}
-          >
-            Изменить
-          </Button>
-          <Button
+          />
+          <ActionIconButton
+            label="Удалить"
+            path={DELETE_ICON_PATH}
             disabled={actionPending}
             onClick={() => {
               onDelete(tag);
             }}
-          >
-            Удалить
-          </Button>
+          />
         </Box>
       </TableCell>
     </TableRow>

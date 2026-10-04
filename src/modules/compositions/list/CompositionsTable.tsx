@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Chip,
   Table,
   TableBody,
@@ -8,6 +7,11 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import {
+  ActionIconButton,
+  DELETE_ICON_PATH,
+  EDIT_ICON_PATH,
+} from '../../../shared/ui/ActionIconButton.tsx';
 import { STATUS_LABELS, tagDisplayName } from '../composition-display.ts';
 import type { Composition } from '../compositions-store.ts';
 
@@ -30,7 +34,7 @@ export const CompositionsTable = ({
           <TableCell>Автор</TableCell>
           <TableCell>Статус</TableCell>
           <TableCell>Теги</TableCell>
-          <TableCell>Действия</TableCell>
+          <TableCell align="right">Действия</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -70,23 +74,23 @@ const CompositionRow = ({
           ))}
         </Box>
       </TableCell>
-      <TableCell>
-        <Button
-          size="small"
-          onClick={() => {
-            onEdit(composition);
-          }}
-        >
-          Изменить
-        </Button>
-        <Button
-          size="small"
-          onClick={() => {
-            onDelete(composition);
-          }}
-        >
-          Удалить
-        </Button>
+      <TableCell align="right">
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+          <ActionIconButton
+            label="Изменить"
+            path={EDIT_ICON_PATH}
+            onClick={() => {
+              onEdit(composition);
+            }}
+          />
+          <ActionIconButton
+            label="Удалить"
+            path={DELETE_ICON_PATH}
+            onClick={() => {
+              onDelete(composition);
+            }}
+          />
+        </Box>
       </TableCell>
     </TableRow>
   );

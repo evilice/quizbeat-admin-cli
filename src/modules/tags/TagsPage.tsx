@@ -1,6 +1,7 @@
-import { Box, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { ListPagination } from '../../shared/ui/ListPagination.tsx';
+import { ListWithFilters } from '../../shared/ui/ListWithFilters.tsx';
 import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
 import { TagFormDialog } from './form/TagFormDialog.tsx';
 import { DeleteTagDialog } from './list/DeleteTagDialog.tsx';
@@ -37,13 +38,15 @@ export const TagsPage = observer(() => {
   } = useTagsList();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <TagsFilters
-        search={search}
-        onSearchChange={onSearchChange}
-        onCreate={openCreate}
-      />
-
+    <ListWithFilters
+      filters={
+        <TagsFilters
+          search={search}
+          onSearchChange={onSearchChange}
+          onCreate={openCreate}
+        />
+      }
+    >
       <TagFormDialog
         key={formOpen ? (editTarget?.id ?? 'create') : 'closed'}
         open={formOpen}
@@ -82,6 +85,6 @@ export const TagsPage = observer(() => {
           onNext={goToNextPage}
         />
       ) : null}
-    </Box>
+    </ListWithFilters>
   );
 });

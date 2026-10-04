@@ -56,7 +56,8 @@
         "src/modules/compositions/composition-display.ts",
         "src/modules/compositions/use-tag-options.ts",
         "src/shared/hooks/**",
-        "src/shared/ui/ListPagination.tsx"
+        "src/shared/ui/ListPagination.tsx",
+        "src/shared/ui/ListWithFilters.tsx"
       ],
       "rules": {
         "func-style": ["error", "expression"]

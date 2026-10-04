@@ -1,6 +1,7 @@
-import { Box, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
+import { ListWithFilters } from '../../shared/ui/ListWithFilters.tsx';
 import { EMPTY_ADMINS_MESSAGE } from './admin-display.ts';
 import { CreateAdminDialog } from './create/CreateAdminDialog.tsx';
 import { AdminsFilters } from './list/AdminsFilters.tsx';
@@ -47,17 +48,19 @@ export const AdminsPage = observer(() => {
   } = useAdminsList();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <AdminsFilters
-        search={search}
-        roleFilter={roleFilter}
-        activityFilter={activityFilter}
-        onSearchChange={onSearchChange}
-        onRoleFilterChange={onRoleFilterChange}
-        onActivityFilterChange={onActivityFilterChange}
-        onCreate={openCreate}
-      />
-
+    <ListWithFilters
+      filters={
+        <AdminsFilters
+          search={search}
+          roleFilter={roleFilter}
+          activityFilter={activityFilter}
+          onSearchChange={onSearchChange}
+          onRoleFilterChange={onRoleFilterChange}
+          onActivityFilterChange={onActivityFilterChange}
+          onCreate={openCreate}
+        />
+      }
+    >
       <CreateAdminDialog
         open={createOpen}
         onClose={closeCreate}
@@ -108,6 +111,6 @@ export const AdminsPage = observer(() => {
           onNext={goToNextPage}
         />
       ) : null}
-    </Box>
+    </ListWithFilters>
   );
 });

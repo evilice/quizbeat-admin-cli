@@ -1,6 +1,7 @@
-import { Box, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import { ListPagination } from '../../shared/ui/ListPagination.tsx';
+import { ListWithFilters } from '../../shared/ui/ListWithFilters.tsx';
 import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
 import { EMPTY_COMPOSITIONS_MESSAGE } from './composition-display.ts';
 import { CreateCompositionDialog } from './create/CreateCompositionDialog.tsx';
@@ -42,18 +43,20 @@ export const CompositionsPage = observer(() => {
   } = useCompositionsList();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <CompositionsFilters
-        search={search}
-        statusFilter={statusFilter}
-        selectedTagIds={selectedTagIds}
-        tagOptions={tagOptions}
-        onSearchChange={onSearchChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onTagsFilterChange={onTagsFilterChange}
-        onCreate={openCreate}
-      />
-
+    <ListWithFilters
+      filters={
+        <CompositionsFilters
+          search={search}
+          statusFilter={statusFilter}
+          selectedTagIds={selectedTagIds}
+          tagOptions={tagOptions}
+          onSearchChange={onSearchChange}
+          onStatusFilterChange={onStatusFilterChange}
+          onTagsFilterChange={onTagsFilterChange}
+          onCreate={openCreate}
+        />
+      }
+    >
       <CreateCompositionDialog
         open={createOpen}
         tagOptions={tagOptions}
@@ -91,6 +94,6 @@ export const CompositionsPage = observer(() => {
           onNext={goToNextPage}
         />
       ) : null}
-    </Box>
+    </ListWithFilters>
   );
 });

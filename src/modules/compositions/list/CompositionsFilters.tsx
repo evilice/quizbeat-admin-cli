@@ -35,22 +35,16 @@ export const CompositionsFilters = ({
   onCreate,
 }: CompositionsFiltersProps) => {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 2,
-        alignItems: 'flex-start',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <TextField
+        fullWidth
         label="Поиск по названию или автору"
         value={search}
         onChange={(event) => {
           onSearchChange(event.target.value);
         }}
       />
-      <FormControl sx={{ minWidth: 180 }}>
+      <FormControl fullWidth>
         <InputLabel id="compositions-status-filter-label">Статус</InputLabel>
         <Select<StatusFilter>
           labelId="compositions-status-filter-label"
@@ -65,7 +59,7 @@ export const CompositionsFilters = ({
           <MenuItem value="PUBLISHED">{STATUS_LABELS.PUBLISHED}</MenuItem>
         </Select>
       </FormControl>
-      <FormControl sx={{ minWidth: 240 }}>
+      <FormControl fullWidth>
         <InputLabel id="compositions-tags-filter-label">Теги</InputLabel>
         <Select
           labelId="compositions-tags-filter-label"
@@ -101,7 +95,7 @@ export const CompositionsFilters = ({
           ))}
         </Select>
       </FormControl>
-      <Button variant="contained" onClick={onCreate}>
+      <Button fullWidth variant="contained" onClick={onCreate}>
         Создать
       </Button>
     </Box>

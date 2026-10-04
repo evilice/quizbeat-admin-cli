@@ -103,7 +103,7 @@ export const AppShell = observer(function AppShell() {
           Выход
         </MenuItem>
       </Menu>
-      <Box component="main" sx={{ flexGrow: 1, p: 2 }}>
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: 2 }}>
         <Toolbar />
         {restorePending ? null : signedIn ? (
           <Outlet />

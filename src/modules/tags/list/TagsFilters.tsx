@@ -12,22 +12,16 @@ export const TagsFilters = ({
   onCreate,
 }: TagsFiltersProps) => {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 2,
-        alignItems: 'flex-start',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <TextField
+        fullWidth
         label="Поиск по названию"
         value={search}
         onChange={(event) => {
           onSearchChange(event.target.value);
         }}
       />
-      <Button variant="contained" onClick={onCreate}>
+      <Button fullWidth variant="contained" onClick={onCreate}>
         Создать
       </Button>
     </Box>

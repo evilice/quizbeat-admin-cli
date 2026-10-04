@@ -30,22 +30,16 @@ export const AdminsFilters = ({
   onCreate,
 }: AdminsFiltersProps) => {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 2,
-        alignItems: 'flex-start',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <TextField
+        fullWidth
         label="Поиск по email"
         value={search}
         onChange={(event) => {
           onSearchChange(event.target.value);
         }}
       />
-      <FormControl sx={{ minWidth: 180 }}>
+      <FormControl fullWidth>
         <InputLabel id="admins-role-filter-label">Роль</InputLabel>
         <Select<RoleFilter>
           labelId="admins-role-filter-label"
@@ -63,7 +57,7 @@ export const AdminsFilters = ({
           ))}
         </Select>
       </FormControl>
-      <FormControl sx={{ minWidth: 220 }}>
+      <FormControl fullWidth>
         <InputLabel id="admins-activity-filter-label">Активность</InputLabel>
         <Select<ActivityFilter>
           labelId="admins-activity-filter-label"
@@ -78,7 +72,7 @@ export const AdminsFilters = ({
           <MenuItem value="inactive">Только неактивные</MenuItem>
         </Select>
       </FormControl>
-      <Button variant="contained" onClick={onCreate}>
+      <Button fullWidth variant="contained" onClick={onCreate}>
         Создать
       </Button>
     </Box>

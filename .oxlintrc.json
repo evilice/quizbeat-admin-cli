@@ -50,6 +50,11 @@
         "src/modules/session/{login,change-password}/**",
         "src/modules/session/LoginPage.tsx",
         "src/modules/session/ChangePasswordPage.tsx",
+        "src/modules/compositions/{list,create,edit,card}/**",
+        "src/modules/compositions/CompositionsPage.tsx",
+        "src/modules/compositions/CompositionCardPage.tsx",
+        "src/modules/compositions/composition-display.ts",
+        "src/modules/compositions/use-tag-options.ts",
         "src/shared/hooks/**",
         "src/shared/ui/ListPagination.tsx"
       ],

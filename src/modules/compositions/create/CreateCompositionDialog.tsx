@@ -13,13 +13,11 @@ import {
   Select,
   TextField,
 } from '@mui/material';
-import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../shared/api/api-error.ts';
-import type { CompositionStatus } from './compositions-store.ts';
-import type { Tag } from '../../modules/tags/tags-store.ts';
-import { useRootStore } from '../../shared/store/root-store-context.tsx';
-import { STATUS_LABELS, tagDisplayName } from './composition-display.ts';
-import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
+import type { CompositionStatus } from '../compositions-store.ts';
+import { STATUS_LABELS, tagDisplayName } from '../composition-display.ts';
+import type { Tag } from '../../tags/tags-store.ts';
+import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
+import { useCreateComposition } from './use-create-composition.ts';
 
 type CreateCompositionDialogProps = {
   open: boolean;
@@ -28,67 +26,26 @@ type CreateCompositionDialogProps = {
   onCreated: () => void;
 };
 
-export function CreateCompositionDialog({
+export const CreateCompositionDialog = ({
   open,
   tagOptions,
   onClose,
   onCreated,
-}: CreateCompositionDialogProps) {
-  const { compositions } = useRootStore();
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [status, setStatus] = useState<CompositionStatus>('DRAFT');
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [messages, setMessages] = useState<readonly string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-
-  function resetForm() {
-    setTitle('');
-    setAuthor('');
-    setStatus('DRAFT');
-    setSelectedTagIds([]);
-    setMessages([]);
-  }
-
-  function handleClose() {
-    if (submitting) {
-      return;
-    }
-    resetForm();
-    onClose();
-  }
-
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (title === '') {
-      setMessages(['Укажите название']);
-      return;
-    }
-    if (author === '') {
-      setMessages(['Укажите автора']);
-      return;
-    }
-
-    setSubmitting(true);
-    setMessages([]);
-    try {
-      await compositions.create({
-        title,
-        author,
-        ...(status === 'PUBLISHED' ? { status: 'PUBLISHED' as const } : {}),
-        ...(selectedTagIds.length > 0 ? { tagIds: selectedTagIds } : {}),
-      });
-      resetForm();
-      onCreated();
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
+}: CreateCompositionDialogProps) => {
+  const {
+    title,
+    setTitle,
+    author,
+    setAuthor,
+    status,
+    setStatus,
+    selectedTagIds,
+    setSelectedTagIds,
+    messages,
+    submitting,
+    handleClose,
+    handleSubmit,
+  } = useCreateComposition(onClose, onCreated);
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -123,12 +80,12 @@ export function CreateCompositionDialog({
           />
           <FormControl fullWidth>
             <InputLabel id="create-composition-status-label">Статус</InputLabel>
-            <Select
+            <Select<CompositionStatus>
               labelId="create-composition-status-label"
               label="Статус"
               value={status}
               onChange={(event) => {
-                setStatus(event.target.value as CompositionStatus);
+                setStatus(event.target.value);
               }}
             >
               <MenuItem value="DRAFT">{STATUS_LABELS.DRAFT}</MenuItem>
@@ -184,4 +141,4 @@ export function CreateCompositionDialog({
       </Box>
     </Dialog>
   );
-}
+};

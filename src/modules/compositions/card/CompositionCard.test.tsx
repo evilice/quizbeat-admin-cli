@@ -17,11 +17,11 @@ vi.mock('wavesurfer.js', () => ({
     }),
   },
 }));
-import { makeAccessToken } from '../../shared/testing/make-access-token.ts';
-import { RootStore } from '../../shared/store/root-store.ts';
-import type { SessionStorage } from '../../modules/session/session-store.ts';
-import { AppProviders } from '../../app/App.tsx';
-import { routes } from '../../app/routes.tsx';
+import { makeAccessToken } from '../../../shared/testing/make-access-token.ts';
+import { RootStore } from '../../../shared/store/root-store.ts';
+import type { SessionStorage } from '../../session/session-store.ts';
+import { AppProviders } from '../../../app/App.tsx';
+import { routes } from '../../../app/routes.tsx';
 
 const COMPOSITION_ID = '11111111-1111-1111-1111-111111111111';
 const UNKNOWN_TAG_MESSAGE =
@@ -408,11 +408,11 @@ describe('карточка композиции', () => {
   });
 });
 
-function renderCard({
+const renderCard = ({
   state,
 }: {
   state?: { title?: string; author?: string };
-} = {}) {
+} = {}) => {
   const store = new RootStore(createMemoryStorage());
   store.session.setPair(
     makeAccessToken({ sub: 'viewer-1', role: 'ADMIN', type: 'staff' }),
@@ -432,9 +432,9 @@ function renderCard({
       <RouterProvider router={router} />
     </AppProviders>,
   );
-}
+};
 
-function stubCardFetch({
+const stubCardFetch = ({
   full = sampleCompositionFull(),
   fullStatus = 200,
   tags = [] as ReturnType<typeof sampleTag>[],
@@ -448,7 +448,7 @@ function stubCardFetch({
   patchStatus?: number;
   patchResponse?: ReturnType<typeof sampleComposition>;
   patchBody?: unknown;
-} = {}) {
+} = {}) => {
   const fetchMock = vi
     .fn()
     .mockImplementation((url: string, init?: RequestInit) => {
@@ -509,17 +509,17 @@ function stubCardFetch({
     });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
-}
+};
 
-function getFullCalls(fetchMock: ReturnType<typeof vi.fn>) {
+const getFullCalls = (fetchMock: ReturnType<typeof vi.fn>) => {
   return fetchMock.mock.calls.filter((call) => {
     const url = String(call[0]);
     const method = (call[1] as RequestInit | undefined)?.method ?? 'GET';
     return url.includes('/full') && method === 'GET';
   });
-}
+};
 
-function getCompositionListCalls(fetchMock: ReturnType<typeof vi.fn>) {
+const getCompositionListCalls = (fetchMock: ReturnType<typeof vi.fn>) => {
   return fetchMock.mock.calls.filter((call) => {
     const url = String(call[0]);
     const method = (call[1] as RequestInit | undefined)?.method ?? 'GET';
@@ -529,12 +529,12 @@ function getCompositionListCalls(fetchMock: ReturnType<typeof vi.fn>) {
     const pathname = new URL(url).pathname;
     return pathname === '/compositions';
   });
-}
+};
 
-function getBareCompositionGetCalls(
+const getBareCompositionGetCalls = (
   fetchMock: ReturnType<typeof vi.fn>,
   id: string,
-) {
+) => {
   return fetchMock.mock.calls.filter((call) => {
     const url = String(call[0]);
     const method = (call[1] as RequestInit | undefined)?.method ?? 'GET';
@@ -544,9 +544,9 @@ function getBareCompositionGetCalls(
     const pathname = new URL(url).pathname;
     return pathname === `/compositions/${id}`;
   });
-}
+};
 
-function patchBodies(fetchMock: ReturnType<typeof vi.fn>) {
+const patchBodies = (fetchMock: ReturnType<typeof vi.fn>) => {
   return fetchMock.mock.calls
     .filter((call) => (call[1] as RequestInit | undefined)?.method === 'PATCH')
     .map((call) => {
@@ -556,15 +556,15 @@ function patchBodies(fetchMock: ReturnType<typeof vi.fn>) {
         unknown
       >;
     });
-}
+};
 
-function sampleTag(
+const sampleTag = (
   overrides: {
     id?: string;
     code?: string;
     translations?: { locale: 'ru' | 'en'; name: string }[];
   } = {},
-) {
+) => {
   return {
     id: overrides.id ?? 'tag-id',
     code: overrides.code ?? 'rock',
@@ -574,9 +574,9 @@ function sampleTag(
     ],
     createdAt: '2026-01-01T00:00:00.000Z',
   };
-}
+};
 
-function sampleComposition(
+const sampleComposition = (
   overrides: {
     id?: string;
     title?: string;
@@ -584,7 +584,7 @@ function sampleComposition(
     status?: 'DRAFT' | 'PUBLISHED';
     tags?: ReturnType<typeof sampleTag>[];
   } = {},
-) {
+) => {
   return {
     id: overrides.id ?? COMPOSITION_ID,
     title: overrides.title ?? 'Song One',
@@ -596,9 +596,9 @@ function sampleComposition(
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   };
-}
+};
 
-function sampleCompositionFull(
+const sampleCompositionFull = (
   overrides: Partial<{
     id: string;
     title: string;
@@ -611,7 +611,7 @@ function sampleCompositionFull(
     images: unknown[];
     notes: unknown[];
   }> = {},
-) {
+) => {
   return {
     ...sampleComposition(overrides),
     originalAudioUrl:
@@ -626,18 +626,18 @@ function sampleCompositionFull(
     images: overrides.images ?? [],
     notes: overrides.notes ?? [],
   };
-}
+};
 
-function jsonResponse(status: number, body: unknown): Response {
+const jsonResponse = (status: number, body: unknown): Response => {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
-}
+};
 
-function createMemoryStorage(
+const createMemoryStorage = (
   initial: Record<string, string> = {},
-): SessionStorage {
+): SessionStorage => {
   const entries = new Map(Object.entries(initial));
   return {
     getItem(key: string): string | null {
@@ -650,4 +650,4 @@ function createMemoryStorage(
       entries.delete(key);
     },
   };
-}
+};

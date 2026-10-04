@@ -1,32 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
 import {
   SEARCH_DEBOUNCE_MS,
   useDebouncedValue,
 } from '../../../shared/hooks/use-debounced-value.ts';
+import {
+  listPresentation,
+  useListQuery,
+} from '../../../shared/hooks/use-list-query.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type { CompositionLocationState } from '../card/use-composition-card.ts';
 import type {
   Composition,
   CompositionStatus,
   ListCompositionsParams,
-  PaginatedCompositions,
 } from '../compositions-store.ts';
 import { useTagOptions } from '../use-tag-options.ts';
 
 export type StatusFilter = 'all' | CompositionStatus;
 
-type ListState = {
-  key: string;
-  result: PaginatedCompositions | null;
-  messages: readonly string[];
+type ListFilters = {
+  search: string;
+  statusFilter: StatusFilter;
+  selectedTagIds: readonly string[];
 };
 
 const buildParams = (
-  search: string,
-  statusFilter: StatusFilter,
-  selectedTagIds: readonly string[],
+  { search, statusFilter, selectedTagIds }: ListFilters,
   page: number,
 ): ListCompositionsParams => {
   const params: ListCompositionsParams = { page };
@@ -49,105 +50,56 @@ export const useCompositionsList = () => {
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
-  const [listVersion, setListVersion] = useState(0);
-  const [listState, setListState] = useState<ListState | null>(null);
   const [actionMessages, setActionMessages] = useState<
     readonly string[] | null
   >(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Composition | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
   const search = useDebouncedValue(searchInput.trim(), SEARCH_DEBOUNCE_MS);
-  const requestKey = JSON.stringify([
-    buildParams(search, statusFilter, selectedTagIds, page),
-    listVersion,
-  ]);
-  const requestKeyRef = useRef(requestKey);
+  const query = useListQuery({
+    params: { search, statusFilter, selectedTagIds },
+    fetchPage: (filters, page) => compositions.list(buildParams(filters, page)),
+  });
 
-  useEffect(() => {
-    requestKeyRef.current = requestKey;
-    let cancelled = false;
-    const params = buildParams(search, statusFilter, selectedTagIds, page);
-
-    void compositions
-      .list(params)
-      .then((result) => {
-        if (!cancelled) {
-          setListState({ key: requestKey, result, messages: [] });
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setListState({
-            key: requestKey,
-            result: null,
-            messages: messagesFromError(error),
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    compositions,
-    search,
-    statusFilter,
-    selectedTagIds,
-    page,
-    listVersion,
-    requestKey,
-  ]);
-
-  const loading = listState?.key !== requestKey || refreshing;
-  const listMessages = loading ? [] : (listState?.messages ?? []);
-  const messages = actionMessages ?? listMessages;
-  const result = listState?.result ?? null;
-  const hasError = messages.length > 0;
-  const items = result?.items ?? [];
-  const total = result?.total ?? 0;
-  const limit = result?.limit ?? 20;
-  const currentPage = result?.page ?? page;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const showEmpty =
-    !loading && !hasError && result !== null && items.length === 0;
-  const showTable = items.length > 0;
-  const showPagination =
-    showTable || (!hasError && result !== null && total > 0);
+  const messages = actionMessages ?? query.listMessages;
+  const presentation = listPresentation({
+    result: query.result,
+    loading: query.loading,
+    hasError: messages.length > 0,
+  });
 
   const reloadList = () => {
     setActionMessages(null);
-    setListVersion((current) => current + 1);
+    query.reload();
   };
 
   const onSearchChange = (value: string) => {
     setSearchInput(value);
-    setPage(1);
+    query.resetPage();
     setActionMessages(null);
   };
 
   const onStatusFilterChange = (value: StatusFilter) => {
     setStatusFilter(value);
-    setPage(1);
+    query.resetPage();
     setActionMessages(null);
   };
 
   const onTagsFilterChange = (value: string[]) => {
     setSelectedTagIds(value);
-    setPage(1);
+    query.resetPage();
     setActionMessages(null);
   };
 
   const goToPreviousPage = () => {
-    setPage((current) => Math.max(1, current - 1));
+    query.goToPreviousPage();
     setActionMessages(null);
   };
 
   const goToNextPage = () => {
-    setPage((current) => current + 1);
+    query.goToNextPage();
     setActionMessages(null);
   };
 
@@ -198,22 +150,9 @@ export const useCompositionsList = () => {
       setActionMessages(messagesFromError(error));
       if (error instanceof ApiError && error.status === 404) {
         setDeleteTarget(null);
-        setRefreshing(true);
-        try {
-          const pageResult = await compositions.list(
-            buildParams(search, statusFilter, selectedTagIds, page),
-          );
-          if (requestKeyRef.current === requestKey) {
-            setListState({
-              key: requestKey,
-              result: pageResult,
-              messages: [],
-            });
-          }
-        } catch (listError) {
-          setActionMessages(messagesFromError(listError));
-        } finally {
-          setRefreshing(false);
+        const refreshMessages = await query.refreshCurrentPage();
+        if (refreshMessages !== null) {
+          setActionMessages(refreshMessages);
         }
       }
     } finally {
@@ -231,14 +170,12 @@ export const useCompositionsList = () => {
     onStatusFilterChange,
     onTagsFilterChange,
     messages,
-    showEmpty,
-    showTable,
-    items,
+    ...presentation,
+    items: query.items,
     actionPending,
-    loading,
-    showPagination,
-    currentPage,
-    totalPages,
+    loading: query.loading,
+    currentPage: query.currentPage,
+    totalPages: query.totalPages,
     goToPreviousPage,
     goToNextPage,
     createOpen,

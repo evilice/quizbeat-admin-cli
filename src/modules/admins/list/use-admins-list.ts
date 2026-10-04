@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { messagesFromError } from '../../../shared/api/api-error.ts';
+import {
+  listPresentation,
+  useListQuery,
+} from '../../../shared/hooks/use-list-query.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import type { StaffRole } from '../../session/parse-access-token.ts';
 import {
   PASSWORD_RESET_NOTICE,
   SELF_ROLE_CHANGED_NOTICE,
 } from '../admin-display.ts';
-import {
-  type Admin,
-  type ListAdminsParams,
-  type PaginatedAdmins,
-} from '../admins-store.ts';
+import { type Admin, type ListAdminsParams } from '../admins-store.ts';
 import {
   SEARCH_DEBOUNCE_MS,
   useDebouncedValue,
@@ -19,16 +19,14 @@ import {
 export type RoleFilter = 'all' | StaffRole;
 export type ActivityFilter = 'all' | 'active' | 'inactive';
 
-type ListState = {
-  key: string;
-  result: PaginatedAdmins | null;
-  messages: readonly string[];
+type ListFilters = {
+  search: string;
+  roleFilter: RoleFilter;
+  activityFilter: ActivityFilter;
 };
 
 const buildParams = (
-  search: string,
-  roleFilter: RoleFilter,
-  activityFilter: ActivityFilter,
+  { search, roleFilter, activityFilter }: ListFilters,
   page: number,
 ): ListAdminsParams => {
   const params: ListAdminsParams = { page };
@@ -49,9 +47,6 @@ export const useAdminsList = () => {
   const [searchInput, setSearchInput] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
-  const [page, setPage] = useState(1);
-  const [listVersion, setListVersion] = useState(0);
-  const [listState, setListState] = useState<ListState | null>(null);
   const [actionMessages, setActionMessages] = useState<readonly string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -60,58 +55,19 @@ export const useAdminsList = () => {
   const [actionPending, setActionPending] = useState(false);
 
   const search = useDebouncedValue(searchInput.trim(), SEARCH_DEBOUNCE_MS);
-  const requestKey = JSON.stringify([
-    buildParams(search, roleFilter, activityFilter, page),
-    listVersion,
-  ]);
+  const query = useListQuery({
+    params: { search, roleFilter, activityFilter },
+    fetchPage: (filters, page) => admins.list(buildParams(filters, page)),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    const params = buildParams(search, roleFilter, activityFilter, page);
+  const messages = [...query.listMessages, ...actionMessages];
+  const presentation = listPresentation({
+    result: query.result,
+    loading: query.loading,
+    hasError: messages.length > 0,
+  });
 
-    admins
-      .list(params)
-      .then((result) => {
-        if (!cancelled) {
-          setListState({ key: requestKey, result, messages: [] });
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setListState({
-            key: requestKey,
-            result: null,
-            messages: messagesFromError(error),
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [admins, search, roleFilter, activityFilter, page, requestKey]);
-
-  const loading = listState?.key !== requestKey;
-  const listMessages = loading ? [] : (listState?.messages ?? []);
-  const messages = [...listMessages, ...actionMessages];
-  const result = listState?.result ?? null;
-  const hasError = messages.length > 0;
-  const items = result?.items ?? [];
-  const total = result?.total ?? 0;
-  const limit = result?.limit ?? 20;
-  const currentPage = result?.page ?? page;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const showEmpty =
-    !loading && !hasError && result !== null && items.length === 0;
-  // Таблица остаётся при ошибке действия (409): result не сбрасываем.
-  // При 403 списка result = null, items пусты — таблицы нет.
-  const showTable = items.length > 0;
-  const showPagination =
-    showTable || (!hasError && result !== null && total > 0);
-
-  const reloadList = () => {
-    setListVersion((current) => current + 1);
-  };
+  const reloadList = query.reload;
 
   const resetFeedback = () => {
     setActionMessages([]);
@@ -120,29 +76,29 @@ export const useAdminsList = () => {
 
   const onSearchChange = (value: string) => {
     setSearchInput(value);
-    setPage(1);
+    query.resetPage();
     resetFeedback();
   };
 
   const onRoleFilterChange = (value: RoleFilter) => {
     setRoleFilter(value);
-    setPage(1);
+    query.resetPage();
     resetFeedback();
   };
 
   const onActivityFilterChange = (value: ActivityFilter) => {
     setActivityFilter(value);
-    setPage(1);
+    query.resetPage();
     resetFeedback();
   };
 
   const goToPreviousPage = () => {
-    setPage((current) => Math.max(1, current - 1));
+    query.goToPreviousPage();
     resetFeedback();
   };
 
   const goToNextPage = () => {
-    setPage((current) => current + 1);
+    query.goToNextPage();
     resetFeedback();
   };
 
@@ -246,14 +202,12 @@ export const useAdminsList = () => {
     onActivityFilterChange,
     messages,
     notice,
-    showEmpty,
-    showTable,
-    items,
+    ...presentation,
+    items: query.items,
     actionPending,
-    loading,
-    showPagination,
-    currentPage,
-    totalPages,
+    loading: query.loading,
+    currentPage: query.currentPage,
+    totalPages: query.totalPages,
     goToPreviousPage,
     goToNextPage,
     createOpen,

@@ -1,96 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
 import {
   SEARCH_DEBOUNCE_MS,
   useDebouncedValue,
 } from '../../../shared/hooks/use-debounced-value.ts';
+import {
+  listPresentation,
+  useListQuery,
+} from '../../../shared/hooks/use-list-query.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
-import type { ListTagsParams, PaginatedTags, Tag } from '../tags-store.ts';
-
-type ListState = {
-  key: string;
-  result: PaginatedTags | null;
-  messages: readonly string[];
-};
+import type { Tag } from '../tags-store.ts';
 
 export const useTagsList = () => {
   const { tags } = useRootStore();
   const [searchInput, setSearchInput] = useState('');
-  const [page, setPage] = useState(1);
-  const [listVersion, setListVersion] = useState(0);
-  const [listState, setListState] = useState<ListState | null>(null);
   const [actionMessages, setActionMessages] = useState<
     readonly string[] | null
   >(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Tag | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
   const search = useDebouncedValue(searchInput.trim(), SEARCH_DEBOUNCE_MS);
-  const requestKey = JSON.stringify([page, search, listVersion]);
+  const query = useListQuery({
+    params: { search },
+    fetchPage: ({ search: text }, page) => tags.list({ page, search: text }),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    const params: ListTagsParams = { page, search };
-
-    void tags
-      .list(params)
-      .then((result) => {
-        if (!cancelled) {
-          setListState({ key: requestKey, result, messages: [] });
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setListState({
-            key: requestKey,
-            result: null,
-            messages: messagesFromError(error),
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [tags, search, page, listVersion, requestKey]);
-
-  const loading = listState?.key !== requestKey || refreshing;
-  const listMessages = listState?.key === requestKey ? listState.messages : [];
-  const messages = actionMessages ?? listMessages;
-  const hasError = messages.length > 0;
-  const result = listState?.result ?? null;
-  const items = result?.items ?? [];
-  const total = result?.total ?? 0;
-  const limit = result?.limit ?? 20;
-  const currentPage = result?.page ?? page;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const showEmpty =
-    !loading && !hasError && result !== null && items.length === 0;
-  const showTable = items.length > 0;
-  const showPagination =
-    showTable || (!hasError && result !== null && total > 0);
+  const messages = actionMessages ?? query.listMessages;
+  const presentation = listPresentation({
+    result: query.result,
+    loading: query.loading,
+    hasError: messages.length > 0,
+  });
 
   const reloadList = () => {
     setActionMessages(null);
-    setListVersion((current) => current + 1);
+    query.reload();
   };
 
   const onSearchChange = (value: string) => {
     setSearchInput(value);
-    setPage(1);
+    query.resetPage();
     setActionMessages(null);
   };
 
   const goToPreviousPage = () => {
-    setPage((current) => Math.max(1, current - 1));
+    query.goToPreviousPage();
     setActionMessages(null);
   };
 
   const goToNextPage = () => {
-    setPage((current) => current + 1);
+    query.goToNextPage();
     setActionMessages(null);
   };
 
@@ -140,18 +102,9 @@ export const useTagsList = () => {
       setActionMessages(messagesFromError(error));
       if (error instanceof ApiError && error.status === 404) {
         setDeleteTarget(null);
-        setRefreshing(true);
-        try {
-          const pageResult = await tags.list({ page, search });
-          setListState({
-            key: requestKey,
-            result: pageResult,
-            messages: [],
-          });
-        } catch (listError) {
-          setActionMessages(messagesFromError(listError));
-        } finally {
-          setRefreshing(false);
+        const refreshMessages = await query.refreshCurrentPage();
+        if (refreshMessages !== null) {
+          setActionMessages(refreshMessages);
         }
       }
     } finally {
@@ -163,14 +116,12 @@ export const useTagsList = () => {
     search: searchInput,
     onSearchChange,
     messages,
-    showEmpty,
-    showTable,
-    items,
+    ...presentation,
+    items: query.items,
     actionPending,
-    loading,
-    showPagination,
-    currentPage,
-    totalPages,
+    loading: query.loading,
+    currentPage: query.currentPage,
+    totalPages: query.totalPages,
     goToPreviousPage,
     goToNextPage,
     formOpen,

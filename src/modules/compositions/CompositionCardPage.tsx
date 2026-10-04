@@ -91,26 +91,44 @@ export const CompositionCardPage = observer(() => {
           />
         }
         audio={
-          <>
-            <AudioUploadBlock
-              compositionId={full.id}
-              originalAudioUrl={full.originalAudioUrl}
-              originalAudioDurationSec={full.originalAudioDurationSec}
-              onUploaded={handleAudioUploaded}
-            />
-            <WaveformPointsBlock
-              compositionId={full.id}
-              originalAudioUrl={full.originalAudioUrl}
-              originalAudioDurationSec={full.originalAudioDurationSec}
-              audioVersion={audioVersion}
-              onPointsCreated={handlePointsCreated}
-            />
-            <ClipsListBlock
-              compositionId={full.id}
-              initialClips={full.clips}
-              reloadToken={clipsReloadToken}
-            />
-          </>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+              gap: 4,
+              alignItems: 'start',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                minWidth: 0,
+              }}
+            >
+              <AudioUploadBlock
+                compositionId={full.id}
+                originalAudioUrl={full.originalAudioUrl}
+                originalAudioDurationSec={full.originalAudioDurationSec}
+                onUploaded={handleAudioUploaded}
+              />
+              <WaveformPointsBlock
+                compositionId={full.id}
+                originalAudioUrl={full.originalAudioUrl}
+                originalAudioDurationSec={full.originalAudioDurationSec}
+                audioVersion={audioVersion}
+                onPointsCreated={handlePointsCreated}
+              />
+            </Box>
+            <Box sx={{ minWidth: 0, overflowX: 'auto' }}>
+              <ClipsListBlock
+                compositionId={full.id}
+                initialClips={full.clips}
+                reloadToken={clipsReloadToken}
+              />
+            </Box>
+          </Box>
         }
         images={
           <ImagesBlock compositionId={full.id} initialImages={full.images} />

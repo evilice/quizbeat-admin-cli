@@ -214,7 +214,7 @@ export function WaveformPointsBlock({
           ? ''
           : String(originalAudioDurationSec)
       }
-      sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 720 }}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
     >
       <Typography variant="h6" component="h2">
         Разметка отрезков

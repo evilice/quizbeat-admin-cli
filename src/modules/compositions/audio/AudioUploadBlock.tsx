@@ -62,7 +62,7 @@ export function AudioUploadBlock({
           ? ''
           : String(originalAudioDurationSec)
       }
-      sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 720 }}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
     >
       <Typography variant="h6" component="h2">
         Исходный трек

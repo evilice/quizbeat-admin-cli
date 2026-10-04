@@ -57,79 +57,92 @@ export const CompositionEditForm = ({
       onSubmit={(event) => {
         void handleSubmit(event);
       }}
-      sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 480 }}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
     >
-      <TextField
-        label="Название"
-        value={title}
-        onChange={(event) => {
-          setTitle(event.target.value);
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+          gap: 2,
+          alignItems: 'start',
         }}
-        autoComplete="off"
-        fullWidth
-      />
-      <TextField
-        label="Автор"
-        value={author}
-        onChange={(event) => {
-          setAuthor(event.target.value);
-        }}
-        autoComplete="off"
-        fullWidth
-      />
-      <FormControl fullWidth>
-        <InputLabel id="composition-card-status-label">Статус</InputLabel>
-        <Select<CompositionStatus>
-          labelId="composition-card-status-label"
-          label="Статус"
-          value={status}
-          onChange={(event) => {
-            setStatus(event.target.value);
-          }}
-        >
-          <MenuItem value="DRAFT">{STATUS_LABELS.DRAFT}</MenuItem>
-          <MenuItem value="PUBLISHED">{STATUS_LABELS.PUBLISHED}</MenuItem>
-        </Select>
-      </FormControl>
-      <FormControl fullWidth>
-        <InputLabel id="composition-card-tags-label">Теги</InputLabel>
-        <Select
-          labelId="composition-card-tags-label"
-          label="Теги"
-          multiple
-          value={selectedTagIds}
-          input={<OutlinedInput label="Теги" />}
-          onChange={(event) => {
-            const value = event.target.value;
-            setSelectedTagIds(
-              typeof value === 'string' ? value.split(',') : value,
-            );
-            setTagsTouched(true);
-          }}
-          renderValue={(selected) => (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {selected.map((tagId) => {
-                const tag =
-                  tagOptions.find((item) => item.id === tagId) ??
-                  composition.tags.find((item) => item.id === tagId);
-                return (
-                  <Chip
-                    key={tagId}
-                    size="small"
-                    label={tag ? tagDisplayName(tag) : tagId}
-                  />
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Название"
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value);
+            }}
+            autoComplete="off"
+            fullWidth
+          />
+          <TextField
+            label="Автор"
+            value={author}
+            onChange={(event) => {
+              setAuthor(event.target.value);
+            }}
+            autoComplete="off"
+            fullWidth
+          />
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel id="composition-card-status-label">Статус</InputLabel>
+            <Select<CompositionStatus>
+              labelId="composition-card-status-label"
+              label="Статус"
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+              }}
+            >
+              <MenuItem value="DRAFT">{STATUS_LABELS.DRAFT}</MenuItem>
+              <MenuItem value="PUBLISHED">{STATUS_LABELS.PUBLISHED}</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel id="composition-card-tags-label">Теги</InputLabel>
+            <Select
+              labelId="composition-card-tags-label"
+              label="Теги"
+              multiple
+              value={selectedTagIds}
+              input={<OutlinedInput label="Теги" />}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSelectedTagIds(
+                  typeof value === 'string' ? value.split(',') : value,
                 );
-              })}
-            </Box>
-          )}
-        >
-          {tagOptions.map((tag) => (
-            <MenuItem key={tag.id} value={tag.id}>
-              {tagDisplayName(tag)}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+                setTagsTouched(true);
+              }}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((tagId) => {
+                    const tag =
+                      tagOptions.find((item) => item.id === tagId) ??
+                      composition.tags.find((item) => item.id === tagId);
+                    return (
+                      <Chip
+                        key={tagId}
+                        size="small"
+                        label={tag ? tagDisplayName(tag) : tagId}
+                      />
+                    );
+                  })}
+                </Box>
+              )}
+            >
+              {tagOptions.map((tag) => (
+                <MenuItem key={tag.id} value={tag.id}>
+                  {tagDisplayName(tag)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
       <ErrorMessages messages={messages} />
       <Box sx={{ display: 'flex', gap: 2 }}>
         <Button type="submit" variant="contained" disabled={saving}>

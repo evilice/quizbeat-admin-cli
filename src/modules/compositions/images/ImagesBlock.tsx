@@ -8,10 +8,10 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import {
+  rectSortingStrategy,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -35,6 +35,10 @@ import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { MAX_IMAGE_FILES, type CompositionImage } from './images-store.ts';
 import { useAttemptThrottle } from '../../../shared/hooks/use-attempt-throttle.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
+import {
+  ActionIconButton,
+  DELETE_ICON_PATH,
+} from '../../../shared/ui/ActionIconButton.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import { imagesInOrder, nextImageIds } from './image-order.ts';
 import { visuallyHiddenInputSx } from '../../../shared/ui/visually-hidden-input.ts';
@@ -176,7 +180,7 @@ export function ImagesBlock({
   return (
     <Box
       data-testid="images-block"
-      sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 720 }}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
     >
       <Typography variant="h6" component="h2">
         Изображения
@@ -228,9 +232,15 @@ export function ImagesBlock({
         >
           <SortableContext
             items={images.map((image) => image.id)}
-            strategy={verticalListSortingStrategy}
+            strategy={rectSortingStrategy}
           >
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                gap: 1.5,
+              }}
+            >
               {images.map((image, index) => (
                 <SortableImage
                   key={image.id}
@@ -320,16 +330,8 @@ function SortableImage({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      sx={{ display: 'flex', gap: 2, alignItems: 'center' }}
+      sx={{ position: 'relative' }}
     >
-      <Box
-        component="img"
-        src={image.fileUrl}
-        alt={`Изображение ${String(image.order + 1)}`}
-        data-testid={`image-preview-${image.id}`}
-        onError={onPreviewError}
-        sx={{ width: 96, height: 96, objectFit: 'cover' }}
-      />
       <Box
         component="button"
         type="button"
@@ -345,18 +347,49 @@ function SortableImage({
         }
         aria-label={`Переместить изображение ${image.id}`}
         disabled={disabled}
+        sx={{
+          display: 'block',
+          width: '100%',
+          p: 0,
+          border: 0,
+          borderRadius: 1,
+          overflow: 'hidden',
+          bgcolor: 'transparent',
+          lineHeight: 0,
+          cursor: disabled ? 'default' : 'grab',
+        }}
       >
-        Переместить
+        <Box
+          component="img"
+          src={image.fileUrl}
+          alt={`Изображение ${String(image.order + 1)}`}
+          data-testid={`image-preview-${image.id}`}
+          onError={onPreviewError}
+          sx={{
+            display: 'block',
+            width: '100%',
+            aspectRatio: '1',
+            objectFit: 'cover',
+          }}
+        />
       </Box>
-      <Button
-        size="small"
-        color="warning"
-        disabled={disabled}
-        aria-label={`Удалить изображение ${image.id}`}
-        onClick={onDelete}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 4,
+          right: 4,
+          borderRadius: '50%',
+          bgcolor: 'rgba(255, 255, 255, 0.92)',
+          lineHeight: 0,
+        }}
       >
-        Удалить
-      </Button>
+        <ActionIconButton
+          label={`Удалить изображение ${image.id}`}
+          path={DELETE_ICON_PATH}
+          disabled={disabled}
+          onClick={onDelete}
+        />
+      </Box>
     </Box>
   );
 }

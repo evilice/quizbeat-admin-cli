@@ -1,73 +1,33 @@
-import { Box, Button, TextField } from '@mui/material';
 import { observer } from 'mobx-react-lite';
-import { useState, type SubmitEvent } from 'react';
-import { ApiError } from '../../shared/api/api-error.ts';
-import { normalizeEmail } from './normalize-email.ts';
-import { useRootStore } from '../../shared/store/root-store-context.tsx';
-import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
+import { LoginForm } from './login/LoginForm.tsx';
+import { useLogin } from './login/use-login.ts';
 
-export const LoginPage = observer(function LoginPage({
-  restoreMessages = null,
-}: {
+type LoginPageProps = {
   restoreMessages?: readonly string[] | null;
-}) {
-  const { session } = useRootStore();
-  const [email, setEmail] = useState(session.email ?? '');
-  const [password, setPassword] = useState('');
-  const [messages, setMessages] = useState<readonly string[]>(
-    restoreMessages ?? [],
-  );
-  const [submitting, setSubmitting] = useState(false);
+};
 
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalized = normalizeEmail(email);
-    if (normalized === undefined) {
-      return;
-    }
+export const LoginPage = observer(
+  ({ restoreMessages = null }: LoginPageProps) => {
+    const {
+      email,
+      setEmail,
+      password,
+      setPassword,
+      messages,
+      submitting,
+      handleSubmit,
+    } = useLogin(restoreMessages);
 
-    setSubmitting(true);
-    setMessages([]);
-    try {
-      await session.login(normalized, password);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setMessages(error.messages);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <Box
-      component="form"
-      onSubmit={(event) => {
-        void handleSubmit(event);
-      }}
-      sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 360 }}
-    >
-      <TextField
-        label="Email"
-        value={email}
-        onChange={(event) => {
-          setEmail(event.target.value);
-        }}
-        autoComplete="username"
+    return (
+      <LoginForm
+        email={email}
+        onEmailChange={setEmail}
+        password={password}
+        onPasswordChange={setPassword}
+        messages={messages}
+        submitting={submitting}
+        onSubmit={handleSubmit}
       />
-      <TextField
-        label="Пароль"
-        type="password"
-        value={password}
-        onChange={(event) => {
-          setPassword(event.target.value);
-        }}
-        autoComplete="current-password"
-      />
-      <ErrorMessages messages={messages} />
-      <Button type="submit" variant="contained" disabled={submitting}>
-        Войти
-      </Button>
-    </Box>
-  );
-});
+    );
+  },
+);

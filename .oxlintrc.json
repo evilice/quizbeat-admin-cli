@@ -47,6 +47,9 @@
         "src/modules/tags/{list,form}/**",
         "src/modules/tags/TagsPage.tsx",
         "src/modules/tags/tags-display.ts",
+        "src/modules/session/{login,change-password}/**",
+        "src/modules/session/LoginPage.tsx",
+        "src/modules/session/ChangePasswordPage.tsx",
         "src/shared/hooks/**",
         "src/shared/ui/ListPagination.tsx"
       ],

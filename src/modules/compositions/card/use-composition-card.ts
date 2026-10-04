@@ -10,6 +10,8 @@ export type CompositionLocationState = {
   author?: string;
 };
 
+export type CompositionCardTab = 'general' | 'audio' | 'images' | 'notes';
+
 const mergeCompositionIntoFull = (
   current: CompositionFull,
   updated: Composition,
@@ -41,6 +43,7 @@ export const useCompositionCard = () => {
   const [loadMessages, setLoadMessages] = useState<readonly string[]>([]);
   const [clipsReloadToken, setClipsReloadToken] = useState(0);
   const [audioVersion, setAudioVersion] = useState(0);
+  const [tab, setTab] = useState<CompositionCardTab>('general');
   const [trackedId, setTrackedId] = useState(id);
   const missingId = id === undefined || id === '';
 
@@ -51,6 +54,7 @@ export const useCompositionCard = () => {
     setNotFound(false);
     setLoadMessages([]);
     setClipsReloadToken(0);
+    setTab('general');
   }
 
   useEffect(() => {
@@ -128,6 +132,8 @@ export const useCompositionCard = () => {
     tagMessages,
     clipsReloadToken,
     audioVersion,
+    tab,
+    setTab,
     applySaved,
     handleAudioUploaded,
     handlePointsCreated,

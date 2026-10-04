@@ -8,7 +8,6 @@ import {
   OutlinedInput,
   Select,
   TextField,
-  Typography,
 } from '@mui/material';
 import { Link } from 'react-router';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
@@ -60,10 +59,6 @@ export const CompositionEditForm = ({
       }}
       sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 480 }}
     >
-      <Typography variant="h5" component="h1">
-        {title}
-        {author !== '' ? ` — ${author}` : ''}
-      </Typography>
       <TextField
         label="Название"
         value={title}

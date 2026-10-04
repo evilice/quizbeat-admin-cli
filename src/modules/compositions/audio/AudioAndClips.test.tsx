@@ -72,7 +72,7 @@ describe('загрузка исходного трека', () => {
       audioUrl: { url: 'https://example.com/fresh.mp3' },
       clips: [],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByText('Трек не загружен')).toBeTruthy();
@@ -113,7 +113,7 @@ describe('загрузка исходного трека', () => {
       audioUrl: { url: 'https://example.com/fresh.mp3' },
       clips: [],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByLabelText('Файл трека')).toBeTruthy();
@@ -158,7 +158,7 @@ describe('загрузка исходного трека', () => {
         audioStatus: item.status,
         audioMessage: item.message,
       });
-      renderCard();
+      await renderCard();
       await waitFor(() => {
         expect(screen.getByLabelText('Файл трека')).toBeTruthy();
       });
@@ -183,7 +183,7 @@ describe('загрузка исходного трека', () => {
       audioStatus: 404,
       audioMessage: 'Not Found',
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByLabelText('Файл трека')).toBeTruthy();
@@ -211,7 +211,7 @@ describe('загрузка исходного трека', () => {
 
   it('originalAudioUrl: null — трек не загружен, без GET .../audio и без ухода на логин', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull() });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByText('Трек не загружен')).toBeTruthy();
@@ -244,7 +244,7 @@ describe('загрузка исходного трека', () => {
       audioUrl: { url: fresh },
       clips: [clip],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -291,7 +291,7 @@ describe('повторная загрузка трека', () => {
       audioUrl: { url: fresh },
       clips: [],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(audioGets(fetchMock)).toHaveLength(1);
@@ -318,7 +318,7 @@ describe('волна и точки', () => {
       }),
       clipsAfterCreate: [sampleClip({ status: 'PENDING' })],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByLabelText('Старт, с')).toBeTruthy();
@@ -408,7 +408,7 @@ describe('волна и точки', () => {
       clipsAfterCreate: [createdOnly],
       clips: [listedExisting, listedCreated],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -445,7 +445,7 @@ describe('волна и точки', () => {
         originalAudioDurationSec: 10,
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByLabelText('Старт, с')).toBeTruthy();
@@ -470,7 +470,7 @@ describe('волна и точки', () => {
 
   it('без длительности точки отправить нельзя и /full не повторяется', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull() });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -494,7 +494,7 @@ describe('волна и точки', () => {
       }),
       audioUrl: { url: fresh },
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId('audio-waveform')).toBeTruthy();
@@ -556,7 +556,7 @@ describe('волна и точки', () => {
       return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId('audio-waveform')).toBeTruthy();
@@ -592,7 +592,7 @@ describe('волна и точки', () => {
         originalAudioDurationSec: 30,
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -1070,7 +1070,7 @@ async function emitWaveError() {
   });
 }
 
-function renderCard() {
+async function renderCard() {
   const store = new RootStore(createMemoryStorage());
   store.session.setPair(
     makeAccessToken({ sub: 'viewer-1', role: 'ADMIN', type: 'staff' }),
@@ -1080,11 +1080,16 @@ function renderCard() {
   const router = createMemoryRouter(routes, {
     initialEntries: [`/compositions/${COMPOSITION_ID}`],
   });
-  return render(
+  const view = render(
     <AppProviders store={store}>
       <RouterProvider router={router} />
     </AppProviders>,
   );
+  await waitFor(() => {
+    expect(screen.getByRole('tab', { name: 'Аудио' })).toBeTruthy();
+  });
+  fireEvent.click(screen.getByRole('tab', { name: 'Аудио' }));
+  return view;
 }
 
 function renderClips(clips: AudioClip[], fetchMock: ReturnType<typeof vi.fn>) {

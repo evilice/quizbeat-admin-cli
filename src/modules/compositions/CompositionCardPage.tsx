@@ -5,6 +5,7 @@ import { ErrorMessages } from '../../shared/ui/ErrorMessages.tsx';
 import { AudioUploadBlock } from './audio/AudioUploadBlock.tsx';
 import { ClipsListBlock } from './audio/ClipsListBlock.tsx';
 import { WaveformPointsBlock } from './audio/WaveformPointsBlock.tsx';
+import { CompositionCardTabs } from './card/CompositionCardTabs.tsx';
 import { useCompositionCard } from './card/use-composition-card.ts';
 import { COMPOSITION_NOT_FOUND_MESSAGE } from './composition-display.ts';
 import { CompositionEditForm } from './edit/CompositionEditForm.tsx';
@@ -23,6 +24,8 @@ export const CompositionCardPage = observer(() => {
     tagMessages,
     clipsReloadToken,
     audioVersion,
+    tab,
+    setTab,
     applySaved,
     handleAudioUploaded,
     handlePointsCreated,
@@ -67,34 +70,53 @@ export const CompositionCardPage = observer(() => {
     return null;
   }
 
+  const heading = [headerTitle, headerAuthor].filter(Boolean).join(' — ');
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {heading !== '' ? (
+        <Typography variant="h5" component="h1">
+          {heading}
+        </Typography>
+      ) : null}
       <ErrorMessages messages={tagMessages} />
-      <CompositionEditForm
-        composition={full}
-        tagOptions={tagOptions}
-        onSaved={applySaved}
+      <CompositionCardTabs
+        value={tab}
+        onChange={setTab}
+        general={
+          <CompositionEditForm
+            composition={full}
+            tagOptions={tagOptions}
+            onSaved={applySaved}
+          />
+        }
+        audio={
+          <>
+            <AudioUploadBlock
+              compositionId={full.id}
+              originalAudioUrl={full.originalAudioUrl}
+              originalAudioDurationSec={full.originalAudioDurationSec}
+              onUploaded={handleAudioUploaded}
+            />
+            <WaveformPointsBlock
+              compositionId={full.id}
+              originalAudioUrl={full.originalAudioUrl}
+              originalAudioDurationSec={full.originalAudioDurationSec}
+              audioVersion={audioVersion}
+              onPointsCreated={handlePointsCreated}
+            />
+            <ClipsListBlock
+              compositionId={full.id}
+              initialClips={full.clips}
+              reloadToken={clipsReloadToken}
+            />
+          </>
+        }
+        images={
+          <ImagesBlock compositionId={full.id} initialImages={full.images} />
+        }
+        notes={<NotesBlock compositionId={full.id} initialNotes={full.notes} />}
       />
-      <AudioUploadBlock
-        compositionId={full.id}
-        originalAudioUrl={full.originalAudioUrl}
-        originalAudioDurationSec={full.originalAudioDurationSec}
-        onUploaded={handleAudioUploaded}
-      />
-      <WaveformPointsBlock
-        compositionId={full.id}
-        originalAudioUrl={full.originalAudioUrl}
-        originalAudioDurationSec={full.originalAudioDurationSec}
-        audioVersion={audioVersion}
-        onPointsCreated={handlePointsCreated}
-      />
-      <ClipsListBlock
-        compositionId={full.id}
-        initialClips={full.clips}
-        reloadToken={clipsReloadToken}
-      />
-      <ImagesBlock compositionId={full.id} initialImages={full.images} />
-      <NotesBlock compositionId={full.id} initialNotes={full.notes} />
     </Box>
   );
 });

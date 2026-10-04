@@ -59,7 +59,7 @@ describe('список заметок на карточке', () => {
         ],
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`note-text-ru-${NOTE_A}`).textContent).toBe(
@@ -84,7 +84,7 @@ describe('список заметок на карточке', () => {
 
   it('пустой массив из full рисует пустое состояние и не читает notes', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull({ notes: [] }) });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByText('Заметок нет')).toBeTruthy();
@@ -97,7 +97,7 @@ describe('список заметок на карточке', () => {
 describe('создание и правка заметки', () => {
   it('пустой текст en при заполненном ru не вызывает fetch', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull() });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Создать' })).toBeTruthy();
@@ -117,7 +117,7 @@ describe('создание и правка заметки', () => {
 
   it('пустой текст ru при заполненном en не вызывает fetch', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull() });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Создать' })).toBeTruthy();
@@ -149,7 +149,7 @@ describe('создание и правка заметки', () => {
       createBody: created,
       listBody: [created],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByText('Заметок нет')).toBeTruthy();
@@ -211,7 +211,7 @@ describe('создание и правка заметки', () => {
       full: sampleFull({ notes: [initial] }),
       updateBody: updated,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`note-text-ru-${NOTE_A}`).textContent).toBe(
@@ -281,7 +281,7 @@ describe('создание и правка заметки', () => {
       full: sampleFull({ notes: [first, second] }),
       updateBody: updated,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(noteIdsOnScreen()).toEqual([NOTE_A, NOTE_B]);
@@ -338,7 +338,7 @@ describe('создание и правка заметки', () => {
       createBody: created,
       listBody: listed,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`note-text-ru-${NOTE_A}`).textContent).toBe(
@@ -374,7 +374,7 @@ describe('создание и правка заметки', () => {
       createStatus: 400,
       createMessage: INCOMPLETE,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Создать' })).toBeTruthy();
@@ -412,7 +412,7 @@ describe('порядок заметок', () => {
       full: sampleFull({ notes: initial }),
       orderBody: reordered,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(noteIdsOnScreen()).toEqual([NOTE_A, NOTE_B, NOTE_C]);
@@ -465,7 +465,7 @@ describe('порядок заметок', () => {
         notes: [sampleNote({ id: NOTE_A })],
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -490,7 +490,7 @@ describe('порядок заметок', () => {
       orderStatus: 400,
       orderMessage: MISMATCH,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(noteIdsOnScreen()).toEqual([NOTE_A, NOTE_B]);
@@ -517,7 +517,7 @@ describe('удаление заметки', () => {
         ],
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -574,7 +574,7 @@ describe('удаление заметки', () => {
         }),
       ],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -603,7 +603,7 @@ describe('удаление заметки', () => {
     const fetchMock = stubCardFetch({
       full: sampleFull({ notes: [sampleNote({ id: NOTE_A })] }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -632,7 +632,7 @@ describe('удаление заметки', () => {
       deleteMessage: 'Not Found',
       listBody: [sampleNote({ id: NOTE_A })],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -669,7 +669,7 @@ function noteIdsOnScreen(): string[] {
   );
 }
 
-function renderCard() {
+async function renderCard() {
   const store = new RootStore(createMemoryStorage());
   store.session.setPair(
     makeAccessToken({ sub: 'viewer-1', role: 'ADMIN', type: 'staff' }),
@@ -679,11 +679,16 @@ function renderCard() {
   const router = createMemoryRouter(routes, {
     initialEntries: [`/compositions/${COMPOSITION_ID}`],
   });
-  return render(
+  const view = render(
     <AppProviders store={store}>
       <RouterProvider router={router} />
     </AppProviders>,
   );
+  await waitFor(() => {
+    expect(screen.getByRole('tab', { name: 'Заметки' })).toBeTruthy();
+  });
+  fireEvent.click(screen.getByRole('tab', { name: 'Заметки' }));
+  return view;
 }
 
 function stubCardFetch({

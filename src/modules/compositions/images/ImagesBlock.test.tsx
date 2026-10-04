@@ -57,7 +57,7 @@ describe('изображения на карточке', () => {
         ],
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -86,7 +86,7 @@ describe('изображения на карточке', () => {
 
   it('пустой список из full не шлёт imageIds и показывает пустое состояние', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull({ images: [] }) });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByText('Изображений нет')).toBeTruthy();
@@ -106,7 +106,7 @@ describe('изображения на карточке', () => {
       uploadBody: uploaded,
       listBody: uploaded,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByLabelText('Файлы изображений')).toBeTruthy();
@@ -169,7 +169,7 @@ describe('изображения на карточке', () => {
       uploadBody: uploaded,
       listBody: listed,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
@@ -212,7 +212,7 @@ describe('изображения на карточке', () => {
 
   it('11 файлов в сеть не уходят', async () => {
     const fetchMock = stubCardFetch({ full: sampleFull() });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByLabelText('Файлы изображений')).toBeTruthy();
@@ -251,7 +251,7 @@ describe('изображения на карточке', () => {
         uploadStatus: item.status,
         uploadMessage: item.message,
       });
-      renderCard();
+      await renderCard();
       await waitFor(() => {
         expect(screen.getByLabelText('Файлы изображений')).toBeTruthy();
       });
@@ -287,7 +287,7 @@ describe('изображения на карточке', () => {
       full: sampleFull({ images: initial }),
       orderBody: reordered,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
@@ -337,7 +337,7 @@ describe('изображения на карточке', () => {
       orderStatus: 400,
       orderMessage: MISMATCH,
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
@@ -357,7 +357,7 @@ describe('изображения на карточке', () => {
         images: [sampleImage({ id: IMAGE_A, fileUrl: FILE_URL_A })],
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
@@ -401,7 +401,7 @@ describe('изображения на карточке', () => {
         sampleImage({ id: IMAGE_B, fileUrl: FILE_URL_A_FRESH, order: 0 }),
       ],
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
@@ -430,7 +430,7 @@ describe('изображения на карточке', () => {
         images: [sampleImage({ id: IMAGE_A, fileUrl: FILE_URL_A })],
       }),
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -460,7 +460,7 @@ describe('изображения на карточке', () => {
       deleteStatus: 404,
       deleteMessage: 'Not Found',
     });
-    renderCard();
+    await renderCard();
 
     await waitFor(() => {
       expect(
@@ -530,7 +530,7 @@ function imageIdsOnScreen(): string[] {
   );
 }
 
-function renderCard() {
+async function renderCard() {
   const store = new RootStore(createMemoryStorage());
   store.session.setPair(
     makeAccessToken({ sub: 'viewer-1', role: 'ADMIN', type: 'staff' }),
@@ -540,11 +540,16 @@ function renderCard() {
   const router = createMemoryRouter(routes, {
     initialEntries: [`/compositions/${COMPOSITION_ID}`],
   });
-  return render(
+  const view = render(
     <AppProviders store={store}>
       <RouterProvider router={router} />
     </AppProviders>,
   );
+  await waitFor(() => {
+    expect(screen.getByRole('tab', { name: 'Изображения' })).toBeTruthy();
+  });
+  fireEvent.click(screen.getByRole('tab', { name: 'Изображения' }));
+  return view;
 }
 
 function stubCardFetch({

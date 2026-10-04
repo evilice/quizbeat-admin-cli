@@ -320,9 +320,69 @@ describe('карточка композиции', () => {
     expect(formAfter.getAttribute('data-images-count')).toBe('1');
     expect(formAfter.getAttribute('data-notes-count')).toBe('1');
     expect(formAfter.getAttribute('data-original-audio-url')).toBe(audioUrl);
-    expect(screen.getByText('Готово')).toBeTruthy();
-    expect(screen.getByTestId('image-preview-img-1')).toBeTruthy();
-    expect(screen.getByText('Факт')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Аудио' }));
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Аудио' })).getByText(
+        'Готово',
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: 'Изображения' }));
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Изображения' })).getByTestId(
+        'image-preview-img-1',
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: 'Заметки' }));
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Заметки' })).getByText(
+        'Факт',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('разделы карточки переключаются вкладками', async () => {
+    stubCardFetch();
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Название')).toBeTruthy();
+    });
+    expect(
+      screen.getByRole('tab', { name: 'Общее', selected: true }),
+    ).toBeTruthy();
+    expect(screen.getByRole('tabpanel', { name: 'Общее' })).toBeTruthy();
+    expect(screen.queryByRole('tabpanel', { name: 'Аудио' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Аудио' }));
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Аудио' })).getByText(
+        'Трек не загружен',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('tabpanel', { name: 'Общее' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Изображения' }));
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Изображения' })).getByText(
+        'Изображений нет',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('tabpanel', { name: 'Аудио' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Заметки' }));
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Заметки' })).getByRole(
+        'heading',
+        { name: 'А знали ли Вы?' },
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('tabpanel', { name: 'Изображения' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Общее' }));
+    expect((screen.getByLabelText('Название') as HTMLInputElement).value).toBe(
+      'Song One',
+    );
   });
 
   it('со строки списка «Изменить» открывает карточку с мгновенным заголовком', async () => {

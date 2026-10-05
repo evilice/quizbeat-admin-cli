@@ -19,7 +19,9 @@ import { ClipsListBlock } from './ClipsListBlock.tsx';
 import { routes } from '../../../app/routes.tsx';
 
 const waveCreate = vi.hoisted(() => vi.fn());
-const wavePlay = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const wavePlay = vi.hoisted(() =>
+  vi.fn((_start?: number) => Promise.resolve()),
+);
 const wavePause = vi.hoisted(() => vi.fn());
 const waveTimeupdate = vi.hoisted(() => ({
   handler: undefined as ((currentTime: number) => void) | undefined,
@@ -532,7 +534,9 @@ describe('волна и точки', () => {
       screen.queryByRole('button', { name: 'Отправить точки' }),
     ).toBeNull();
     expect(
-      screen.getByRole('button', { name: 'Проиграть с точки' }).disabled,
+      screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Проиграть с точки',
+      }).disabled,
     ).toBe(true);
     expect(clipPosts(fetchMock)).toHaveLength(0);
     expect(fullGets(fetchMock)).toHaveLength(1);
@@ -557,7 +561,7 @@ describe('волна и точки', () => {
       }
     });
 
-    const playButton = screen.getByRole('button', {
+    const playButton = screen.getByRole<HTMLButtonElement>('button', {
       name: 'Проиграть с точки',
     });
     expect(playButton.disabled).toBe(false);

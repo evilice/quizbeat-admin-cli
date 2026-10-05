@@ -22,12 +22,22 @@ import {
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
 import { AudioWaveform, type AudioWaveformHandle } from './AudioWaveform.tsx';
 import { DIFFICULTY_LABELS, isPointInsideTrack } from './audio-display.ts';
-import { PLAY_ICON_PATH } from '../../../shared/ui/ActionIconButton.tsx';
+import {
+  ActionIconButton,
+  PLAY_ICON_PATH,
+} from '../../../shared/ui/ActionIconButton.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 
 const DIFFICULTIES: readonly AudioClipDifficulty[] = ['EASY', 'MEDIUM', 'HARD'];
 
+const TRIPLE_POINT_DURATIONS: readonly AudioClipDurationSec[] = [1, 3, 8];
+
 const PAUSE_ICON_PATH = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
+
+const ADD_POINT_ICON_PATH = 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z';
+
+const ADD_THREE_POINTS_ICON_PATH =
+  'M4 6H2v14c0 1.1.9 2 2 2h14v-2H4zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z';
 
 function parseStartSec(startInput: string): number | null {
   const startTimeSec = Number(startInput);
@@ -213,7 +223,7 @@ export function WaveformPointsBlock({
     setStartInput(String(start));
   }
 
-  function addPoint() {
+  function appendDrafts(durations: readonly AudioClipDurationSec[]) {
     if (originalAudioDurationSec === null) {
       return;
     }
@@ -223,23 +233,34 @@ export function WaveformPointsBlock({
       return;
     }
     if (
-      !isPointInsideTrack(startTimeSec, durationSec, originalAudioDurationSec)
+      durations.some(
+        (item) =>
+          !isPointInsideTrack(startTimeSec, item, originalAudioDurationSec),
+      )
     ) {
       setMessages(['Точка выходит за длительность трека']);
       return;
     }
     setMessages([]);
-    const key = `draft-${String(draftKey.current)}`;
-    draftKey.current += 1;
-    setDrafts((current) => [
-      ...current,
-      {
+    const next = durations.map((item) => {
+      const key = `draft-${String(draftKey.current)}`;
+      draftKey.current += 1;
+      return {
         key,
         startTimeSec,
-        durationSec,
+        durationSec: item,
         difficulty,
-      },
-    ]);
+      };
+    });
+    setDrafts((current) => [...current, ...next]);
+  }
+
+  function addPoint() {
+    appendDrafts([durationSec]);
+  }
+
+  function addThreePoints() {
+    appendDrafts(TRIPLE_POINT_DURATIONS);
   }
 
   async function submitPoints() {
@@ -394,7 +415,14 @@ export function WaveformPointsBlock({
           ) : (
             <Typography>Ссылка на волну обновляется</Typography>
           )}
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              alignItems: 'center',
+            }}
+          >
             <TextField
               label="Старт, с"
               type="number"
@@ -440,9 +468,18 @@ export function WaveformPointsBlock({
                 ))}
               </Select>
             </FormControl>
-            <Button variant="outlined" onClick={addPoint}>
-              Добавить точку
-            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <ActionIconButton
+                label="Добавить точку"
+                path={ADD_POINT_ICON_PATH}
+                onClick={addPoint}
+              />
+              <ActionIconButton
+                label="Добавить 3 точки"
+                path={ADD_THREE_POINTS_ICON_PATH}
+                onClick={addThreePoints}
+              />
+            </Box>
           </Box>
           {drafts.length === 0 ? (
             <Typography variant="body2">Точек в черновике нет</Typography>

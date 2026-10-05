@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('экран списка сотрудников', () => {
-  it('первая загрузка без isActive, строка с isActive false видна', async () => {
+  it('первая загрузка с isActive=true, фильтр стоит на «только активные»', async () => {
     const fetchMock = stubFetch(() =>
       jsonResponse(200, {
         items: [
@@ -32,14 +32,8 @@ describe('экран списка сотрудников', () => {
             role: 'ADMIN',
             isActive: true,
           }),
-          sampleAdmin({
-            id: 'a-2',
-            email: 'gone@example.com',
-            role: 'SUPER_ADMIN',
-            isActive: false,
-          }),
         ],
-        total: 2,
+        total: 1,
         page: 1,
         limit: 20,
       }),
@@ -47,15 +41,15 @@ describe('экран списка сотрудников', () => {
     renderAdmins();
 
     await waitFor(() => {
-      expect(screen.getByText('gone@example.com')).toBeTruthy();
+      expect(screen.getByText('alive@example.com')).toBeTruthy();
     });
 
     const firstUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(firstUrl.pathname).toBe('/admins');
-    expect(firstUrl.searchParams.has('isActive')).toBe(false);
-    expect(screen.getByText('неактивен')).toBeTruthy();
-    expect(screen.getByText('Супер-админ')).toBeTruthy();
-    expect(screen.getByText('alive@example.com')).toBeTruthy();
+    expect(firstUrl.searchParams.get('isActive')).toBe('true');
+    expect(screen.getByLabelText('Активность').textContent).toContain(
+      'Только активные',
+    );
     expect(screen.getByText('активен')).toBeTruthy();
     expect(screen.getByText('Админ')).toBeTruthy();
   });

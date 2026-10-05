@@ -6,12 +6,24 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
 import { messagesFromError } from '../../../shared/api/api-error.ts';
 import type { CompositionNote } from './notes-store.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
+import {
+  ActionIconButton,
+  ARROW_DOWN_ICON_PATH,
+  ARROW_UP_ICON_PATH,
+  DELETE_ICON_PATH,
+  EDIT_ICON_PATH,
+} from '../../../shared/ui/ActionIconButton.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import { NoteFormDialog } from './NoteFormDialog.tsx';
 import { noteText } from './note-text.ts';
@@ -124,7 +136,7 @@ export function NotesBlock({
   return (
     <Box
       data-testid="notes-block"
-      sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 720 }}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
     >
       <Typography variant="h6" component="h2">
         А знали ли Вы?
@@ -144,71 +156,90 @@ export function NotesBlock({
       {notes.length === 0 ? (
         <Typography>Заметок нет</Typography>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {notes.map((note, index) => (
-            <Box
-              key={note.id}
-              data-note-id={note.id}
-              data-note-index={String(index)}
-              sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}
-            >
-              <Box sx={{ flex: 1 }}>
-                <Typography data-testid={`note-text-ru-${note.id}`}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Порядок</TableCell>
+              <TableCell>Текст (ru)</TableCell>
+              <TableCell>Текст (en)</TableCell>
+              <TableCell align="right">Действия</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {notes.map((note, index) => (
+              <TableRow
+                key={note.id}
+                data-note-id={note.id}
+                data-note-index={String(index)}
+              >
+                <TableCell>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      width: 'fit-content',
+                    }}
+                  >
+                    <ActionIconButton
+                      label="Выше"
+                      ariaLabel={`Выше ${note.id}`}
+                      path={ARROW_UP_ICON_PATH}
+                      disabled={busy || index === 0}
+                      onClick={() => {
+                        move(note.id, -1);
+                      }}
+                    />
+                    <ActionIconButton
+                      label="Ниже"
+                      ariaLabel={`Ниже ${note.id}`}
+                      path={ARROW_DOWN_ICON_PATH}
+                      disabled={busy || index === notes.length - 1}
+                      onClick={() => {
+                        move(note.id, 1);
+                      }}
+                    />
+                  </Box>
+                </TableCell>
+                <TableCell data-testid={`note-text-ru-${note.id}`}>
                   {noteText(note, 'ru')}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  data-testid={`note-text-en-${note.id}`}
-                >
+                </TableCell>
+                <TableCell data-testid={`note-text-en-${note.id}`}>
                   {noteText(note, 'en')}
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                disabled={busy}
-                aria-label={`Изменить заметку ${note.id}`}
-                onClick={() => {
-                  setEditTarget(note);
-                  setFormOpen(true);
-                }}
-              >
-                Изменить
-              </Button>
-              <Button
-                size="small"
-                disabled={busy || index === 0}
-                aria-label={`Выше ${note.id}`}
-                onClick={() => {
-                  move(note.id, -1);
-                }}
-              >
-                Выше
-              </Button>
-              <Button
-                size="small"
-                disabled={busy || index === notes.length - 1}
-                aria-label={`Ниже ${note.id}`}
-                onClick={() => {
-                  move(note.id, 1);
-                }}
-              >
-                Ниже
-              </Button>
-              <Button
-                size="small"
-                color="warning"
-                disabled={busy}
-                aria-label={`Удалить заметку ${note.id}`}
-                onClick={() => {
-                  setDeleteTarget(note);
-                }}
-              >
-                Удалить
-              </Button>
-            </Box>
-          ))}
-        </Box>
+                </TableCell>
+                <TableCell align="right">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      gap: 0.5,
+                    }}
+                  >
+                    <ActionIconButton
+                      label="Изменить"
+                      ariaLabel={`Изменить заметку ${note.id}`}
+                      path={EDIT_ICON_PATH}
+                      disabled={busy}
+                      onClick={() => {
+                        setEditTarget(note);
+                        setFormOpen(true);
+                      }}
+                    />
+                    <ActionIconButton
+                      label="Удалить"
+                      ariaLabel={`Удалить заметку ${note.id}`}
+                      path={DELETE_ICON_PATH}
+                      disabled={busy}
+                      onClick={() => {
+                        setDeleteTarget(note);
+                      }}
+                    />
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
       <ErrorMessages messages={messages} />
       <NoteFormDialog

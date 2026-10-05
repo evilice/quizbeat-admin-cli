@@ -10,11 +10,18 @@ export const PLAY_ICON_PATH = 'M8 5v14l11-7z';
 
 export const STOP_ICON_PATH = 'M6 6h12v12H6z';
 
+export const ARROW_UP_ICON_PATH =
+  'M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z';
+
+export const ARROW_DOWN_ICON_PATH =
+  'M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z';
+
 type ActionIconButtonProps = {
   label: string;
   path: string;
   disabled?: boolean;
   fillRule?: 'evenodd';
+  ariaLabel?: string;
   onClick: () => void;
 };
 
@@ -23,13 +30,14 @@ export const ActionIconButton = ({
   path,
   disabled = false,
   fillRule,
+  ariaLabel,
   onClick,
 }: ActionIconButtonProps) => {
   return (
     <Tooltip title={label}>
       <Box component="span" sx={{ display: 'inline-flex' }}>
         <IconButton
-          aria-label={label}
+          aria-label={ariaLabel ?? label}
           size="small"
           disabled={disabled}
           onClick={onClick}

@@ -752,6 +752,92 @@ describe('волна и точки', () => {
     fireEvent.click(removeDraftButton());
     expect(screen.getAllByText(pointText)).toHaveLength(1);
   });
+
+  it('добавляет три точки 1, 3 и 8 с от текущего старта', async () => {
+    const fetchMock = stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: AUDIO_URL,
+        originalAudioDurationSec: 30,
+      }),
+      clipsAfterCreate: [
+        sampleClip({ status: 'PENDING', durationSec: 1 }),
+        sampleClip({ status: 'PENDING', durationSec: 3 }),
+        sampleClip({ status: 'PENDING', durationSec: 8 }),
+      ],
+    });
+    await renderCard();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Добавить 3 точки' }),
+      ).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByLabelText('Старт, с'), {
+      target: { value: '2.5' },
+    });
+    fireEvent.mouseDown(screen.getByLabelText('Сложность'));
+    fireEvent.click(screen.getByRole('option', { name: 'Сложная' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить 3 точки' }));
+
+    expect(screen.getByText('2.5 с, 1 с, Сложная')).toBeTruthy();
+    expect(screen.getByText('2.5 с, 3 с, Сложная')).toBeTruthy();
+    expect(screen.getByText('2.5 с, 8 с, Сложная')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить точки' }));
+
+    await waitFor(() => {
+      expect(clipPosts(fetchMock)).toHaveLength(1);
+    });
+    const created = clipPosts(fetchMock)[0];
+    if (created === undefined) {
+      throw new Error('нет POST .../clips');
+    }
+    const rawBody = (created[1] as RequestInit).body;
+    if (typeof rawBody !== 'string') {
+      throw new Error('тело POST .../clips не строка');
+    }
+    const body = JSON.parse(rawBody) as {
+      points: {
+        startTimeSec: number;
+        durationSec: number;
+        difficulty: string;
+      }[];
+    };
+    expect(body.points).toEqual([
+      { startTimeSec: 2.5, durationSec: 1, difficulty: 'HARD' },
+      { startTimeSec: 2.5, durationSec: 3, difficulty: 'HARD' },
+      { startTimeSec: 2.5, durationSec: 8, difficulty: 'HARD' },
+    ]);
+  });
+
+  it('три точки не попадают в черновик, если хотя бы одна выходит за трек', async () => {
+    const fetchMock = stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: AUDIO_URL,
+        originalAudioDurationSec: 10,
+      }),
+    });
+    await renderCard();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Добавить 3 точки' }),
+      ).toBeTruthy();
+    });
+    const callsBefore = fetchMock.mock.calls.length;
+
+    fireEvent.change(screen.getByLabelText('Старт, с'), {
+      target: { value: '4' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить 3 точки' }));
+
+    expect(
+      screen.getByText('Точка выходит за длительность трека'),
+    ).toBeTruthy();
+    expect(screen.getByText('Точек в черновике нет')).toBeTruthy();
+    expect(fetchMock.mock.calls.length).toBe(callsBefore);
+  });
 });
 
 describe('список отрезков и опрос', () => {

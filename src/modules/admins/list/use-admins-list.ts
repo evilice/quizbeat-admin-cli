@@ -10,7 +10,7 @@ import {
   PASSWORD_RESET_NOTICE,
   SELF_ROLE_CHANGED_NOTICE,
 } from '../admin-display.ts';
-import { type Admin, type ListAdminsParams } from '../admins-store.ts';
+import type { Admin, ListAdminsParams } from '../admins-store.ts';
 import {
   SEARCH_DEBOUNCE_MS,
   useDebouncedValue,
@@ -46,7 +46,8 @@ export const useAdminsList = () => {
   const { admins, session } = useRootStore();
   const [searchInput, setSearchInput] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
-  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('active');
+  const [activityFilter, setActivityFilter] =
+    useState<ActivityFilter>('active');
   const [actionMessages, setActionMessages] = useState<readonly string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -125,6 +126,7 @@ export const useAdminsList = () => {
   };
 
   const openDeactivate = (admin: Admin) => {
+    resetFeedback();
     setDeactivateTarget(admin);
   };
 

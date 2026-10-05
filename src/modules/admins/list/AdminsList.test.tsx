@@ -381,6 +381,57 @@ describe('роль, деактивация и активация', () => {
     expect(within(row as HTMLElement).getByText('Супер-админ')).toBeTruthy();
   });
 
+  it('открытие диалога деактивации убирает прошлую ошибку действия', async () => {
+    const admin = sampleAdmin({
+      id: 'super-1',
+      email: 'super@example.com',
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    });
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.method === 'PATCH') {
+          return Promise.resolve(
+            jsonResponse(409, {
+              statusCode: 409,
+              message: LAST_SUPER_ADMIN_MESSAGE,
+              error: 'Conflict',
+              path: `/admins/${admin.id}`,
+              timestamp: '2026-09-24T00:00:00.000Z',
+            }),
+          );
+        }
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: [admin],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    renderAdmins();
+
+    await waitFor(() => {
+      expect(screen.getByText('super@example.com')).toBeTruthy();
+    });
+
+    const row = screen.getByText('super@example.com').closest('tr');
+    fireEvent.mouseDown(
+      within(row as HTMLElement).getByLabelText('Роль сотрудника'),
+    );
+    fireEvent.click(screen.getByRole('option', { name: 'Админ' }));
+    await waitFor(() => {
+      expect(screen.getByText(LAST_SUPER_ADMIN_MESSAGE)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
+
+    expect(screen.queryByText(LAST_SUPER_ADMIN_MESSAGE)).toBeNull();
+  });
+
   it('DELETE по своему id вызывает forgetRefresh, access на месте, запроса /auth/staff/refresh нет', async () => {
     const selfId = 'viewer-1';
     const admin = sampleAdmin({

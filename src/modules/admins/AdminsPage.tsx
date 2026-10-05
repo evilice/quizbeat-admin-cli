@@ -20,6 +20,7 @@ export const AdminsPage = observer(() => {
     onRoleFilterChange,
     onActivityFilterChange,
     messages,
+    deactivateMessages,
     notice,
     showEmpty,
     showTable,
@@ -76,7 +77,7 @@ export const AdminsPage = observer(() => {
       <DeactivateAdminDialog
         admin={deactivateTarget}
         pending={actionPending}
-        messages={messages}
+        messages={deactivateMessages}
         onClose={closeDeactivate}
         onConfirm={confirmDeactivate}
       />

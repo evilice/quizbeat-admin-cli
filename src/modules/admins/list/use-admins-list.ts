@@ -61,7 +61,10 @@ export const useAdminsList = () => {
     fetchPage: (filters, page) => admins.list(buildParams(filters, page)),
   });
 
-  const messages = [...query.listMessages, ...actionMessages];
+  const deactivating = deactivateTarget !== null;
+  const messages = deactivating
+    ? query.listMessages
+    : [...query.listMessages, ...actionMessages];
   const presentation = listPresentation({
     result: query.result,
     loading: query.loading,
@@ -134,6 +137,7 @@ export const useAdminsList = () => {
     if (actionPending) {
       return;
     }
+    setActionMessages([]);
     setDeactivateTarget(null);
   };
 
@@ -203,6 +207,7 @@ export const useAdminsList = () => {
     onRoleFilterChange,
     onActivityFilterChange,
     messages,
+    deactivateMessages: deactivating ? actionMessages : [],
     notice,
     ...presentation,
     items: query.items,

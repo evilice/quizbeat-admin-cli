@@ -377,8 +377,19 @@ describe('роль, деактивация и активация', () => {
         within(screen.getByRole('dialog')).getByText(LAST_SUPER_ADMIN_MESSAGE),
       ).toBeTruthy();
     });
+    expect(screen.getAllByText(LAST_SUPER_ADMIN_MESSAGE)).toHaveLength(1);
     expect(screen.getByText('активен')).toBeTruthy();
     expect(within(row as HTMLElement).getByText('Супер-админ')).toBeTruthy();
+
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Отмена',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    expect(screen.queryByText(LAST_SUPER_ADMIN_MESSAGE)).toBeNull();
   });
 
   it('открытие диалога деактивации убирает прошлую ошибку действия', async () => {

@@ -54,7 +54,10 @@ export function AudioWaveform({
       return wave.play(startSec);
     },
     pause() {
-      waveRef.current?.pause();
+      const wave = waveRef.current;
+      if (wave !== null && wave.isPlaying()) {
+        wave.pause();
+      }
     },
   }));
 

@@ -104,6 +104,16 @@ export function NotesBlock({
     }
   }
 
+  function openDelete(target: CompositionNote) {
+    setMessages([]);
+    setDeleteTarget(target);
+  }
+
+  function closeDelete() {
+    setMessages([]);
+    setDeleteTarget(null);
+  }
+
   async function confirmDelete() {
     if (deleteTarget === null) {
       return;
@@ -231,7 +241,7 @@ export function NotesBlock({
                       path={DELETE_ICON_PATH}
                       disabled={busy}
                       onClick={() => {
-                        setDeleteTarget(note);
+                        openDelete(note);
                       }}
                     />
                   </Box>
@@ -241,7 +251,7 @@ export function NotesBlock({
           </TableBody>
         </Table>
       )}
-      <ErrorMessages messages={messages} />
+      <ErrorMessages messages={deleteTarget === null ? messages : []} />
       <NoteFormDialog
         key={formOpen ? (editTarget?.id ?? 'create') : 'closed'}
         open={formOpen}
@@ -257,7 +267,7 @@ export function NotesBlock({
         open={deleteTarget !== null}
         onClose={() => {
           if (!busy) {
-            setDeleteTarget(null);
+            closeDelete();
           }
         }}
       >
@@ -272,14 +282,10 @@ export function NotesBlock({
               <Typography>{noteText(deleteTarget, 'en')}</Typography>
             </>
           ) : null}
+          <ErrorMessages messages={deleteTarget === null ? [] : messages} />
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setDeleteTarget(null);
-            }}
-            disabled={busy}
-          >
+          <Button onClick={closeDelete} disabled={busy}>
             Отмена
           </Button>
           <Button

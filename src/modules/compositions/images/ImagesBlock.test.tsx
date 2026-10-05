@@ -452,6 +452,39 @@ describe('изображения на карточке', () => {
     expect(screen.getByTestId(`image-preview-${IMAGE_A}`)).toBeTruthy();
   });
 
+  it('ошибка удаления показывается один раз, в диалоге, и сбрасывается отменой', async () => {
+    stubCardFetch({
+      full: sampleFull({
+        images: [sampleImage({ id: IMAGE_A, fileUrl: FILE_URL_A })],
+      }),
+      deleteStatus: 404,
+      deleteMessage: 'Not Found',
+    });
+    await renderCard();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: `Удалить изображение ${IMAGE_A}` }),
+      ).toBeTruthy();
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: `Удалить изображение ${IMAGE_A}` }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => {
+      expect(within(dialog).getByText('Not Found')).toBeTruthy();
+    });
+    expect(screen.getAllByText('Not Found')).toHaveLength(1);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Отмена' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    expect(screen.queryByText('Not Found')).toBeNull();
+  });
+
   it('404 удаления показывает message', async () => {
     stubCardFetch({
       full: sampleFull({

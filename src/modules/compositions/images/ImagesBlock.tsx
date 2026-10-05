@@ -132,6 +132,16 @@ export function ImagesBlock({
     }
   }
 
+  function openDelete(target: CompositionImage) {
+    setMessages([]);
+    setDeleteTarget(target);
+  }
+
+  function closeDelete() {
+    setMessages([]);
+    setDeleteTarget(null);
+  }
+
   async function confirmDelete() {
     if (deleteTarget === null) {
       return;
@@ -248,7 +258,7 @@ export function ImagesBlock({
                   index={index}
                   disabled={busy}
                   onDelete={() => {
-                    setDeleteTarget(image);
+                    openDelete(image);
                   }}
                   onPreviewError={() => {
                     handlePreviewError(image.id);
@@ -259,12 +269,12 @@ export function ImagesBlock({
           </SortableContext>
         </DndContext>
       )}
-      <ErrorMessages messages={messages} />
+      <ErrorMessages messages={deleteTarget === null ? messages : []} />
       <Dialog
         open={deleteTarget !== null}
         onClose={() => {
           if (!busy) {
-            setDeleteTarget(null);
+            closeDelete();
           }
         }}
       >
@@ -273,14 +283,10 @@ export function ImagesBlock({
           <DialogContentText>
             Изображение исчезнет безвозвратно. Восстановить его нельзя.
           </DialogContentText>
+          <ErrorMessages messages={deleteTarget === null ? [] : messages} />
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setDeleteTarget(null);
-            }}
-            disabled={busy}
-          >
+          <Button onClick={closeDelete} disabled={busy}>
             Отмена
           </Button>
           <Button

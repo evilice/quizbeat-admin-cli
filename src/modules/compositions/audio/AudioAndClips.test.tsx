@@ -1207,6 +1207,42 @@ describe('удаление и перегенерация отрезка', () => 
     vi.restoreAllMocks();
   });
 
+  it('уход с вкладки «Аудио» ставит на паузу и волну, и отрезок', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() =>
+      Promise.resolve(),
+    );
+    const mediaPause = vi.spyOn(HTMLMediaElement.prototype, 'pause');
+    stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: AUDIO_URL,
+        originalAudioDurationSec: 30,
+        clips: [sampleClip({ status: 'DONE' })],
+      }),
+    });
+    await renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('audio-waveform')).toBeTruthy();
+    });
+    await act(async () => {
+      for (const handler of waveReady.handlers) {
+        handler();
+      }
+    });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Аудио' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Проиграть с точки' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Проиграть' }));
+    expect(wavePause).not.toHaveBeenCalled();
+    mediaPause.mockClear();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Заметки' }));
+
+    expect(wavePause).toHaveBeenCalledTimes(1);
+    expect(mediaPause).toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
   it('204 убирает строку, даже если повторный список упал', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET';

@@ -118,6 +118,7 @@ export const CompositionCardPage = observer(() => {
                 originalAudioUrl={full.originalAudioUrl}
                 originalAudioDurationSec={full.originalAudioDurationSec}
                 audioVersion={audioVersion}
+                active={tab === 'audio'}
                 onPointsCreated={handlePointsCreated}
               />
             </Box>
@@ -126,6 +127,7 @@ export const CompositionCardPage = observer(() => {
                 compositionId={full.id}
                 initialClips={full.clips}
                 reloadToken={clipsReloadToken}
+                active={tab === 'audio'}
               />
             </Box>
           </Box>

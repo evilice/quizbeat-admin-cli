@@ -421,6 +421,57 @@ describe('удаление композиции', () => {
     author: 'Author One',
   });
 
+  it('ошибка удаления показывается один раз, в диалоге, и сбрасывается отменой', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) => {
+        if (init?.method === 'DELETE') {
+          return Promise.resolve(new Response('', { status: 500 }));
+        }
+        if (new URL(String(url)).pathname.endsWith('/tags')) {
+          return Promise.resolve(
+            jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+          );
+        }
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: [COMPOSITION],
+            total: 1,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+
+    openDeleteDialog('Song One');
+    confirmDeleteDialog();
+    await waitFor(() => {
+      expect(screen.getAllByText('Непредвиденная ошибка')).toHaveLength(1);
+    });
+    expect(
+      within(screen.getByRole('dialog')).getByText('Непредвиденная ошибка'),
+    ).toBeTruthy();
+
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Отмена',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    expect(screen.queryByText('Непредвиденная ошибка')).toBeNull();
+
+    openDeleteDialog('Song One');
+    expect(screen.queryByText('Непредвиденная ошибка')).toBeNull();
+  });
+
   it('отмена не вызывает fetch, строка остаётся', async () => {
     const fetchMock = stubListFetch({
       items: [COMPOSITION],

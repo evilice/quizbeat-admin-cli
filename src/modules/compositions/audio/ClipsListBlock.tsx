@@ -45,10 +45,13 @@ export function ClipsListBlock({
   compositionId,
   initialClips,
   reloadToken,
+  active = true,
 }: {
   compositionId: string;
   initialClips: AudioClip[];
   reloadToken: number;
+  /** Блок на скрытой вкладке остаётся смонтированным, но не должен играть. */
+  active?: boolean;
 }) {
   const { audioClips } = useRootStore();
   const [clips, setClips] = useState(initialClips);
@@ -118,6 +121,26 @@ export function ClipsListBlock({
   useEffect(() => {
     playingIdRef.current = playingId;
   }, [playingId]);
+
+  useEffect(() => {
+    if (active || playingIdRef.current === null) {
+      return;
+    }
+    const audio = document.getElementById(`clip-audio-${playingIdRef.current}`);
+    if (audio instanceof HTMLAudioElement) {
+      audio.pause();
+    }
+  }, [active]);
+
+  function openDelete(target: AudioClip) {
+    setMessages([]);
+    setDeleteTarget(target);
+  }
+
+  function closeDelete() {
+    setMessages([]);
+    setDeleteTarget(null);
+  }
 
   async function confirmDelete() {
     if (deleteTarget === null) {
@@ -290,6 +313,11 @@ export function ClipsListBlock({
                               setPlayback(null);
                             }
                           }}
+                          onPause={() => {
+                            if (playingIdRef.current === clip.id) {
+                              setPlayback(null);
+                            }
+                          }}
                           onError={() => {
                             if (playingIdRef.current === clip.id) {
                               setPlayback(null);
@@ -335,7 +363,7 @@ export function ClipsListBlock({
                       path={DELETE_ICON_PATH}
                       disabled={actionPending}
                       onClick={() => {
-                        setDeleteTarget(clip);
+                        openDelete(clip);
                       }}
                     />
                   </Box>
@@ -345,12 +373,12 @@ export function ClipsListBlock({
           </TableBody>
         </Table>
       )}
-      <ErrorMessages messages={messages} />
+      <ErrorMessages messages={deleteTarget === null ? messages : []} />
       <Dialog
         open={deleteTarget !== null}
         onClose={() => {
           if (!actionPending) {
-            setDeleteTarget(null);
+            closeDelete();
           }
         }}
       >
@@ -359,14 +387,10 @@ export function ClipsListBlock({
           <DialogContentText>
             Отрезок исчезнет безвозвратно. Восстановить его нельзя.
           </DialogContentText>
+          <ErrorMessages messages={deleteTarget === null ? [] : messages} />
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setDeleteTarget(null);
-            }}
-            disabled={actionPending}
-          >
+          <Button onClick={closeDelete} disabled={actionPending}>
             Отмена
           </Button>
           <Button

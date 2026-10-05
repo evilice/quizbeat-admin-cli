@@ -21,6 +21,7 @@ export const CompositionsPage = observer(() => {
     onStatusFilterChange,
     onTagsFilterChange,
     messages,
+    deleteMessages,
     showEmpty,
     showTable,
     items,
@@ -67,7 +68,7 @@ export const CompositionsPage = observer(() => {
       <DeleteCompositionDialog
         composition={deleteTarget}
         pending={actionPending}
-        messages={messages}
+        messages={deleteMessages}
         onClose={closeDelete}
         onConfirm={confirmDelete}
       />

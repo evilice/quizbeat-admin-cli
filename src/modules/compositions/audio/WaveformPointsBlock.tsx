@@ -72,6 +72,7 @@ export function WaveformPointsBlock({
   originalAudioUrl,
   originalAudioDurationSec,
   audioVersion,
+  active = true,
   onPointsCreated,
 }: {
   compositionId: string;
@@ -79,6 +80,8 @@ export function WaveformPointsBlock({
   originalAudioDurationSec: number | null;
   /** Растёт при каждой загрузке трека: новая дорожка при прежних длительности и ссылке. */
   audioVersion: number;
+  /** Блок на скрытой вкладке остаётся смонтированным, но не должен играть. */
+  active?: boolean;
   onPointsCreated: () => void;
 }) {
   const { audioClips } = useRootStore();
@@ -102,6 +105,12 @@ export function WaveformPointsBlock({
   useEffect(() => {
     autoRefreshUsed.current = false;
   }, [originalAudioUrl]);
+
+  useEffect(() => {
+    if (!active) {
+      waveformRef.current?.pause();
+    }
+  }, [active]);
 
   useEffect(() => {
     if (originalAudioUrl !== null || originalAudioDurationSec === null) {

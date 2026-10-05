@@ -13,6 +13,7 @@ vi.mock('wavesurfer.js', () => ({
   default: {
     create: () => ({
       on: () => undefined,
+      isPlaying: () => false,
       destroy: () => undefined,
     }),
   },

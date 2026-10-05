@@ -63,7 +63,9 @@ export const useCompositionsList = () => {
     fetchPage: (filters, page) => compositions.list(buildParams(filters, page)),
   });
 
-  const messages = actionMessages ?? query.listMessages;
+  const deleting = deleteTarget !== null;
+  const messages =
+    deleting || actionMessages === null ? query.listMessages : actionMessages;
   const presentation = listPresentation({
     result: query.result,
     loading: query.loading,
@@ -125,6 +127,7 @@ export const useCompositionsList = () => {
   };
 
   const openDelete = (composition: Composition) => {
+    setActionMessages(null);
     setDeleteTarget(composition);
   };
 
@@ -132,6 +135,7 @@ export const useCompositionsList = () => {
     if (actionPending) {
       return;
     }
+    setActionMessages(null);
     setDeleteTarget(null);
   };
 
@@ -170,6 +174,7 @@ export const useCompositionsList = () => {
     onStatusFilterChange,
     onTagsFilterChange,
     messages,
+    deleteMessages: deleting ? (actionMessages ?? []) : [],
     ...presentation,
     items: query.items,
     actionPending,

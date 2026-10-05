@@ -56,15 +56,15 @@ src/
   app/                 # провайдеры, тема, роутер, шапка
   shared/
     api/               # один HTTP-клиент и разбор ошибки
-    ui/                # ErrorMessages, пагинация списка, скрытый file input
-    hooks/             # хуки без привязки к домену (дебаунс, последнее значение)
+    ui/                # ErrorMessages, ListWithFilters, пагинация, ActionIconButton, скрытый file input
+    hooks/             # без привязки к домену: use-list-query, дебаунс, последнее значение, use-attempt-throttle
     store/             # RootStore и useRootStore
     testing/           # makeAccessToken, только тесты
   modules/
     session/
     admins/
     tags/
-    compositions/
+    compositions/      # list/, create/, edit/, card/ (хук и вкладки карточки)
       audio/
       images/
       notes/

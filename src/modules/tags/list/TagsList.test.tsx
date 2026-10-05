@@ -447,6 +447,45 @@ describe('удаление тега', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(getListCalls(fetchMock)).toHaveLength(1);
   });
+
+  it('повторное открытие диалога не показывает прошлую ошибку удаления', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.method === 'DELETE') {
+          return Promise.resolve(new Response('', { status: 500 }));
+        }
+        return Promise.resolve(
+          jsonResponse(200, { items: [TAG], total: 1, page: 1, limit: 20 }),
+        );
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    renderTags();
+
+    await waitFor(() => {
+      expect(screen.getByText('rock')).toBeTruthy();
+    });
+
+    openDeleteDialog('rock');
+    confirmDeleteDialog();
+    await waitFor(() => {
+      expect(screen.getAllByText('Непредвиденная ошибка')).toHaveLength(1);
+    });
+
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Отмена',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    expect(screen.queryByText('Непредвиденная ошибка')).toBeNull();
+
+    openDeleteDialog('rock');
+    expect(screen.queryByText('Непредвиденная ошибка')).toBeNull();
+  });
 });
 
 const openDeleteDialog = (code: string) => {

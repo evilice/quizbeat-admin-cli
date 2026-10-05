@@ -28,7 +28,9 @@ export const useTagsList = () => {
     fetchPage: ({ search: text }, page) => tags.list({ page, search: text }),
   });
 
-  const messages = actionMessages ?? query.listMessages;
+  const deleting = deleteTarget !== null;
+  const messages =
+    deleting || actionMessages === null ? query.listMessages : actionMessages;
   const presentation = listPresentation({
     result: query.result,
     loading: query.loading,
@@ -77,6 +79,7 @@ export const useTagsList = () => {
   };
 
   const openDelete = (tag: Tag) => {
+    setActionMessages(null);
     setDeleteTarget(tag);
   };
 
@@ -84,6 +87,7 @@ export const useTagsList = () => {
     if (actionPending) {
       return;
     }
+    setActionMessages(null);
     setDeleteTarget(null);
   };
 
@@ -116,6 +120,7 @@ export const useTagsList = () => {
     search: searchInput,
     onSearchChange,
     messages,
+    deleteMessages: deleting ? (actionMessages ?? []) : [],
     ...presentation,
     items: query.items,
     actionPending,

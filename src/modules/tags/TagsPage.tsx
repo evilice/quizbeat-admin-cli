@@ -15,6 +15,7 @@ export const TagsPage = observer(() => {
     search,
     onSearchChange,
     messages,
+    deleteMessages,
     showEmpty,
     showTable,
     items,
@@ -58,7 +59,7 @@ export const TagsPage = observer(() => {
       <DeleteTagDialog
         tag={deleteTarget}
         pending={actionPending}
-        messages={messages}
+        messages={deleteMessages}
         onClose={closeDelete}
         onConfirm={confirmDelete}
       />

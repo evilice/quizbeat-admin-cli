@@ -51,6 +51,98 @@
   границ и object URL) и тесты рядом.
 - Подключение на карточке (вкладка/секция «Видео»).
 
+## План работы
+
+Порядок — от чистых функций границ к хуку, затем к разметке; тест пишется
+до кода каждого шага. `npm run lint` и `npm run test` — после каждого шага
+(правило 8), `npm run build` — в конце. Файлы — по разделу 11
+[правил разработки](../../04-development-rules.md): хук и разметка рядом, в
+`src/modules/compositions/video/`; новых зависимостей нет.
+
+**Шаги.**
+
+1. **Разведка (сделана, повторить при реализации).**
+   - Образец файлового input — `AudioUploadBlock` (`visuallyHiddenInputSx`,
+     сброс `input.value`, `ErrorMessages`); образец «слежения за временем» —
+     `WaveformPointsBlock`/`AudioWaveform` (прослушивание отрезка, пауза при
+     `active={false}`, чтобы уход с вкладки останавливал воспроизведение —
+     панели вкладок остаются смонтированными).
+   - **В jsdom нет `URL.createObjectURL`/`revokeObjectURL` и
+     `HTMLMediaElement` не играет и не шлёт события.** В тестах: стабы
+     `vi.stubGlobal`-ом на `URL.createObjectURL`/`revokeObjectURL` и
+     `vi.spyOn(HTMLMediaElement.prototype, 'play'|'pause')` — как в
+     `AudioAndClips.test.tsx`; `loadedmetadata`, `timeupdate`, `error`
+     поднимаются `fireEvent`, `duration` задаётся
+     `Object.defineProperty(video, 'duration', ...)`.
+   - Компонент `Slider` MUI с `value={[a, b]}` отдаёт массив; в тестах им
+     удобнее управлять через поля ввода, а ползунок проверять по
+     `aria-valuemin/max/now` у двух `input[type=range]`.
+2. **Чистые функции (TDD).** `video/video-trim.ts` (без React) + тест:
+   - `MAX_VIDEO_CLIP_SEC = 60` с комментарием-ссылкой на
+     `VIDEO_MAX_CLIP_DURATION_SEC`; `MIN_VIDEO_CLIP_SEC = 0.1` (зеркало
+     серверной `MIN_CLIP_DURATION_SEC`);
+   - `defaultBounds(durationSec)` → `{ start: 0, end: min(duration, 60) }`;
+   - `roundSec(value)` — до 2 знаков (`Math.round(v * 100) / 100`);
+   - `validateBounds(start, end, durationSec)` → `string | null` (причина):
+     `start < 0`, `end ≤ start`, длина `< 0.1`, длина `> 60`,
+     `end > duration`; значения `NaN`/пустое поле — отдельная причина (пустая
+     строка не должна превращаться в `0`, как и на сервере).
+   - Граница `end` после округления может оказаться чуть больше
+     `duration` (`duration = 4.996` → `5`): сравнивать до округления или
+     зажимать `end` до `roundDown(duration)`; зафиксировать тестом.
+3. **Хук `video/use-video-trim.ts` (TDD).** Состояние: `file`, `objectUrl`,
+   `durationSec`, `start`, `end` (в полях ввода — строки, в расчётах —
+   числа), `playbackError`, `busy`, `messages`. Поведение:
+   - выбор файла: `revokeObjectURL` прежнего → `createObjectURL(file)`,
+     сброс `durationSec`/границ/`playbackError`/`messages`;
+   - `loadedmetadata`: `durationSec = video.duration`; если не конечное
+     число (`Infinity` у потокового webm без метаданных) или `0` —
+     `playbackError`, «Сохранить» заблокировано; иначе `defaultBounds`;
+   - `error` у `<video>` → `playbackError` с текстом «Не удалось прочитать
+     видео; нужен mp4 или webm»;
+   - «начало/конец = текущая позиция» — `roundSec(video.currentTime)`;
+   - «проиграть отрезок»: `currentTime = start`, `play()`; по `timeupdate`
+     при `currentTime ≥ end` — `pause()` и один раз вернуть позицию на
+     `start`; смена границ во время проигрыша останавливает его;
+   - `submit()`: если `busy` или `validateBounds` вернул причину — ничего;
+     иначе `busy = true` → `video.save(compositionId, file, roundSec(start),
+     roundSec(end))` → успех: `onSaved(videoDurationSec)` наружу (хук
+     карточки обновит `full`, задача 3), очистка файла и object URL; ошибка
+     → `messagesFromError`, файл и границы **сохраняются** (повторить без
+     повторного выбора 500 МБ); `finally` → `busy = false`;
+   - `useEffect`-очистка: `revokeObjectURL` при размонтировании; `pause()`
+     при `active === false` (вкладка «Видео» скрыта).
+4. **Разметка `video/VideoTrimEditor.tsx` (TDD).** Скрытый input
+   (`accept=".mp4,.webm,video/mp4,video/webm"`, `aria-label="Видео-файл"`),
+   подсказка «mp4, webm, ориентир размера — 500 МБ; тип и размер проверяет
+   сервер; видео с iPhone (.mov) не поддерживается»,
+   `<video controls src={objectUrl}>`, двойной `Slider`
+   (`min=0, max=duration, step=0.01`, `disableSwap`), два `TextField`
+   (`type="number"`, шаг `0.01`), кнопки «Начало = текущая позиция»,
+   «Конец = текущая позиция», «Проиграть отрезок», «Сохранить»; причина
+   блокировки текстом под полями; при `busy` — `LinearProgress`
+   (indeterminate) с подписью «Идёт загрузка и обрезка — это может занять
+   до пары минут», input/ползунок/поля/кнопки `disabled`; `ErrorMessages`.
+   Тексты ошибок сервера — только как текст.
+5. **Тесты компонента** — все пункты критериев готовности ниже, плюс:
+   смена файла во время `busy` невозможна; `error` после успешного
+   `loadedmetadata` блокирует «Сохранить»; ошибка `save` оставляет файл и
+   границы; выбор второго файла отзывает object URL первого.
+6. **Подключение.** Пока блока задачи 3 нет, редактор рендерится на
+   карточке как есть, с `onSaved`, выставляющим `videoDurationSec` и
+   `videoUrl: null` в `full`; вкладку «Видео» (`CompositionCardTab` +
+   `TABS`) завести в этой задаче, содержимое вкладки доработает задача 3.
+   Не забыть расширить тест `CompositionCardTabs`, если он зависит от числа
+   вкладок.
+7. **Ревью.** `/code-review` уровня `medium`, отдельный контекст. Для
+   человека в отчёте: утечки object URL, поведение при смене файла
+   во время загрузки, что клиентские проверки не подменяют серверные
+   (загрузка файла — зона обязательного человеческого ревью по правилу 7).
+
+**Принятый риск.** Клиент не знает кодек файла: mp4 с HEVC браузер может
+не проиграть (тогда отправка блокируется текстом), а может проиграть, но
+сервер отклонит — оба исхода показываются сообщением, оба безопасны.
+
 ## Критерии готовности
 
 - `npm run test`, `npm run lint`, `npm run build` проходят.

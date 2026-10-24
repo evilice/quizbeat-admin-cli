@@ -43,6 +43,78 @@
   стору карточки.
 - Раздел в `02-staff-api.md` (после проверки по коду сервера).
 
+## План работы
+
+Порядок — от типов и контракта к стору, от теста к коду; `npm run lint` и
+`npm run test` — после каждого шага (правило 8), `npm run build` — в конце
+(задача трогает тип `CompositionFull`, который собирает карточку). Новых
+зависимостей нет.
+
+**Шаги.**
+
+1. **Разведка (сделана, повторить при реализации).**
+   - Сторы проекта **без состояния данных**: `AudioClipsStore.uploadAudio`
+     возвращает результат, а `full` держит хук карточки
+     (`use-composition-card.ts`, образец — `handleAudioUploaded`). Поэтому
+     «сбросить `videoUrl`» из критериев — это правка `full` в хуке (задача 3),
+     а `VideoStore` отдаёт только результаты вызовов. Дублировать `videoUrl`
+     в сторе нельзя: два источника правды разойдутся.
+   - Образец multipart — `AudioClipsStore.uploadAudio`: `FormData` +
+     `api.requestForm`, `Content-Type` не выставляется. У `fetch` в
+     `api-client.ts` таймаута нет — длинная обрезка не оборвётся.
+   - Пустое тело ответа `requestForm` возвращает как `undefined`: `POST`
+     обязан бросить `ApiError(null, [...])` на `undefined`, как
+     `uploadAudio` (`Пустой ответ загрузки трека`).
+   - Контракт сверить по коду сервера:
+     [контроллер](../../../../quizbeat-srv/src/composition-video/composition-video.controller.ts),
+     `UploadVideoDto`, `VideoUrlResponseDto`, `CompositionFullResponseDto`
+     (`videoUrl`, `videoDurationSec` — `null`, не отсутствуют). Сервер на
+     момент плана готов (серверный этап 14, задача 3 выполнена).
+2. **Типы.** В `compositions-store.ts` расширить `CompositionFull`:
+   `videoUrl: string | null`, `videoDurationSec: number | null`. Прогнать
+   `npm run build`: ломаются фикстуры `CompositionFull` в тестах
+   (`compositions-store.test.ts`, `CompositionCard.test.tsx`,
+   `ImagesBlock.test.tsx`) — добавить оба поля `null`.
+3. **Тесты стора (TDD, красные).** `video/video-store.test.ts` по образцу
+   `images-store.test.ts` (мок `fetch`, `SessionStore` с токеном):
+   - `save`: `POST /compositions/:id/video`, тело — `FormData` с `file`,
+     `startSec`, `endSec` строками, без заголовка `Content-Type:
+     application/json`; результат `{ videoDurationSec }` возвращается как есть;
+     пустой ответ → `ApiError`;
+   - `getUrl`: `GET`, возвращает строку `url`; `404` → `null` (видео нет),
+     другие статусы пробрасываются;
+   - `remove`: `DELETE`, `204` без тела — не ошибка;
+   - `400`/`413`/`415`/`422` попадают в `messagesFromError` как есть;
+   - числа в `FormData`: `String(1.5)` → `'1.5'`; проверить значения вроде
+     `0.1 + 0.2` — после округления до 2 знаков в UI (задача 2) в стор
+     приходит уже округлённое, стор само не округляет и не форматирует.
+4. **Стор.** `video/video-store.ts`: `class VideoStore { constructor(api) }`
+   с методами `save(compositionId, file, startSec, endSec)`,
+   `getUrl(compositionId)` (`404` → `null`), `remove(compositionId)`.
+   Подключить в `RootStore` полем `video` (после `notes`). Блокировка
+   повторной отправки — **не в сторе** (состояние экрана, раздел 11 правил):
+   это флаг `busy` в хуке редактора (задача 2); критерий «повторная
+   отправка во время идущей блокируется» проверяется там тестом на
+   компонент, а в этой задаче — тестом, что стор не вызывает `fetch`
+   повторно сам (ровно один запрос на `save`).
+5. **Карта API.** Раздел `## 9. Видео` в `02-staff-api.md` (после заметок),
+   прежний `## 9. Что клиент не вызывает` → `## 10.`. Ссылок на старый
+   якорь в репозитории нет (проверено `grep`), но проверить заново.
+   Содержимое — по коду сервера: три метода, поля, коды `400/404/413/415/422`,
+   дефолтные лимиты (`STORAGE_MAX_VIDEO_SIZE_BYTES` 500 МБ,
+   `VIDEO_MAX_CLIP_DURATION_SEC` 60, `VIDEO_MAX_RESULT_SIZE_BYTES` 100 МБ,
+   `FFMPEG_VIDEO_TIMEOUT_MS` 120 с), синхронность запроса, `POST` без URL в
+   ответе, presigned `videoUrl`. В §5 карты дополнить описание `GET .../full`
+   двумя полями; в §1 список временных ссылок — `videoUrl`.
+6. **Ревью.** `/code-review` уровня `medium` в отдельном контексте.
+   Человеческое ревью не обязательно (нет сессии/ролей/токенов); в отчёт —
+   короткий список: загрузка файла идёт через общий `requestForm`, ошибки
+   сервера не перетираются клиентскими текстами.
+
+**Принятый риск.** Клиентские лимиты (500 МБ, 60 с) — зеркала серверных
+env-значений, которые на стенде могут быть другими. Источник истины —
+ответ сервера; расхождение проявится как `413`/`400` с текстом `message`.
+
 ## Критерии готовности
 
 - `npm run test`, `npm run lint`, `npm run build` проходят.

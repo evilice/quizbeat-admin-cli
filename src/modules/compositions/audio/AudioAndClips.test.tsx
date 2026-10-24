@@ -509,7 +509,7 @@ describe('волна и точки', () => {
     expect(clipPosts(fetchMock)).toHaveLength(0);
 
     fireEvent.change(screen.getByLabelText('Старт, с'), {
-      target: { value: '8' },
+      target: { value: '9.5' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Добавить точку' }));
     expect(
@@ -574,11 +574,11 @@ describe('волна и точки', () => {
       screen.getByTestId('clip-range').getAttribute('data-start-sec'),
     ).toBe('12.5');
     expect(screen.getByTestId('clip-range').getAttribute('data-end-sec')).toBe(
-      '17.5',
+      '13.5',
     );
     expect(
       screen.getByTestId('clip-end-marker').getAttribute('data-end-sec'),
-    ).toBe('17.5');
+    ).toBe('13.5');
 
     fireEvent.mouseDown(screen.getByLabelText('Длительность'));
     fireEvent.click(screen.getByRole('option', { name: '8 с' }));
@@ -746,7 +746,7 @@ describe('волна и точки', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Добавить точку' }));
     fireEvent.click(screen.getByRole('button', { name: 'Добавить точку' }));
-    const pointText = '0 с, 5 с, Лёгкая';
+    const pointText = '0 с, 1 с, Лёгкая';
     expect(screen.getAllByText(pointText)).toHaveLength(2);
 
     fireEvent.click(removeDraftButton());
@@ -755,6 +755,28 @@ describe('волна и точки', () => {
 
     fireEvent.click(removeDraftButton());
     expect(screen.getAllByText(pointText)).toHaveLength(1);
+  });
+
+  it('предлагает ровно длительности 1, 3 и 8 и по умолчанию выбирает допустимую', async () => {
+    stubCardFetch({
+      full: sampleFull({
+        originalAudioUrl: AUDIO_URL,
+        originalAudioDurationSec: 30,
+      }),
+    });
+    await renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Длительность')).toBeTruthy();
+    });
+    expect(
+      screen.getByRole('combobox', { name: 'Длительность' }).textContent,
+    ).toBe('1 с');
+
+    fireEvent.mouseDown(screen.getByLabelText('Длительность'));
+    expect(
+      screen.getAllByRole('option').map((option) => option.textContent),
+    ).toEqual(['1 с', '3 с', '8 с']);
   });
 
   it('добавляет три точки 1, 3 и 8 с от текущего старта', async () => {
@@ -953,6 +975,36 @@ describe('список отрезков и опрос', () => {
     ).toBeNull();
   });
 
+  it('два отрезка одной длительности и сложности различимы по старту', () => {
+    const laterId = '33333333-3333-3333-3333-333333333333';
+    renderClips(
+      [
+        sampleClip({
+          durationSec: 3,
+          difficulty: 'MEDIUM',
+          startTimeSec: 1.5,
+        }),
+        sampleClip({
+          id: laterId,
+          durationSec: 3,
+          difficulty: 'MEDIUM',
+          startTimeSec: 12,
+        }),
+      ],
+      vi.fn(),
+    );
+
+    expect(screen.getByText('1.5 с')).toBeTruthy();
+    expect(screen.getByText('12 с')).toBeTruthy();
+    expect(screen.getAllByText('3 с')).toHaveLength(2);
+    expect(screen.getAllByText('Средняя')).toHaveLength(2);
+    expect(
+      screen.getByText(
+        'В игре используются отрезки 1, 3 и 8 секунд; прежние отрезки другой длительности остаются в списке, но в игру не попадают.',
+      ),
+    ).toBeTruthy();
+  });
+
   it('опрос заменяет clips целиком и не оставляет fileUrl из первого снимка', async () => {
     vi.useFakeTimers();
     const otherId = '33333333-3333-3333-3333-333333333333';
@@ -1037,6 +1089,49 @@ describe('список отрезков и опрос', () => {
 });
 
 describe('удаление и перегенерация отрезка', () => {
+  it('отрезок с длительностью вне набора 1/3/8 отображается и удаляется', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET';
+      const pathname = new URL(String(url)).pathname;
+      if (method === 'DELETE' && pathname.endsWith(`/clips/${CLIP_ID}`)) {
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      if (method === 'GET' && pathname.endsWith('/clips')) {
+        return Promise.resolve(jsonResponse(200, []));
+      }
+      return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
+    });
+    renderClips(
+      [
+        sampleClip({
+          status: 'DONE',
+          durationSec: 5,
+          startTimeSec: 2,
+          difficulty: 'HARD',
+        }),
+      ],
+      fetchMock,
+    );
+
+    expect(screen.getByText('5 с')).toBeTruthy();
+    expect(screen.getByText('2 с')).toBeTruthy();
+    expect(screen.getByText('Сложная')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Отрезков нет')).toBeTruthy();
+    });
+    const deleted = fetchMock.mock.calls.find(
+      (call) => (call[1] as RequestInit | undefined)?.method === 'DELETE',
+    );
+    expect(String(deleted?.[0])).toBe(
+      `${apiBaseUrl}/compositions/${COMPOSITION_ID}/clips/${CLIP_ID}`,
+    );
+  });
+
   it('подтверждение удаления вызывает DELETE с clipId и 204 убирает строку', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       const method = init?.method ?? 'GET';

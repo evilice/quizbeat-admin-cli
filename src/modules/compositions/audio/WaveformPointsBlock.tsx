@@ -30,8 +30,6 @@ import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 
 const DIFFICULTIES: readonly AudioClipDifficulty[] = ['EASY', 'MEDIUM', 'HARD'];
 
-const TRIPLE_POINT_DURATIONS: readonly AudioClipDurationSec[] = [1, 3, 8];
-
 const PAUSE_ICON_PATH = 'M6 19h4V5H6v14zm8-14v14h4V5h-4z';
 
 const ADD_POINT_ICON_PATH = 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z';
@@ -91,7 +89,9 @@ export function WaveformPointsBlock({
     url: string;
   } | null>(null);
   const [startInput, setStartInput] = useState('0');
-  const [durationSec, setDurationSec] = useState<AudioClipDurationSec>(5);
+  const [durationSec, setDurationSec] = useState<AudioClipDurationSec>(
+    AUDIO_CLIP_DURATIONS[0],
+  );
   const [difficulty, setDifficulty] = useState<AudioClipDifficulty>('EASY');
   const [drafts, setDrafts] = useState<DraftPoint[]>([]);
   const [messages, setMessages] = useState<readonly string[]>([]);
@@ -269,7 +269,7 @@ export function WaveformPointsBlock({
   }
 
   function addThreePoints() {
-    appendDrafts(TRIPLE_POINT_DURATIONS);
+    appendDrafts(AUDIO_CLIP_DURATIONS);
   }
 
   async function submitPoints() {

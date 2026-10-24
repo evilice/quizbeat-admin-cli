@@ -34,6 +34,9 @@ import {
 } from '../../../shared/ui/ActionIconButton.tsx';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 
+const HINT =
+  'В игре используются отрезки 1, 3 и 8 секунд; прежние отрезки другой длительности остаются в списке, но в игру не попадают.';
+
 const DONE_ICON_PATH = 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
 const REGENERATE_ICON_PATH =
   'M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z';
@@ -259,12 +262,14 @@ export function ClipsListBlock({
       <Typography variant="h6" component="h2">
         Отрезки
       </Typography>
+      <Typography variant="body2">{HINT}</Typography>
       {clips.length === 0 ? (
         <Typography>Отрезков нет</Typography>
       ) : (
         <Table size="small">
           <TableHead>
             <TableRow>
+              <TableCell>Старт</TableCell>
               <TableCell>Длительность</TableCell>
               <TableCell>Сложность</TableCell>
               <TableCell>Статус</TableCell>
@@ -274,6 +279,7 @@ export function ClipsListBlock({
           <TableBody>
             {clips.map((clip) => (
               <TableRow key={clip.id}>
+                <TableCell>{clip.startTimeSec} с</TableCell>
                 <TableCell>{clip.durationSec} с</TableCell>
                 <TableCell>{DIFFICULTY_LABELS[clip.difficulty]}</TableCell>
                 <TableCell>

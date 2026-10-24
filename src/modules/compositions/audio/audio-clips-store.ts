@@ -9,6 +9,10 @@ export type AudioClipStatus = 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED';
 export type AudioClip = {
   id: string;
   difficulty: AudioClipDifficulty;
+  /**
+   * Секунды из ответа сервера. У отрезков, созданных до сужения набора,
+   * значение может быть вне `AUDIO_CLIP_DURATIONS`.
+   */
   durationSec: number;
   startTimeSec: number;
   status: AudioClipStatus;
@@ -17,8 +21,9 @@ export type AudioClip = {
   createdAt: string;
 };
 
-export const AUDIO_CLIP_DURATIONS = [1, 2, 3, 5, 8, 13, 21] as const;
+export const AUDIO_CLIP_DURATIONS = [1, 3, 8] as const;
 
+/** Узкий набор только для новой точки. Ответ `GET .../clips` им не ограничен. */
 export type AudioClipDurationSec = (typeof AUDIO_CLIP_DURATIONS)[number];
 
 export type AudioClipPoint = {

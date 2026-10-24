@@ -22,7 +22,7 @@ const CLIP_ID = '22222222-2222-2222-2222-222222222222';
 
 const POINT: AudioClipPoint = {
   startTimeSec: 4,
-  durationSec: 5,
+  durationSec: 3,
   difficulty: 'MEDIUM',
 };
 
@@ -56,7 +56,7 @@ describe('AudioClipsStore', () => {
     stubJsonOk(fetchMock, created, 201);
 
     const result = await audioClips.createClips(COMPOSITION_ID, [
-      { startTimeSec: 4.9, durationSec: 5, difficulty: 'HARD' },
+      { startTimeSec: 4.9, durationSec: 3, difficulty: 'HARD' },
     ]);
 
     expect(requestMethod(fetchMock, 0)).toBe('POST');
@@ -64,7 +64,7 @@ describe('AudioClipsStore', () => {
       `${apiBaseUrl}/compositions/${COMPOSITION_ID}/clips`,
     );
     expect(requestJson(fetchMock, 0)).toEqual({
-      points: [{ startTimeSec: 4.9, durationSec: 5, difficulty: 'HARD' }],
+      points: [{ startTimeSec: 4.9, durationSec: 3, difficulty: 'HARD' }],
     });
     expect(result[0]).not.toHaveProperty('fileUrl');
     expect(requestHeaders(fetchMock, 0).get('Content-Type')).toBe(

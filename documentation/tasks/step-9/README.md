@@ -5,8 +5,8 @@
 Серверная сторона — этап 14 в `quizbeat-srv`
 (`documentation/tasks/step-14/`), особенно
 [задача 3](../../../../quizbeat-srv/documentation/tasks/step-14/03-composition-video-endpoints.md).
-**Этап блокируется серверным этапом 14: эндпоинтов видео на сервере ещё
-нет.** Поля запросов сверять с кодом сервера.
+Эндпоинты видео уже есть в `quizbeat-srv` (этап 14, задача 3). Поля
+запросов сверять с кодом сервера.
 
 Формат файлов — по [task-writing-guidelines.md](../task-writing-guidelines.md).
 
@@ -34,7 +34,7 @@ flowchart TD
 
 | # | Задача | Зависит от | Файл | Статус |
 |---|--------|------------|------|--------|
-| 1 | Стор видео: `POST/GET/DELETE .../video`, поля `videoUrl`/`videoDurationSec` из `GET /full` | серверный этап 14 (задача 3), [этап 4](../step-4/README.md) | [01-video-store.md](./01-video-store.md) | не выполнена |
+| 1 | Стор видео: `POST/GET/DELETE .../video`, поля `videoUrl`/`videoDurationSec` из `GET /full` | серверный этап 14 (задача 3), [этап 4](../step-4/README.md) | [01-video-store.md](./01-video-store.md) | выполнена |
 | 2 | Выбор файла, локальный предпросмотр, выбор отрезка, отправка | 1 | [02-video-trim-editor.md](./02-video-trim-editor.md) | не выполнена |
 | 3 | Блок на карточке: сохранённое видео, замена, удаление | 2 | [03-saved-video-block.md](./03-saved-video-block.md) | не выполнена |
 | 4 | Приёмка этапа 9 целиком | 3 | [04-step9-acceptance.md](./04-step9-acceptance.md) | не выполнена |

@@ -668,6 +668,8 @@ const sampleCompositionFull = (
     tags: ReturnType<typeof sampleTag>[];
     originalAudioUrl: string | null;
     originalAudioDurationSec: number | null;
+    videoUrl: string | null;
+    videoDurationSec: number | null;
     clips: unknown[];
     images: unknown[];
     notes: unknown[];
@@ -682,6 +684,11 @@ const sampleCompositionFull = (
     originalAudioDurationSec:
       overrides.originalAudioDurationSec !== undefined
         ? overrides.originalAudioDurationSec
+        : null,
+    videoUrl: overrides.videoUrl !== undefined ? overrides.videoUrl : null,
+    videoDurationSec:
+      overrides.videoDurationSec !== undefined
+        ? overrides.videoDurationSec
         : null,
     clips: overrides.clips ?? [],
     images: overrides.images ?? [],

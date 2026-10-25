@@ -3,6 +3,7 @@ import { AudioClipsStore } from '../../modules/compositions/audio/audio-clips-st
 import { CompositionsStore } from '../../modules/compositions/compositions-store.ts';
 import { ImagesStore } from '../../modules/compositions/images/images-store.ts';
 import { NotesStore } from '../../modules/compositions/notes/notes-store.ts';
+import { VideoStore } from '../../modules/compositions/video/video-store.ts';
 import {
   SessionStore,
   type SessionStorage,
@@ -18,6 +19,7 @@ export class RootStore {
   readonly audioClips: AudioClipsStore;
   readonly images: ImagesStore;
   readonly notes: NotesStore;
+  readonly video: VideoStore;
   readonly api: ApiClient;
 
   constructor(storage: SessionStorage) {
@@ -29,5 +31,6 @@ export class RootStore {
     this.audioClips = new AudioClipsStore(this.api);
     this.images = new ImagesStore(this.api);
     this.notes = new NotesStore(this.api);
+    this.video = new VideoStore(this.api);
   }
 }

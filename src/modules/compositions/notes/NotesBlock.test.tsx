@@ -809,6 +809,8 @@ function sampleFull(
     updatedAt: '2026-01-01T00:00:00.000Z',
     originalAudioUrl: null,
     originalAudioDurationSec: null,
+    videoUrl: null,
+    videoDurationSec: null,
     clips: [],
     images: [],
     notes: overrides.notes ?? [],

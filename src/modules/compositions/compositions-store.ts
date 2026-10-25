@@ -23,6 +23,10 @@ export type Composition = {
 export type CompositionFull = Composition & {
   originalAudioUrl: string | null;
   originalAudioDurationSec: number | null;
+  /** Presigned-ссылка. `null`, если видео нет — поле есть в JSON всегда. */
+  videoUrl: string | null;
+  /** `null`, если видео нет. Вместе с `videoUrl`, не вместо него. */
+  videoDurationSec: number | null;
   clips: AudioClip[];
   images: CompositionImage[];
   notes: CompositionNote[];

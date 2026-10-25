@@ -1587,6 +1587,8 @@ function sampleFull(
   overrides: {
     originalAudioUrl?: string | null;
     originalAudioDurationSec?: number | null;
+    videoUrl?: string | null;
+    videoDurationSec?: number | null;
     clips?: unknown[];
   } = {},
 ) {
@@ -1602,6 +1604,8 @@ function sampleFull(
     updatedAt: '2026-01-01T00:00:00.000Z',
     originalAudioUrl: overrides.originalAudioUrl ?? null,
     originalAudioDurationSec: overrides.originalAudioDurationSec ?? null,
+    videoUrl: overrides.videoUrl ?? null,
+    videoDurationSec: overrides.videoDurationSec ?? null,
     clips: overrides.clips ?? [],
     images: [],
     notes: [],

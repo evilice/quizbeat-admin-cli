@@ -199,6 +199,8 @@ describe('CompositionsStore', () => {
     const full = sampleCompositionFull({
       originalAudioUrl: null,
       originalAudioDurationSec: null,
+      videoUrl: null,
+      videoDurationSec: null,
       clips: [],
       images: [],
       notes: [],
@@ -211,6 +213,8 @@ describe('CompositionsStore', () => {
     expect(result).toEqual(full);
     expect(result.originalAudioUrl).toBeNull();
     expect(result.originalAudioDurationSec).toBeNull();
+    expect(result.videoUrl).toBeNull();
+    expect(result.videoDurationSec).toBeNull();
     expect(result.clips).toEqual([]);
     expect(result.images).toEqual([]);
     expect(result.notes).toEqual([]);
@@ -306,6 +310,8 @@ function sampleCompositionFull(
     ...sampleComposition(),
     originalAudioUrl: null,
     originalAudioDurationSec: null,
+    videoUrl: null,
+    videoDurationSec: null,
     clips: [],
     images: [],
     notes: [],

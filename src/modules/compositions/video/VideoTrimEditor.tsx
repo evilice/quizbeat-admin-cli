@@ -19,11 +19,15 @@ const UPLOAD_HINT = 'Идёт загрузка и обрезка — это мо
 export const VideoTrimEditor = ({
   compositionId,
   active = true,
+  showHeading = true,
   onSaved,
+  onBusyChange,
 }: {
   compositionId: string;
   active?: boolean;
+  showHeading?: boolean;
   onSaved: (compositionId: string, videoDurationSec: number) => void;
+  onBusyChange?: (busy: boolean) => void;
 }) => {
   const {
     videoRef,
@@ -52,7 +56,7 @@ export const VideoTrimEditor = ({
     onEnded,
     onVideoError,
     submit,
-  } = useVideoTrim({ compositionId, active, onSaved });
+  } = useVideoTrim({ compositionId, active, onSaved, onBusyChange });
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const list = event.target.files;
@@ -68,9 +72,11 @@ export const VideoTrimEditor = ({
       data-testid="video-trim-editor"
       sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
     >
-      <Typography variant="h6" component="h2">
-        Видео
-      </Typography>
+      {showHeading ? (
+        <Typography variant="h6" component="h2">
+          Видео
+        </Typography>
+      ) : null}
       <Typography variant="body2">{HINT}</Typography>
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
         <Button

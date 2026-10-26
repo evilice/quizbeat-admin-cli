@@ -437,6 +437,7 @@ describe('карточка композиции', () => {
       order: 0,
       createdAt: '2026-01-01T00:00:00.000Z',
     };
+    let releaseVideoGet: (response: Response) => void = () => undefined;
     const fetchMock = stubCardFetch({
       full: sampleCompositionFull({
         originalAudioUrl: 'https://example.com/original.mp3',
@@ -448,6 +449,10 @@ describe('карточка композиции', () => {
         notes: [note],
       }),
       videoUpload: { status: 201, body: { videoDurationSec: 2.5 } },
+      videoGet: () =>
+        new Promise((resolve) => {
+          releaseVideoGet = resolve;
+        }),
     });
     renderCard();
 
@@ -456,6 +461,22 @@ describe('карточка композиции', () => {
     });
     fireEvent.click(screen.getByRole('tab', { name: 'Видео' }));
     const panel = screen.getByRole('tabpanel', { name: 'Видео' });
+    expect(
+      within(panel).getByLabelText('Сохранённое видео').getAttribute('src'),
+    ).toBe('https://example.com/old.mp4');
+    expect(videoGets(fetchMock)).toHaveLength(0);
+
+    fireEvent.click(
+      within(panel).getByRole('button', { name: 'Заменить видео' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Продолжить',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
     const file = new File(['video'], 'clip.mp4', { type: 'video/mp4' });
     fireEvent.change(within(panel).getByLabelText('Видео-файл'), {
       target: { files: [file] },
@@ -474,6 +495,17 @@ describe('карточка композиции', () => {
     fireEvent.change(within(panel).getByLabelText('Конец, с'), {
       target: { value: '4.25' },
     });
+    fireEvent.click(
+      within(panel).getByRole('button', { name: 'Проиграть отрезок' }),
+    );
+    pause.mockClear();
+    revokeObjectUrl.mockClear();
+    fireEvent.click(screen.getByRole('tab', { name: 'Заметки' }));
+    expect(pause).toHaveBeenCalled();
+    // панели остаются смонтированными: уход с вкладки не отзывает ссылку
+    expect(revokeObjectUrl).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Видео' }));
     fireEvent.click(within(panel).getByRole('button', { name: 'Сохранить' }));
 
     await waitFor(() => {
@@ -485,6 +517,8 @@ describe('карточка композиции', () => {
     });
     const form = screen.getByTestId('composition-card-form');
     expect(form.getAttribute('data-has-video-url')).toBe('false');
+    expect(within(panel).queryByLabelText('Сохранённое видео')).toBeNull();
+    expect(within(panel).getByText('Получаем ссылку')).toBeTruthy();
     expect(form.getAttribute('data-clips-count')).toBe('1');
     expect(form.getAttribute('data-images-count')).toBe('1');
     expect(form.getAttribute('data-notes-count')).toBe('1');
@@ -504,35 +538,17 @@ describe('карточка композиции', () => {
     expect(body.get('file')).toEqual(file);
     expect(body.get('startSec')).toBe('1.5');
     expect(body.get('endSec')).toBe('4.25');
-    expect(
-      fetchMock.mock.calls.filter((call) => {
-        const method = (call[1] as RequestInit | undefined)?.method ?? 'GET';
-        return method === 'GET' && String(call[0]).includes('/video');
-      }),
-    ).toHaveLength(0);
+    expect(videoGets(fetchMock)).toHaveLength(1);
 
-    fireEvent.change(within(panel).getByLabelText('Видео-файл'), {
-      target: {
-        files: [new File(['video'], 'next.mp4', { type: 'video/mp4' })],
-      },
+    releaseVideoGet(jsonResponse(200, { url: 'https://example.com/new.mp4' }));
+    await waitFor(() => {
+      expect(
+        within(panel).getByLabelText('Сохранённое видео').getAttribute('src'),
+      ).toBe('https://example.com/new.mp4');
     });
-    const nextVideo = within(panel).getByLabelText(
-      'Предпросмотр видео',
-    ) as HTMLVideoElement;
-    Object.defineProperty(nextVideo, 'duration', {
-      configurable: true,
-      get: () => 20,
-    });
-    fireEvent.loadedMetadata(nextVideo);
-    fireEvent.click(
-      within(panel).getByRole('button', { name: 'Проиграть отрезок' }),
-    );
-    pause.mockClear();
-    revokeObjectUrl.mockClear();
-    fireEvent.click(screen.getByRole('tab', { name: 'Заметки' }));
-    expect(pause).toHaveBeenCalled();
-    // панели остаются смонтированными: уход с вкладки не отзывает ссылку
-    expect(revokeObjectUrl).not.toHaveBeenCalled();
+    expect(form.getAttribute('data-has-video-url')).toBe('true');
+    expect(form.getAttribute('data-video-duration')).toBe('2.5');
+    expect(videoGets(fetchMock)).toHaveLength(1);
   });
 
   it('со строки списка «Изменить» открывает карточку с мгновенным заголовком', async () => {
@@ -652,6 +668,7 @@ const stubCardFetch = ({
   patchResponse,
   patchBody,
   videoUpload,
+  videoGet,
 }: {
   full?: ReturnType<typeof sampleCompositionFull>;
   fullStatus?: number;
@@ -660,6 +677,7 @@ const stubCardFetch = ({
   patchResponse?: ReturnType<typeof sampleComposition>;
   patchBody?: unknown;
   videoUpload?: { status: number; body: unknown };
+  videoGet?: () => Promise<Response>;
 } = {}) => {
   const fetchMock = vi
     .fn()
@@ -688,16 +706,18 @@ const stubCardFetch = ({
         );
       }
 
-      if (
-        method === 'POST' &&
-        parsed.pathname === `/compositions/${COMPOSITION_ID}/video`
-      ) {
-        return Promise.resolve(
-          jsonResponse(
-            videoUpload?.status ?? 500,
-            videoUpload?.body ?? { message: 'unexpected' },
-          ),
-        );
+      if (parsed.pathname === `/compositions/${COMPOSITION_ID}/video`) {
+        if (method === 'POST') {
+          return Promise.resolve(
+            jsonResponse(
+              videoUpload?.status ?? 500,
+              videoUpload?.body ?? { message: 'unexpected' },
+            ),
+          );
+        }
+        if (method === 'GET' && videoGet !== undefined) {
+          return videoGet();
+        }
       }
 
       if (parsed.pathname.endsWith('/tags') && method === 'GET') {
@@ -733,6 +753,17 @@ const stubCardFetch = ({
     });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
+};
+
+const videoGets = (fetchMock: ReturnType<typeof vi.fn>) => {
+  return fetchMock.mock.calls.filter((call) => {
+    const method = (call[1] as RequestInit | undefined)?.method ?? 'GET';
+    return (
+      method === 'GET' &&
+      new URL(String(call[0])).pathname ===
+        `/compositions/${COMPOSITION_ID}/video`
+    );
+  });
 };
 
 const getFullCalls = (fetchMock: ReturnType<typeof vi.fn>) => {

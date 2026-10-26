@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
@@ -44,6 +44,10 @@ export const useCompositionCard = () => {
   const [loadMessages, setLoadMessages] = useState<readonly string[]>([]);
   const [clipsReloadToken, setClipsReloadToken] = useState(0);
   const [audioVersion, setAudioVersion] = useState(0);
+  const [videoVersionState, setVideoVersionState] = useState({
+    compositionId: id,
+    value: 0,
+  });
   const [tab, setTab] = useState<CompositionCardTab>('general');
   const [trackedId, setTrackedId] = useState(id);
   const missingId = id === undefined || id === '';
@@ -55,6 +59,7 @@ export const useCompositionCard = () => {
     setNotFound(false);
     setLoadMessages([]);
     setClipsReloadToken(0);
+    setVideoVersionState({ compositionId: id, value: 0 });
     setTab('general');
   }
 
@@ -119,20 +124,53 @@ export const useCompositionCard = () => {
     setClipsReloadToken((value) => value + 1);
   };
 
-  const handleVideoSaved = (
-    compositionId: string,
-    videoDurationSec: number,
-  ) => {
+  // Ссылка сбрасывается до GET: иначе плеер на миг покажет уже заменённый файл.
+  // Апдейтеры чистые. Версия растёт только у своей композиции: поздний
+  // ответ чужой не должен перезапускать запрос ссылки в текущей карточке.
+  const bumpVideoVersion = useCallback((compositionId: string) => {
+    setVideoVersionState((current) =>
+      current.compositionId === compositionId
+        ? { compositionId, value: current.value + 1 }
+        : current,
+    );
+  }, []);
+
+  const handleVideoSaved = useCallback(
+    (compositionId: string, videoDurationSec: number) => {
+      setFull((current) =>
+        current === null || current.id !== compositionId
+          ? current
+          : { ...current, videoDurationSec, videoUrl: null },
+      );
+      bumpVideoVersion(compositionId);
+    },
+    [bumpVideoVersion],
+  );
+
+  const handleVideoRemoved = useCallback(
+    (compositionId: string) => {
+      setFull((current) =>
+        current === null || current.id !== compositionId
+          ? current
+          : { ...current, videoDurationSec: null, videoUrl: null },
+      );
+      bumpVideoVersion(compositionId);
+    },
+    [bumpVideoVersion],
+  );
+
+  const handleVideoUrl = useCallback((compositionId: string, url: string) => {
     setFull((current) =>
-      current === null || current.id !== compositionId
+      current === null ||
+      current.id !== compositionId ||
+      current.videoDurationSec === null
         ? current
         : {
             ...current,
-            videoDurationSec,
-            videoUrl: null,
+            videoUrl: url,
           },
     );
-  };
+  }, []);
 
   const headerTitle = full?.title ?? locationState?.title;
   const headerAuthor = full?.author ?? locationState?.author;
@@ -148,11 +186,14 @@ export const useCompositionCard = () => {
     tagMessages,
     clipsReloadToken,
     audioVersion,
+    videoVersion: videoVersionState.value,
     tab,
     setTab,
     applySaved,
     handleAudioUploaded,
     handlePointsCreated,
     handleVideoSaved,
+    handleVideoRemoved,
+    handleVideoUrl,
   };
 };

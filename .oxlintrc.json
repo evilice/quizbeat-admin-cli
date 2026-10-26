@@ -51,7 +51,7 @@
         "src/modules/session/LoginPage.tsx",
         "src/modules/session/ChangePasswordPage.tsx",
         "src/modules/compositions/{list,create,edit,card}/**",
-        "src/modules/compositions/video/{video-trim*,use-video-trim.ts,VideoTrimEditor*}",
+        "src/modules/compositions/video/{video-trim*,use-video-trim.ts,VideoTrimEditor*,SavedVideo*,use-saved-video.ts}",
         "src/modules/compositions/CompositionsPage.tsx",
         "src/modules/compositions/CompositionCardPage.tsx",
         "src/modules/compositions/composition-display.ts",

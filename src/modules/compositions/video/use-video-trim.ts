@@ -15,10 +15,12 @@ export const useVideoTrim = ({
   compositionId,
   active,
   onSaved,
+  onBusyChange,
 }: {
   compositionId: string;
   active: boolean;
   onSaved: (compositionId: string, videoDurationSec: number) => void;
+  onBusyChange?: (busy: boolean) => void;
 }) => {
   const { video } = useRootStore();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -278,6 +280,7 @@ export const useVideoTrim = ({
     const fileToSend = file;
     busyRef.current = true;
     setBusy(true);
+    onBusyChange?.(true);
     setMessages([]);
     try {
       const result = await video.save(
@@ -299,6 +302,8 @@ export const useVideoTrim = ({
       }
     } finally {
       busyRef.current = false;
+      // Родитель узнаёт об окончании загрузки и после размонтирования редактора.
+      onBusyChange?.(false);
       if (mountedRef.current) {
         setBusy(false);
       }

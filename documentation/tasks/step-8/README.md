@@ -3,9 +3,9 @@
 Статус этапа: выполнен. Сводка — [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 8»](../../03-technical-specification.md#этап-8--сборка-карточки-композиции).
-Карта вызовов — [композиции](../../02-staff-api.md#5-композиции), строка
+Карта вызовов — [композиции](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#5-композиции), строка
 `GET /compositions/:id/full`; общие правила про presigned —
-[§1](../../02-staff-api.md#1-общие-правила).
+[§1](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#1-общие-правила).
 
 Формат файлов — по [task-writing-guidelines.md](../task-writing-guidelines.md).
 Порядок номеров — топологический порядок графа ниже.

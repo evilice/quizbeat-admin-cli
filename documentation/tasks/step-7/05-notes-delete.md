@@ -6,7 +6,7 @@
 Ссылка на ТЗ: [раздел «Этап 7»](../../03-technical-specification.md#этап-7--заметки-а-знали-ли-вы)
 (удаление `DELETE .../notes/:noteId`, `204`; DoD — заметка удаляется).
 Карта: строка `DELETE` в
-[заметках](../../02-staff-api.md#8-заметки).
+[заметках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#8-заметки).
 Сервис —
 [`NotesService.remove`](../../../../quizbeat-srv/src/notes/notes.service.ts).
 

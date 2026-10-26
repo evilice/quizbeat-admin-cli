@@ -4,8 +4,8 @@
 
 Источник: [03-technical-specification.md, раздел «Этап 1»](../../03-technical-specification.md#этап-1--сессия-сотрудника)
 и поведение `401` из [раздела 2](../../03-technical-specification.md#2-общие-технические-требования).
-Карта вызовов — [сессия](../../02-staff-api.md#2-сессия) и строка
-`PATCH /admins/me/password` в [сотрудниках](../../02-staff-api.md#3-сотрудники).
+Карта вызовов — [сессия](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#2-сессия) и строка
+`PATCH /admins/me/password` в [сотрудниках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 
 Формат файлов — по [task-writing-guidelines.md](../task-writing-guidelines.md).
 Порядок номеров — топологический порядок графа ниже. Этап опирается на

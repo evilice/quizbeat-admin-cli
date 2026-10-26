@@ -7,7 +7,7 @@
 (порядок `PATCH .../notes/order`, `{ noteIds }` — полный список; DoD —
 заметка меняет порядок).
 Карта: строка `PATCH .../notes/order` в
-[заметках](../../02-staff-api.md#8-заметки).
+[заметках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#8-заметки).
 DTO —
 [`ReorderNotesDto`](../../../../quizbeat-srv/src/notes/dto/reorder-notes.dto.ts),
 проверка набора —

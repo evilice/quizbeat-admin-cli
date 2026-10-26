@@ -43,7 +43,7 @@
 
 - `src/modules/compositions/audio/audio-clips-store.ts`,
   `WaveformPointsBlock.tsx`, `ClipsListBlock.tsx` и тесты рядом.
-- Документация: [02-staff-api.md](../../02-staff-api.md), ТЗ.
+- Документация: [02-staff-api.md](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md), ТЗ.
 
 ## Критерии готовности
 

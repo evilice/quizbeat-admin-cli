@@ -8,7 +8,7 @@ access уже предусмотрен, клиент сам токен не хр
 (роль и id из access, почта рядом с refresh) и
 [раздел 2](../../03-technical-specification.md#2-общие-технические-требования)
 (access в памяти, refresh в `localStorage`).
-Карта: [сессия](../../02-staff-api.md#2-сессия), payload —
+Карта: [сессия](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#2-сессия), payload —
 [`StaffAccessTokenPayload`](../../../../quizbeat-srv/src/staff-auth/types/staff-user.type.ts).
 Поля токена, уже перечисленные в карте, здесь не повторяются.
 

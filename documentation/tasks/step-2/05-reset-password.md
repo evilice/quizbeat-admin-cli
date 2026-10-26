@@ -9,7 +9,7 @@
 Ссылка на ТЗ: [раздел «Этап 2»](../../03-technical-specification.md#этап-2--сотрудники)
 (`PATCH /admins/:id/password`, тело только `newPassword`, успех `204`).
 Карта: строка `PATCH /admins/:id/password` в
-[сотрудниках](../../02-staff-api.md#3-сотрудники).
+[сотрудниках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 DTO —
 [`ResetAdminPasswordDto`](../../../../quizbeat-srv/src/admin/dto/reset-admin-password.dto.ts).
 Отзыв refresh цели —

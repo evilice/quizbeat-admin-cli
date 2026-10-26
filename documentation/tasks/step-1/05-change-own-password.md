@@ -6,7 +6,7 @@
 Ссылка на ТЗ: [раздел «Этап 1»](../../03-technical-specification.md#этап-1--сессия-сотрудника)
 (смена своего пароля, новый не короче 8 символов, доступна любой роли).
 Карта: строка `PATCH /admins/me/password` в
-[сотрудниках](../../02-staff-api.md#3-сотрудники).
+[сотрудниках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 Контроллер —
 [`admins.controller.ts`](../../../../quizbeat-srv/src/admin/admins.controller.ts)
 (`@Patch('me/password')`), DTO —

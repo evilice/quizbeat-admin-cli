@@ -7,7 +7,7 @@
 [задачи 1](./01-audio-clips-store.md).
 Ссылка на ТЗ: [раздел «Этап 5»](../../03-technical-specification.md#этап-5--аудио-и-отрезки)
 (волна по временной ссылке; разметка; `POST .../clips` с `{ points }`).
-Карта: [аудио и отрезки](../../02-staff-api.md#6-аудио-и-отрезки).
+Карта: [аудио и отрезки](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#6-аудио-и-отрезки).
 DTO точки —
 [`CreateAudioClipPointDto`](../../../../quizbeat-srv/src/audio-clips/dto/create-audio-clip-point.dto.ts),
 набор длительностей и сложностей — там же и

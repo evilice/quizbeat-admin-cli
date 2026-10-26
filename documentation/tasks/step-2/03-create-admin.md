@@ -6,7 +6,7 @@
 Ссылка на ТЗ: [раздел «Этап 2»](../../03-technical-specification.md#этап-2--сотрудники)
 (`POST /admins`: email, пароль не короче 8, роль).
 Карта: строка `POST /admins` в
-[сотрудниках](../../02-staff-api.md#3-сотрудники).
+[сотрудниках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 DTO —
 [`CreateAdminDto`](../../../../quizbeat-srv/src/admin/dto/create-admin.dto.ts),
 нормализация email —

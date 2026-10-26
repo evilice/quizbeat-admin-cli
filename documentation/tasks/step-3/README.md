@@ -3,7 +3,7 @@
 Статус этапа: выполнен. Сводка — [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 3»](../../03-technical-specification.md#этап-3--справочник-тегов).
-Карта вызовов — [теги](../../02-staff-api.md#4-теги).
+Карта вызовов — [теги](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#4-теги).
 
 Формат файлов — по [task-writing-guidelines.md](../task-writing-guidelines.md).
 Порядок номеров — топологический порядок графа ниже. Этап опирается на
@@ -138,7 +138,7 @@ flowchart TD
   `limit: limit must not be less than 1` либо
   `limit: limit must not be greater than 100`. Нецелое значение — тот же
   `400`. Зафиксировано в
-  [общих правилах](../../02-staff-api.md#1-общие-правила). Экраны размер
+  [общих правилах](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#1-общие-правила). Экраны размер
   страницы не выбирают: списки не передают `limit` (сервер ставит 20),
   фильтр тегов на композиции передаёт 100. Если выбор размера страницы
   появится, в нём остаются только целые 1…100.

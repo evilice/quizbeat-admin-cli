@@ -7,7 +7,7 @@
 Новое поле добавляется в корневой стор
 [`src/stores/root-store.ts`](../step-0/03-app-shell.md).
 Ссылка на ТЗ: [раздел «Этап 4»](../../03-technical-specification.md#этап-4--композиции).
-Карта: [композиции](../../02-staff-api.md#5-композиции).
+Карта: [композиции](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#5-композиции).
 Контроллер —
 [`compositions.controller.ts`](../../../../quizbeat-srv/src/compositions/compositions.controller.ts),
 query —

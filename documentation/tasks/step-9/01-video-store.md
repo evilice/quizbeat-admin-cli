@@ -20,7 +20,7 @@
 |---|---|
 | Стор: `save(file, startSec, endSec)` (`POST .../video`, multipart: `file`, `startSec`, `endSec`), `refreshUrl()` (`GET .../video`), `remove()` (`DELETE`, `204`) | Разметка, плеер, выбор отрезка — [задача 2](./02-video-trim-editor.md) |
 | Чтение `videoUrl`, `videoDurationSec` из `GET /full` (оба `null`, если видео нет) | Прогресс-бар загрузки |
-| Раздел «Видео» в [02-staff-api.md](../../02-staff-api.md) (§9) | Игровой API |
+| Раздел «Видео» в [02-staff-api.md](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md) (§9) | Игровой API |
 | Тесты на моке | — |
 
 ## ⚠ Технические нюансы и ограничения

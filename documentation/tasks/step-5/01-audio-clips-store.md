@@ -9,7 +9,7 @@
 [задача 1 этапа 4](../step-4/01-compositions-store.md) /
 [`src/stores/root-store.ts`](../step-0/03-app-shell.md).
 Ссылка на ТЗ: [раздел «Этап 5»](../../03-technical-specification.md#этап-5--аудио-и-отрезки).
-Карта: [аудио и отрезки](../../02-staff-api.md#6-аудио-и-отрезки).
+Карта: [аудио и отрезки](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#6-аудио-и-отрезки).
 Контроллеры —
 [`compositions.controller.ts`](../../../../quizbeat-srv/src/compositions/compositions.controller.ts)
 (`POST`/`GET .../audio`),

@@ -7,7 +7,7 @@
 (список, фильтры, деактивированные видны, прямой заход `ADMIN` получает
 `403` и не рисует список).
 Карта: строка `GET /admins` в
-[сотрудниках](../../02-staff-api.md#3-сотрудники).
+[сотрудниках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 Query и пагинация —
 [`ListAdminsQueryDto`](../../../../quizbeat-srv/src/admin/dto/list-admins-query.dto.ts),
 порядок строк — `createdAt DESC` в

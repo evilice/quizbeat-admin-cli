@@ -8,7 +8,7 @@
 (`PATCH /admins/:id`, `DELETE` как деактивация с телом `200`, access
 живёт до TTL).
 Карта: строки `PATCH /admins/:id` и `DELETE /admins/:id` в
-[сотрудниках](../../02-staff-api.md#3-сотрудники).
+[сотрудниках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 Сервис —
 [`AdminsService`](../../../../quizbeat-srv/src/admin/admins.service.ts)
 (`update` не отзывает refresh, `remove` отзывает), отказ последнего

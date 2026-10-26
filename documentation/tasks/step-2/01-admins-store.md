@@ -7,7 +7,7 @@
 добавляется в корневой стор
 [`src/stores/root-store.ts`](../step-0/03-app-shell.md).
 Ссылка на ТЗ: [раздел «Этап 2»](../../03-technical-specification.md#этап-2--сотрудники).
-Карта: [сотрудники](../../02-staff-api.md#3-сотрудники).
+Карта: [сотрудники](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 Контроллер —
 [`admins.controller.ts`](../../../../quizbeat-srv/src/admin/admins.controller.ts),
 query —

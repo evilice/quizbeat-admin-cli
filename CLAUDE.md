@@ -15,13 +15,23 @@ player-контур не входят. Имя папки `quizbeat-admin-cli` �
 Роли, сценарии, стек —
 [documentation/01-project-overview.md](./documentation/01-project-overview.md).
 Карта staff-API —
-[documentation/02-staff-api.md](./documentation/02-staff-api.md).
+[staff-api.md](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md) в `quizbeat-docs`.
 Этапы и принятые решения —
 [documentation/03-technical-specification.md](./documentation/03-technical-specification.md).
 Нумерация документов и этапов — этого репозитория, не `quizbeat-srv`.
 Сессия — этап 1, сотрудники — этап 2, контент с тегов на этапе 3.
 Поля запросов сверять с картой и с кодом `quizbeat-srv`; если они
-разошлись, верен код сервера, карта правится здесь.
+разошлись, верен код сервера. Контрактом владеет сервер, клиент его не
+переписывает: расхождение оформляется багом или PR в `quizbeat-docs` /
+`quizbeat-srv`.
+
+Общая документация проекта (процесс, контракт API, продуктовые документы) —
+в соседнем репозитории `../quizbeat-docs/` (на GitHub:
+[evilice/quizbeat-docs](https://github.com/evilice/quizbeat-docs)). Правила
+разработки и формат задач сначала читать там:
+`../quizbeat-docs/process/development-rules.md` и
+`../quizbeat-docs/process/task-writing-guidelines.md`. Документы этого
+репозитория — только проектная надстройка над ними.
 
 ## Стек
 
@@ -81,7 +91,7 @@ src/
 ## Документация — куда смотреть
 
 - [documentation/01-project-overview.md](./documentation/01-project-overview.md)
-- [documentation/02-staff-api.md](./documentation/02-staff-api.md) —
+- [staff-api.md](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md) (`../quizbeat-docs/api/staff-api.md`) —
   сверяться заново, не полагаться на память из прошлой сессии.
 - [documentation/03-technical-specification.md](./documentation/03-technical-specification.md) —
   порядок поставки экранов. Сверяться заново.
@@ -103,8 +113,10 @@ src/
   [этап 9](./documentation/tasks/step-9/README.md),
   [этап 10](./documentation/tasks/step-10/README.md).
 
-## Правила разработки (кратко; полный текст —
-в [documentation/04-development-rules.md](./documentation/04-development-rules.md))
+## Правила разработки (кратко; общее ядро —
+`../quizbeat-docs/process/development-rules.md`, специфика клиента и
+раздел 11 —
+[documentation/04-development-rules.md](./documentation/04-development-rules.md))
 
 1. Разведка перед реализацией — искать готовый паттерн в клиенте и
    фактический контракт в `quizbeat-srv`.
@@ -122,7 +134,8 @@ src/
 8. `npm run lint` и `npm run test` после каждого изменения; `npm run build`
    перед сдачей задачи, которая трогает сборку, маршрут или стор.
 9. Обзор, карта API и ТЗ правятся в том же PR, что и код. Контракт сервера
-   отсюда не переписывается: расхождение чинится в карте клиента.
+   отсюда не переписывается: при расхождении верен код сервера, а карту
+   правят через баг или PR в `quizbeat-docs` / `quizbeat-srv`.
 10. Коммиты с префиксом (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`),
     текст после префикса — на русском.
 

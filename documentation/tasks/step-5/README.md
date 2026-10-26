@@ -3,7 +3,7 @@
 Статус этапа: выполнен. Сводка — [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 5»](../../03-technical-specification.md#этап-5--аудио-и-отрезки).
-Карта вызовов — [аудио и отрезки](../../02-staff-api.md#6-аудио-и-отрезки).
+Карта вызовов — [аудио и отрезки](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#6-аудио-и-отрезки).
 
 Формат файлов — по [task-writing-guidelines.md](../task-writing-guidelines.md).
 Порядок номеров — топологический порядок графа ниже. Этап опирается на
@@ -127,7 +127,7 @@ React, без `dangerouslySetInnerHTML`. Уровень 1 (`/code-review` с
 - **Ссылка на волну при первом открытии — `originalAudioUrl` из
   `full`.** В стор/состояние как постоянный адрес её не класть: TTL
   presigned по умолчанию 3600 с
-  ([общие правила карты](../../02-staff-api.md#1-общие-правила)).
+  ([общие правила карты](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#1-общие-правила)).
   Протухшую ссылку (или после `POST .../audio`) обновляют отдельным
   `GET .../audio`, поле `url`; длительности в этом ответе нет. Прямой
   `404` на этом `GET` (когда он всё же вызван для обновления, а не как

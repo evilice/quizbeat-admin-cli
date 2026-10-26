@@ -8,7 +8,7 @@
 (`POST /tags`, `PATCH /tags/:id`: код и ровно два перевода, поле `name`;
 запрос без одного перевода не уходит).
 Карта: строки `POST /tags` и `PATCH /tags/:id` в
-[тегах](../../02-staff-api.md#4-теги).
+[тегах](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#4-теги).
 DTO —
 [`CreateTagDto`](../../../../quizbeat-srv/src/tags/dto/create-tag.dto.ts),
 [`UpdateTagDto`](../../../../quizbeat-srv/src/tags/dto/update-tag.dto.ts),

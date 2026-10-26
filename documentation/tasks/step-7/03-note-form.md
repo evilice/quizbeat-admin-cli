@@ -8,7 +8,7 @@
 (`POST .../notes`, `PATCH .../notes/:noteId`: оба перевода, поле
 `text`; запрос без одного перевода не уходит).
 Карта: строки `POST` и `PATCH .../:noteId` в
-[заметках](../../02-staff-api.md#8-заметки).
+[заметках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#8-заметки).
 DTO —
 [`CreateNoteDto`](../../../../quizbeat-srv/src/notes/dto/create-note.dto.ts),
 [`UpdateNoteDto`](../../../../quizbeat-srv/src/notes/dto/update-note.dto.ts),

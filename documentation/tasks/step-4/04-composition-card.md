@@ -9,7 +9,7 @@
 (карточка открывается `GET .../full`; `PATCH` названия, автора, статуса и
 набора тегов; снятие последнего тега — пустой `tagIds`).
 Карта: строки `GET .../full` и `PATCH /compositions/:id` в
-[композициях](../../02-staff-api.md#5-композиции).
+[композициях](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#5-композиции).
 DTO —
 [`UpdateCompositionDto`](../../../../quizbeat-srv/src/compositions/dto/update-composition.dto.ts),
 [`CompositionFullResponseDto`](../../../../quizbeat-srv/src/compositions/dto/composition-full-response.dto.ts),

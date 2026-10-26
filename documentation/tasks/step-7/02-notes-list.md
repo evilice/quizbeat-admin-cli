@@ -9,7 +9,7 @@
 (список `GET .../notes`; правка идёт из списка, отдельного `GET`
 одной заметки нет).
 Карта: строка `GET .../notes` в
-[заметках](../../02-staff-api.md#8-заметки).
+[заметках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#8-заметки).
 Контроллер —
 [`list`](../../../../quizbeat-srv/src/notes/notes.controller.ts).
 

@@ -9,7 +9,7 @@
 Ссылка на ТЗ: [раздел «Этап 5»](../../03-technical-specification.md#этап-5--аудио-и-отрезки)
 (список; опрос пока есть `PENDING` / `PROCESSING`; `DONE` с `fileUrl`;
 явный `FAILED`).
-Карта: [аудио и отрезки](../../02-staff-api.md#6-аудио-и-отрезки).
+Карта: [аудио и отрезки](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#6-аудио-и-отрезки).
 Статусы —
 [`AudioClipStatus`](../../../../quizbeat-srv/src/audio-clips/audio-clip-status.enum.ts),
 ответ —

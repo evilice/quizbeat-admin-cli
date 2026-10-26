@@ -1,7 +1,7 @@
 # Этап 9 — Видео композиции: декомпозиция на задачи
 
 Источник: [03-technical-specification.md, раздел «Этап 9»](../../03-technical-specification.md#этап-9--видео-композиции).
-Карта вызовов — [видео](../../02-staff-api.md#9-видео) (добавляется задачей 1).
+Карта вызовов — [видео](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#9-видео) (добавляется задачей 1).
 Серверная сторона — этап 14 в `quizbeat-srv`
 (`documentation/tasks/step-14/`), особенно
 [задача 3](../../../../quizbeat-srv/documentation/tasks/step-14/03-composition-video-endpoints.md).

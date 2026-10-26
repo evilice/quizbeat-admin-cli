@@ -8,7 +8,7 @@
 (порядок `PATCH .../images/order`, `{ imageIds }` — полный список; DoD —
 порядок после перетаскивания совпадает с повторным чтением).
 Карта: строка `PATCH .../images/order` в
-[картинках](../../02-staff-api.md#7-картинки).
+[картинках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#7-картинки).
 DTO —
 [`ReorderCompositionImagesDto`](../../../../quizbeat-srv/src/composition-images/dto/reorder-composition-images.dto.ts),
 проверка набора —

@@ -3,7 +3,7 @@
 Статус этапа: выполнен. Сводка — [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 7»](../../03-technical-specification.md#этап-7--заметки-а-знали-ли-вы).
-Карта вызовов — [заметки](../../02-staff-api.md#8-заметки).
+Карта вызовов — [заметки](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#8-заметки).
 
 Формат файлов — по [task-writing-guidelines.md](../task-writing-guidelines.md).
 Порядок номеров — топологический порядок графа ниже. Этап опирается на

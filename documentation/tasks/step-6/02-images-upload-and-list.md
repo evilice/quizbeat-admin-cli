@@ -9,7 +9,7 @@
 (загрузка `POST .../images`, поле `files`, до 10; список с превью по
 `fileUrl`).
 Карта: строки `POST` / `GET` `.../images` в
-[картинках](../../02-staff-api.md#7-картинки).
+[картинках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#7-картинки).
 Проверка файла на сервере —
 [`FileValidationService`](../../../../quizbeat-srv/src/storage/file-validation.service.ts),
 типы —

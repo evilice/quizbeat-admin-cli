@@ -7,7 +7,7 @@
 (`DELETE /tags/:id` — жёсткое удаление, `204`, с подтверждением;
 композиции теряют тег и сами не удаляются).
 Карта: строка `DELETE /tags/:id` в
-[тегах](../../02-staff-api.md#4-теги).
+[тегах](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#4-теги).
 Сервис —
 [`TagsService.remove`](../../../../quizbeat-srv/src/tags/tags.service.ts),
 связь с композицией —

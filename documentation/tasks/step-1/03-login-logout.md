@@ -5,7 +5,7 @@
 выход, перехватчик `401`).
 Ссылка на ТЗ: [раздел «Этап 1»](../../03-technical-specification.md#этап-1--сессия-сотрудника)
 (форма, выход, восстановление при загрузке, показ `429` на логине).
-Карта: [сессия](../../02-staff-api.md#2-сессия). DTO логина —
+Карта: [сессия](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#2-сессия). DTO логина —
 [`StaffLoginDto`](../../../../quizbeat-srv/src/staff-auth/dto/staff-login.dto.ts).
 Поля тел в карте уже есть.
 

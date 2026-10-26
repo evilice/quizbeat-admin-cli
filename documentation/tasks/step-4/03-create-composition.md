@@ -9,7 +9,7 @@
 (`POST /compositions`: название, автор, необязательный статус и набор
 тегов).
 Карта: строка `POST /compositions` в
-[композициях](../../02-staff-api.md#5-композиции).
+[композициях](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#5-композиции).
 DTO —
 [`CreateCompositionDto`](../../../../quizbeat-srv/src/compositions/dto/create-composition.dto.ts),
 дефолт статуса — в

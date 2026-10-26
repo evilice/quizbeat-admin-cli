@@ -8,7 +8,7 @@
 [задача 1 этапа 4](../step-4/01-compositions-store.md) /
 [`src/stores/root-store.ts`](../step-0/03-app-shell.md).
 Ссылка на ТЗ: [раздел «Этап 7»](../../03-technical-specification.md#этап-7--заметки-а-знали-ли-вы).
-Карта: [заметки](../../02-staff-api.md#8-заметки).
+Карта: [заметки](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#8-заметки).
 Контроллер —
 [`notes.controller.ts`](../../../../quizbeat-srv/src/notes/notes.controller.ts).
 Сервис —

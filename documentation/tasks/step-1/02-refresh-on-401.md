@@ -6,7 +6,7 @@
 Ссылка на ТЗ: [раздел «Этап 1»](../../03-technical-specification.md#этап-1--сессия-сотрудника)
 и абзац про `401` в
 [разделе 2](../../03-technical-specification.md#2-общие-технические-требования).
-Карта: [сессия](../../02-staff-api.md#2-сессия).
+Карта: [сессия](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#2-сессия).
 Контроллер —
 [`staff-auth.controller.ts`](../../../../quizbeat-srv/src/staff-auth/staff-auth.controller.ts),
 ротация —

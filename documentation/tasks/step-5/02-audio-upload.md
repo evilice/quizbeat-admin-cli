@@ -7,7 +7,7 @@
 Ссылка на ТЗ: [раздел «Этап 5»](../../03-technical-specification.md#этап-5--аудио-и-отрезки)
 (загрузка `POST .../audio`, поле `file`, подсказка расширений и размера).
 Карта: строка `POST` / `GET` `.../audio` в
-[аудио и отрезках](../../02-staff-api.md#6-аудио-и-отрезки).
+[аудио и отрезках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#6-аудио-и-отрезки).
 Проверка файла на сервере —
 [`FileValidationService`](../../../../quizbeat-srv/src/storage/file-validation.service.ts),
 контроллер —

@@ -4,7 +4,7 @@
 [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 2»](../../03-technical-specification.md#этап-2--сотрудники).
-Карта вызовов — [сотрудники](../../02-staff-api.md#3-сотрудники).
+Карта вызовов — [сотрудники](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#3-сотрудники).
 Смена своего пароля уже закрыта
 [задачей 5 этапа 1](../step-1/05-change-own-password.md) и здесь не
 повторяется.

@@ -11,7 +11,7 @@ Access и `401` — уже через
 [задача 1 этапа 4](../step-4/01-compositions-store.md) /
 [`src/stores/root-store.ts`](../step-0/03-app-shell.md).
 Ссылка на ТЗ: [раздел «Этап 6»](../../03-technical-specification.md#этап-6--изображения-композиции).
-Карта: [картинки](../../02-staff-api.md#7-картинки).
+Карта: [картинки](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#7-картинки).
 Контроллер —
 [`composition-images.controller.ts`](../../../../quizbeat-srv/src/composition-images/composition-images.controller.ts).
 Сервис —

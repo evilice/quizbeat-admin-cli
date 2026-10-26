@@ -14,7 +14,7 @@
 
 - [Обзор](./documentation/01-project-overview.md) — кто пользуется клиентом,
   какие сценарии он закрывает, как он связан с сервером.
-- [Staff-API](./documentation/02-staff-api.md) — карта вызовов, ролей и
+- [Staff-API](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md) (в `quizbeat-docs`) — карта вызовов, ролей и
   ловушек контракта, на которую опираются экраны. Поля DTO сверяются с
   кодом `quizbeat-srv`, карта их целиком не копирует.
 - [Техническое задание по этапам](./documentation/03-technical-specification.md) —

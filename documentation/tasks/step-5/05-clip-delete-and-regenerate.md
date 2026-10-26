@@ -7,7 +7,7 @@
 Ссылка на ТЗ: [раздел «Этап 5»](../../03-technical-specification.md#этап-5--аудио-и-отрезки)
 (удаление `204`, перегенерация).
 Карта: строки `DELETE` и `POST .../regenerate` в
-[аудио и отрезках](../../02-staff-api.md#6-аудио-и-отрезки).
+[аудио и отрезках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#6-аудио-и-отрезки).
 Сервис —
 [`AudioClipsService.remove` / `regenerate`](../../../../quizbeat-srv/src/audio-clips/audio-clips.service.ts),
 сообщение занятости —

@@ -4,7 +4,7 @@
 [status.md](../status.md).
 
 Источник: [03-technical-specification.md, раздел «Этап 4»](../../03-technical-specification.md#этап-4--композиции).
-Карта вызовов — [композиции](../../02-staff-api.md#5-композиции).
+Карта вызовов — [композиции](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#5-композиции).
 
 Формат файлов — по [task-writing-guidelines.md](../task-writing-guidelines.md).
 Порядок номеров — топологический порядок графа ниже. Этап опирается на

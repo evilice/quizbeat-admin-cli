@@ -8,7 +8,7 @@
 (удаление `DELETE .../images/:imageId`, `204`; DoD — удаление убирает
 карточку).
 Карта: строка `DELETE` в
-[картинках](../../02-staff-api.md#7-картинки).
+[картинках](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#7-картинки).
 Сервис —
 [`CompositionImagesService.remove`](../../../../quizbeat-srv/src/composition-images/composition-images.service.ts).
 

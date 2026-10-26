@@ -9,7 +9,7 @@
 Ссылка на ТЗ: [раздел «Этап 4»](../../03-technical-specification.md#этап-4--композиции)
 (список с поиском, фильтром статуса и тегов, пагинацией).
 Карта: строка `GET /compositions` в
-[композициях](../../02-staff-api.md#5-композиции).
+[композициях](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#5-композиции).
 Query —
 [`ListCompositionsQueryDto`](../../../../quizbeat-srv/src/compositions/dto/list-compositions-query.dto.ts),
 порядок строк — `createdAt DESC` в

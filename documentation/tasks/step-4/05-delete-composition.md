@@ -7,7 +7,7 @@
 (`DELETE /compositions/:id` — мягкое удаление, `200` с `deletedAt`, с
 подтверждением; вернуть нельзя).
 Карта: строка `DELETE /compositions/:id` в
-[композициях](../../02-staff-api.md#5-композиции).
+[композициях](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#5-композиции).
 Сервис —
 [`CompositionsService.remove`](../../../../quizbeat-srv/src/compositions/compositions.service.ts).
 

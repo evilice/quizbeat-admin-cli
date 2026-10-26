@@ -7,7 +7,7 @@
 (HTTP-клиент: базовый URL, JSON, разбор ошибки, место для access-токена)
 и [раздел 2](../../03-technical-specification.md#2-общие-технические-требования)
 (одно место разбора тела ошибки).
-Карта контракта: [общие правила](../../02-staff-api.md#1-общие-правила).
+Карта контракта: [общие правила](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#1-общие-правила).
 Форма тела на сервере:
 [`ErrorResponseBody`](../../../../quizbeat-srv/src/errors/global-exception.filter.ts)
 в `quizbeat-srv`. Поля, уже перечисленные в карте, здесь не повторяются.

@@ -7,7 +7,7 @@
 [списка сотрудников](../step-2/02-admins-list.md).
 Ссылка на ТЗ: [раздел «Этап 3»](../../03-technical-specification.md#этап-3--справочник-тегов)
 (список с поиском по названию и пагинацией).
-Карта: строка `GET /tags` в [тегах](../../02-staff-api.md#4-теги).
+Карта: строка `GET /tags` в [тегах](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#4-теги).
 Query и пагинация —
 [`ListTagsQueryDto`](../../../../quizbeat-srv/src/tags/dto/list-tags-query.dto.ts)
 и [`PaginationQueryDto`](../../../../quizbeat-srv/src/common/pagination/pagination-query.dto.ts),

@@ -295,6 +295,8 @@ refresh после успеха больше не используется. Пр
 
 ### Этап 9 — Видео композиции
 
+Статус: выполнено.
+
 Карта: [видео](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#9-видео). Контракт сервера — этап 14
 в `quizbeat-srv`.
 

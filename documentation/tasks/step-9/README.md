@@ -1,5 +1,7 @@
 # Этап 9 — Видео композиции: декомпозиция на задачи
 
+Статус этапа: выполнен. Сводка — [status.md](../status.md).
+
 Источник: [03-technical-specification.md, раздел «Этап 9»](../../03-technical-specification.md#этап-9--видео-композиции).
 Карта вызовов — [видео](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md#9-видео) (добавляется задачей 1).
 Серверная сторона — этап 14 в `quizbeat-srv`
@@ -37,7 +39,7 @@ flowchart TD
 | 1 | Стор видео: `POST/GET/DELETE .../video`, поля `videoUrl`/`videoDurationSec` из `GET /full` | серверный этап 14 (задача 3), [этап 4](../step-4/README.md) | [01-video-store.md](./01-video-store.md) | выполнена |
 | 2 | Выбор файла, локальный предпросмотр, выбор отрезка, отправка | 1 | [02-video-trim-editor.md](./02-video-trim-editor.md) | выполнена |
 | 3 | Блок на карточке: сохранённое видео, замена, удаление | 2 | [03-saved-video-block.md](./03-saved-video-block.md) | выполнена |
-| 4 | Приёмка этапа 9 целиком | 3 | [04-step9-acceptance.md](./04-step9-acceptance.md) | не выполнена |
+| 4 | Приёмка этапа 9 целиком | 3 | [04-step9-acceptance.md](./04-step9-acceptance.md) | выполнена |
 
 ## Решения этапа
 

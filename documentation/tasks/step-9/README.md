@@ -35,7 +35,7 @@ flowchart TD
 | # | Задача | Зависит от | Файл | Статус |
 |---|--------|------------|------|--------|
 | 1 | Стор видео: `POST/GET/DELETE .../video`, поля `videoUrl`/`videoDurationSec` из `GET /full` | серверный этап 14 (задача 3), [этап 4](../step-4/README.md) | [01-video-store.md](./01-video-store.md) | выполнена |
-| 2 | Выбор файла, локальный предпросмотр, выбор отрезка, отправка | 1 | [02-video-trim-editor.md](./02-video-trim-editor.md) | не выполнена |
+| 2 | Выбор файла, локальный предпросмотр, выбор отрезка, отправка | 1 | [02-video-trim-editor.md](./02-video-trim-editor.md) | выполнена |
 | 3 | Блок на карточке: сохранённое видео, замена, удаление | 2 | [03-saved-video-block.md](./03-saved-video-block.md) | не выполнена |
 | 4 | Приёмка этапа 9 целиком | 3 | [04-step9-acceptance.md](./04-step9-acceptance.md) | не выполнена |
 

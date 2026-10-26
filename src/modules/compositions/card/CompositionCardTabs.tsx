@@ -7,6 +7,7 @@ const TABS: { id: CompositionCardTab; label: string }[] = [
   { id: 'audio', label: 'Аудио' },
   { id: 'images', label: 'Изображения' },
   { id: 'notes', label: 'Заметки' },
+  { id: 'video', label: 'Видео' },
 ];
 
 type CompositionCardTabsProps = {
@@ -16,6 +17,7 @@ type CompositionCardTabsProps = {
   audio: ReactNode;
   images: ReactNode;
   notes: ReactNode;
+  video: ReactNode;
 };
 
 export const CompositionCardTabs = ({
@@ -25,12 +27,14 @@ export const CompositionCardTabs = ({
   audio,
   images,
   notes,
+  video,
 }: CompositionCardTabsProps) => {
   const panels: Record<CompositionCardTab, ReactNode> = {
     general,
     audio,
     images,
     notes,
+    video,
   };
 
   return (

@@ -54,6 +54,12 @@ export const CompositionEditForm = ({
       data-images-count={String(composition.images.length)}
       data-notes-count={String(composition.notes.length)}
       data-original-audio-url={composition.originalAudioUrl ?? ''}
+      data-has-video-url={String(composition.videoUrl !== null)}
+      data-video-duration={
+        composition.videoDurationSec === null
+          ? ''
+          : String(composition.videoDurationSec)
+      }
       onSubmit={(event) => {
         void handleSubmit(event);
       }}

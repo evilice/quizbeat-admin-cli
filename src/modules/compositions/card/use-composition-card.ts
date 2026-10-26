@@ -10,7 +10,8 @@ export type CompositionLocationState = {
   author?: string;
 };
 
-export type CompositionCardTab = 'general' | 'audio' | 'images' | 'notes';
+export type CompositionCardTab =
+  'general' | 'audio' | 'images' | 'notes' | 'video';
 
 const mergeCompositionIntoFull = (
   current: CompositionFull,
@@ -118,6 +119,21 @@ export const useCompositionCard = () => {
     setClipsReloadToken((value) => value + 1);
   };
 
+  const handleVideoSaved = (
+    compositionId: string,
+    videoDurationSec: number,
+  ) => {
+    setFull((current) =>
+      current === null || current.id !== compositionId
+        ? current
+        : {
+            ...current,
+            videoDurationSec,
+            videoUrl: null,
+          },
+    );
+  };
+
   const headerTitle = full?.title ?? locationState?.title;
   const headerAuthor = full?.author ?? locationState?.author;
 
@@ -137,5 +153,6 @@ export const useCompositionCard = () => {
     applySaved,
     handleAudioUploaded,
     handlePointsCreated,
+    handleVideoSaved,
   };
 };

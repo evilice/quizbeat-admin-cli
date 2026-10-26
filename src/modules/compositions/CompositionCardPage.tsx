@@ -11,6 +11,7 @@ import { COMPOSITION_NOT_FOUND_MESSAGE } from './composition-display.ts';
 import { CompositionEditForm } from './edit/CompositionEditForm.tsx';
 import { ImagesBlock } from './images/ImagesBlock.tsx';
 import { NotesBlock } from './notes/NotesBlock.tsx';
+import { VideoTrimEditor } from './video/VideoTrimEditor.tsx';
 
 export const CompositionCardPage = observer(() => {
   const {
@@ -29,6 +30,7 @@ export const CompositionCardPage = observer(() => {
     applySaved,
     handleAudioUploaded,
     handlePointsCreated,
+    handleVideoSaved,
   } = useCompositionCard();
 
   if (notFound) {
@@ -136,6 +138,14 @@ export const CompositionCardPage = observer(() => {
           <ImagesBlock compositionId={full.id} initialImages={full.images} />
         }
         notes={<NotesBlock compositionId={full.id} initialNotes={full.notes} />}
+        video={
+          <VideoTrimEditor
+            key={full.id}
+            compositionId={full.id}
+            active={tab === 'video'}
+            onSaved={handleVideoSaved}
+          />
+        }
       />
     </Box>
   );

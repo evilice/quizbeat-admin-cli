@@ -31,6 +31,7 @@ const UNKNOWN_TAG_MESSAGE =
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('карточка композиции', () => {
@@ -380,10 +381,158 @@ describe('карточка композиции', () => {
     ).toBeTruthy();
     expect(screen.queryByRole('tabpanel', { name: 'Изображения' })).toBeNull();
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Видео' }));
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Видео' })).getByText(
+        'mp4, webm, ориентир размера — 500 МБ; тип и размер проверяет сервер; видео с iPhone (.mov) не поддерживается',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('tabpanel', { name: 'Заметки' })).toBeNull();
+
     fireEvent.click(screen.getByRole('tab', { name: 'Общее' }));
     expect((screen.getByLabelText('Название') as HTMLInputElement).value).toBe(
       'Song One',
     );
+  });
+
+  it('сохранение видео пишет длительность, сбрасывает ссылку и не трогает остальные блоки', async () => {
+    const createObjectUrl = vi.fn((_blob: Blob): string => 'blob:card-video');
+    const revokeObjectUrl = vi.fn((_url: string): void => undefined);
+    vi.stubGlobal(
+      'URL',
+      class extends URL {
+        static createObjectURL(blob: Blob): string {
+          return createObjectUrl(blob);
+        }
+
+        static revokeObjectURL(url: string): void {
+          revokeObjectUrl(url);
+        }
+      },
+    );
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() =>
+      Promise.resolve(),
+    );
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, 'pause')
+      .mockImplementation(() => {});
+    const clip = {
+      id: 'clip-1',
+      difficulty: 'EASY' as const,
+      durationSec: 5,
+      startTimeSec: 0,
+      status: 'DONE' as const,
+      fileUrl: 'https://example.com/clip.mp3',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const image = {
+      id: 'img-1',
+      fileUrl: 'https://example.com/img.png',
+      order: 0,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const note = {
+      id: 'note-1',
+      translations: [{ locale: 'ru' as const, text: 'Факт' }],
+      order: 0,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const fetchMock = stubCardFetch({
+      full: sampleCompositionFull({
+        originalAudioUrl: 'https://example.com/original.mp3',
+        originalAudioDurationSec: 120,
+        videoUrl: 'https://example.com/old.mp4',
+        videoDurationSec: 8,
+        clips: [clip],
+        images: [image],
+        notes: [note],
+      }),
+      videoUpload: { status: 201, body: { videoDurationSec: 2.5 } },
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Название')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole('tab', { name: 'Видео' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Видео' });
+    const file = new File(['video'], 'clip.mp4', { type: 'video/mp4' });
+    fireEvent.change(within(panel).getByLabelText('Видео-файл'), {
+      target: { files: [file] },
+    });
+    const video = within(panel).getByLabelText(
+      'Предпросмотр видео',
+    ) as HTMLVideoElement;
+    Object.defineProperty(video, 'duration', {
+      configurable: true,
+      get: () => 90,
+    });
+    fireEvent.loadedMetadata(video);
+    fireEvent.change(within(panel).getByLabelText('Начало, с'), {
+      target: { value: '1.5' },
+    });
+    fireEvent.change(within(panel).getByLabelText('Конец, с'), {
+      target: { value: '4.25' },
+    });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Сохранить' }));
+
+    await waitFor(() => {
+      expect(
+        screen
+          .getByTestId('composition-card-form')
+          .getAttribute('data-video-duration'),
+      ).toBe('2.5');
+    });
+    const form = screen.getByTestId('composition-card-form');
+    expect(form.getAttribute('data-has-video-url')).toBe('false');
+    expect(form.getAttribute('data-clips-count')).toBe('1');
+    expect(form.getAttribute('data-images-count')).toBe('1');
+    expect(form.getAttribute('data-notes-count')).toBe('1');
+    expect(form.getAttribute('data-original-audio-url')).toBe(
+      'https://example.com/original.mp3',
+    );
+    expect(getFullCalls(fetchMock)).toHaveLength(1);
+    const posts = fetchMock.mock.calls.filter(
+      (call) => (call[1] as RequestInit | undefined)?.method === 'POST',
+    );
+    expect(posts).toHaveLength(1);
+    const post = posts[0];
+    if (post === undefined) {
+      throw new Error('POST не ушёл');
+    }
+    const body = (post[1] as RequestInit).body as FormData;
+    expect(body.get('file')).toEqual(file);
+    expect(body.get('startSec')).toBe('1.5');
+    expect(body.get('endSec')).toBe('4.25');
+    expect(
+      fetchMock.mock.calls.filter((call) => {
+        const method = (call[1] as RequestInit | undefined)?.method ?? 'GET';
+        return method === 'GET' && String(call[0]).includes('/video');
+      }),
+    ).toHaveLength(0);
+
+    fireEvent.change(within(panel).getByLabelText('Видео-файл'), {
+      target: {
+        files: [new File(['video'], 'next.mp4', { type: 'video/mp4' })],
+      },
+    });
+    const nextVideo = within(panel).getByLabelText(
+      'Предпросмотр видео',
+    ) as HTMLVideoElement;
+    Object.defineProperty(nextVideo, 'duration', {
+      configurable: true,
+      get: () => 20,
+    });
+    fireEvent.loadedMetadata(nextVideo);
+    fireEvent.click(
+      within(panel).getByRole('button', { name: 'Проиграть отрезок' }),
+    );
+    pause.mockClear();
+    revokeObjectUrl.mockClear();
+    fireEvent.click(screen.getByRole('tab', { name: 'Заметки' }));
+    expect(pause).toHaveBeenCalled();
+    // панели остаются смонтированными: уход с вкладки не отзывает ссылку
+    expect(revokeObjectUrl).not.toHaveBeenCalled();
   });
 
   it('со строки списка «Изменить» открывает карточку с мгновенным заголовком', async () => {
@@ -502,6 +651,7 @@ const stubCardFetch = ({
   patchStatus = 200,
   patchResponse,
   patchBody,
+  videoUpload,
 }: {
   full?: ReturnType<typeof sampleCompositionFull>;
   fullStatus?: number;
@@ -509,6 +659,7 @@ const stubCardFetch = ({
   patchStatus?: number;
   patchResponse?: ReturnType<typeof sampleComposition>;
   patchBody?: unknown;
+  videoUpload?: { status: number; body: unknown };
 } = {}) => {
   const fetchMock = vi
     .fn()
@@ -533,6 +684,18 @@ const stubCardFetch = ({
                 status: full.status,
                 tags: full.tags,
               }),
+          ),
+        );
+      }
+
+      if (
+        method === 'POST' &&
+        parsed.pathname === `/compositions/${COMPOSITION_ID}/video`
+      ) {
+        return Promise.resolve(
+          jsonResponse(
+            videoUpload?.status ?? 500,
+            videoUpload?.body ?? { message: 'unexpected' },
           ),
         );
       }

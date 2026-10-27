@@ -1,3 +1,4 @@
+import { reaction } from 'mobx';
 import { AdminsStore } from '../../modules/admins/admins-store.ts';
 import { AudioClipsStore } from '../../modules/compositions/audio/audio-clips-store.ts';
 import { CompositionsStore } from '../../modules/compositions/compositions-store.ts';
@@ -8,6 +9,7 @@ import {
   SessionStore,
   type SessionStorage,
 } from '../../modules/session/session-store.ts';
+import { StorageStore } from '../../modules/storage/storage-store.ts';
 import { TagsStore } from '../../modules/tags/tags-store.ts';
 import type { ApiClient } from '../api/api-client.ts';
 
@@ -20,6 +22,7 @@ export class RootStore {
   readonly images: ImagesStore;
   readonly notes: NotesStore;
   readonly video: VideoStore;
+  readonly storage: StorageStore;
   readonly api: ApiClient;
 
   constructor(storage: SessionStorage) {
@@ -32,5 +35,15 @@ export class RootStore {
     this.images = new ImagesStore(this.api);
     this.notes = new NotesStore(this.api);
     this.video = new VideoStore(this.api);
+    this.storage = new StorageStore(this.api);
+    // Итог необратимой очистки переживает уход со страницы, но не сессию.
+    reaction(
+      () => this.session.accessToken === null,
+      (lost) => {
+        if (lost) {
+          this.storage.discard();
+        }
+      },
+    );
   }
 }

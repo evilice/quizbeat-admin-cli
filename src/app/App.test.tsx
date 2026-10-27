@@ -109,14 +109,17 @@ describe('роль в оболочке и пункты меню', () => {
     const navLinks = screen.getAllByRole('link');
     expect(navLinks.map((link) => link.textContent)).toEqual([
       'Сотрудники',
+      'Хранилище',
       'Композиции',
       'Теги',
     ]);
     const adminsLink = navLinks[0];
     expect(adminsLink?.getAttribute('href')).toBe('/admins');
-    const compositionsLink = navLinks[1];
+    const storageLink = navLinks[1];
+    expect(storageLink?.getAttribute('href')).toBe('/storage');
+    const compositionsLink = navLinks[2];
     expect(compositionsLink?.getAttribute('href')).toBe('/compositions');
-    const tagsLink = navLinks[2];
+    const tagsLink = navLinks[3];
     expect(tagsLink?.getAttribute('href')).toBe('/tags');
     openAccount();
     expect(screen.getByText('super@example.com')).toBeTruthy();
@@ -158,6 +161,7 @@ describe('роль в оболочке и пункты меню', () => {
     render(shell(store, '/'));
 
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Хранилище' })).toBeNull();
     const navLinks = screen.getAllByRole('link');
     expect(navLinks.map((link) => link.textContent)).toEqual([
       'Композиции',
@@ -262,6 +266,10 @@ describe('роль в оболочке и пункты меню', () => {
 
     render(shell(store, '/admins'));
     expect(currentNavLabel()).toBe('Сотрудники');
+    cleanup();
+
+    render(shell(store, '/storage'));
+    expect(currentNavLabel()).toBe('Хранилище');
     cleanup();
 
     render(shell(store, '/password'));

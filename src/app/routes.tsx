@@ -5,6 +5,7 @@ import { ChangePasswordPage } from '../modules/session/ChangePasswordPage.tsx';
 import { CompositionCardPage } from '../modules/compositions/CompositionCardPage.tsx';
 import { CompositionsPage } from '../modules/compositions/CompositionsPage.tsx';
 import { HomePage, LoginRedirect, MissingPage } from './pages.tsx';
+import { StoragePage } from '../modules/storage/StoragePage.tsx';
 import { TagsPage } from '../modules/tags/TagsPage.tsx';
 
 export const routes: RouteObject[] = [
@@ -17,6 +18,7 @@ export const routes: RouteObject[] = [
       { path: '/compositions/:id', element: <CompositionCardPage /> },
       { path: '/tags', element: <TagsPage /> },
       { path: '/admins', element: <AdminsPage /> },
+      { path: '/storage', element: <StoragePage /> },
       { path: '/password', element: <ChangePasswordPage /> },
       { path: '*', element: <MissingPage /> },
     ],

@@ -79,6 +79,7 @@ src/
       images/
       notes/
       video/
+    storage/           # страница очистки: стор, предпросмотр, подтверждение
 ```
 
 Экраны берут стор через `useRootStore` из `shared/store/root-store-context.tsx`
@@ -111,17 +112,20 @@ src/
   [этап 7](./documentation/tasks/step-7/README.md),
   [этап 8](./documentation/tasks/step-8/README.md),
   [этап 9](./documentation/tasks/step-9/README.md),
-  [этап 10](./documentation/tasks/step-10/README.md).
+  [этап 10](./documentation/tasks/step-10/README.md),
+  [этап 11](./documentation/tasks/step-11/README.md).
 
-## Правила разработки (кратко; общее ядро —
-`../quizbeat-docs/process/development-rules.md`, специфика клиента и
-раздел 11 —
-[documentation/04-development-rules.md](./documentation/04-development-rules.md))
+## Правила разработки
+
+Кратко; общее ядро — `../quizbeat-docs/process/development-rules.md`,
+специфика клиента и раздел 11 —
+[documentation/04-development-rules.md](./documentation/04-development-rules.md).
 
 1. Разведка перед реализацией — искать готовый паттерн в клиенте и
    фактический контракт в `quizbeat-srv`.
 2. Один HTTP-клиент, один разбор ошибки, доменные сторы MobX, UI на MUI.
-   Состояние экрана в доменный стор не переносится (раздел 11 правил).
+   Состояние экрана в доменный стор не переносится (раздел 11 правил);
+   исключение — `storage`, см. раздел 11.
    Скрытие по роли не заменяет `403` сервера.
 3. TDD для сессии, ролей и разбора ошибок. Падающий тест чинится кодом, не
    ослаблением теста.
@@ -173,3 +177,8 @@ src/
   (`Current password is incorrect`), не отказ access-токена.
 - Документация и коммиты — на русском, идентификаторы в коде — на
   английском.
+- Очистка хранилища — `POST /storage/sweep`, в теле всегда явный
+  `apply: false` / `true`. Только `SUPER_ADMIN`. Короткого таймаута нет,
+  стор запрос не повторяет (повторяет только общий клиент после `401` и
+  refresh: сервер отказал до выполнения). Итог экрана — ответ удаления, не числа
+  предпросмотра.

@@ -5,6 +5,7 @@ import type { SessionStore } from '../../modules/session/session-store.ts';
 
 const menuItems = [
   { label: 'Сотрудники', to: '/admins', role: 'SUPER_ADMIN' },
+  { label: 'Хранилище', to: '/storage', role: 'SUPER_ADMIN' },
   { label: 'Композиции', to: '/compositions' },
   { label: 'Теги', to: '/tags' },
 ];

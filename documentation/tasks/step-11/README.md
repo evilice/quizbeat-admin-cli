@@ -5,7 +5,7 @@
 Источник: [03-technical-specification.md, раздел «Этап 11»](../../03-technical-specification.md#этап-11--очистка-хранилища).
 Серверная сторона — этап 16 в `quizbeat-srv`
 (`documentation/tasks/step-16/`), особенно
-[задача 2](../../../../quizbeat-srv/documentation/tasks/step-16/02-storage-orphan-sweep.md).
+[задача 1](../../../../quizbeat-srv/documentation/tasks/step-16/01-storage-orphan-sweep.md).
 Решения заказчика (2026-10-27): сборка мусора запускается кнопкой в
 админке, доступна только `SUPER_ADMIN`, история запусков не нужна;
 показывать число удалённых файлов и освобождённый объём.
@@ -25,7 +25,7 @@ flowchart TD
 
 | # | Задача | Зависит от | Файл | Статус |
 |---|--------|------------|------|--------|
-| 1 | Стор, страница «Хранилище» и пункт меню для `SUPER_ADMIN` | серверный этап 16 (задача 2) | [01-storage-sweep-page.md](./01-storage-sweep-page.md) | не выполнена |
+| 1 | Стор, страница «Хранилище» и пункт меню для `SUPER_ADMIN` | серверный этап 16 (задача 1) | [01-storage-sweep-page.md](./01-storage-sweep-page.md) | не выполнена |
 | 2 | Приёмка этапа 11 целиком | 1 | [02-step11-acceptance.md](./02-step11-acceptance.md) | не выполнена |
 
 ## Решения этапа

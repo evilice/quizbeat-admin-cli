@@ -2,13 +2,13 @@
 
 Этап: 11 — Очистка хранилища.
 Зависимости: серверный этап 16,
-[задача 2](../../../../quizbeat-srv/documentation/tasks/step-16/02-storage-orphan-sweep.md)
+[задача 1](../../../../quizbeat-srv/documentation/tasks/step-16/01-storage-orphan-sweep.md)
 (`POST /storage/sweep`); [HTTP-клиент](../step-0/02-http-client.md);
 [роль в оболочке](../step-1/04-role-menu.md).
 Ссылка на ТЗ: [раздел «Этап 11»](../../03-technical-specification.md#этап-11--очистка-хранилища).
 Карта: раздел «Хранилище» в
 [staff-api.md](https://github.com/evilice/quizbeat-docs/blob/main/api/staff-api.md)
-(появляется в серверной задаче 2). Поля запроса и ответа здесь не
+(появляется в серверной задаче 1). Поля запроса и ответа здесь не
 повторяются.
 
 ## Зачем

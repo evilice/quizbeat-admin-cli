@@ -677,7 +677,7 @@ function sampleFull(
   return {
     id: COMPOSITION_ID,
     title: 'Song One',
-    author: 'Author',
+    artists: [],
     status: 'DRAFT' as const,
     createdById: 'admin-1',
     tags: [],

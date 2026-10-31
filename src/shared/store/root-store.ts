@@ -1,5 +1,6 @@
 import { reaction } from 'mobx';
 import { AdminsStore } from '../../modules/admins/admins-store.ts';
+import { ArtistsStore } from '../../modules/artists/artists-store.ts';
 import { AudioClipsStore } from '../../modules/compositions/audio/audio-clips-store.ts';
 import { CompositionsStore } from '../../modules/compositions/compositions-store.ts';
 import { ImagesStore } from '../../modules/compositions/images/images-store.ts';
@@ -17,6 +18,7 @@ export class RootStore {
   readonly session: SessionStore;
   readonly admins: AdminsStore;
   readonly tags: TagsStore;
+  readonly artists: ArtistsStore;
   readonly compositions: CompositionsStore;
   readonly audioClips: AudioClipsStore;
   readonly images: ImagesStore;
@@ -30,6 +32,7 @@ export class RootStore {
     this.api = this.session.api;
     this.admins = new AdminsStore(this.api);
     this.tags = new TagsStore(this.api);
+    this.artists = new ArtistsStore(this.api);
     this.compositions = new CompositionsStore(this.api);
     this.audioClips = new AudioClipsStore(this.api);
     this.images = new ImagesStore(this.api);

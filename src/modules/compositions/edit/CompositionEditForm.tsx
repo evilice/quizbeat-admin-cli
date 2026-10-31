@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
+import { ArtistsField } from '../artists/ArtistsField.tsx';
 import { STATUS_LABELS, tagDisplayName } from '../composition-display.ts';
 import type {
   Composition,
@@ -34,13 +35,15 @@ export const CompositionEditForm = ({
   const {
     title,
     setTitle,
-    author,
-    setAuthor,
+    artists,
+    changeArtists,
     status,
     setStatus,
     selectedTagIds,
     setSelectedTagIds,
     setTagsTouched,
+    artistCreating,
+    setArtistCreating,
     messages,
     saving,
     handleSubmit,
@@ -83,14 +86,10 @@ export const CompositionEditForm = ({
             autoComplete="off"
             fullWidth
           />
-          <TextField
-            label="Автор"
-            value={author}
-            onChange={(event) => {
-              setAuthor(event.target.value);
-            }}
-            autoComplete="off"
-            fullWidth
+          <ArtistsField
+            value={artists}
+            onChange={changeArtists}
+            onCreatingChange={setArtistCreating}
           />
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -151,7 +150,11 @@ export const CompositionEditForm = ({
       </Box>
       <ErrorMessages messages={messages} />
       <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button type="submit" variant="contained" disabled={saving}>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={saving || artistCreating}
+        >
           Сохранить
         </Button>
         <Button component={Link} to="/compositions" disabled={saving}>

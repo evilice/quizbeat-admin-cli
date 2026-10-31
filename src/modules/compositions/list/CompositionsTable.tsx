@@ -12,7 +12,11 @@ import {
   DELETE_ICON_PATH,
   EDIT_ICON_PATH,
 } from '../../../shared/ui/ActionIconButton.tsx';
-import { STATUS_LABELS, tagDisplayName } from '../composition-display.ts';
+import {
+  artistNames,
+  STATUS_LABELS,
+  tagDisplayName,
+} from '../composition-display.ts';
 import type { Composition } from '../compositions-store.ts';
 
 type CompositionsTableProps = {
@@ -31,7 +35,7 @@ export const CompositionsTable = ({
       <TableHead>
         <TableRow>
           <TableCell>Название</TableCell>
-          <TableCell>Автор</TableCell>
+          <TableCell>Исполнители</TableCell>
           <TableCell>Статус</TableCell>
           <TableCell>Теги</TableCell>
           <TableCell align="right">Действия</TableCell>
@@ -65,7 +69,7 @@ const CompositionRow = ({
   return (
     <TableRow>
       <TableCell>{composition.title}</TableCell>
-      <TableCell>{composition.author}</TableCell>
+      <TableCell>{artistNames(composition.artists)}</TableCell>
       <TableCell>{STATUS_LABELS[composition.status]}</TableCell>
       <TableCell>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>

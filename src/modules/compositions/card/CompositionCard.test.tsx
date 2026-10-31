@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -38,7 +39,10 @@ describe('карточка композиции', () => {
   it('монтирование /compositions/:id с state и без вызывает ровно один GET .../full', async () => {
     const fetchMock = stubCardFetch();
     renderCard({
-      state: { title: 'Pending Title', author: 'Pending Author' },
+      state: {
+        title: 'Pending Title',
+        artists: [{ id: 'pending-artist', name: 'Pending Artist' }],
+      },
     });
 
     await waitFor(() => {
@@ -72,6 +76,60 @@ describe('карточка композиции', () => {
     expect(
       getBareCompositionGetCalls(fetchMockNoState, COMPOSITION_ID),
     ).toHaveLength(0);
+  });
+
+  it('до загрузки /full заголовок берёт название и исполнителей из location.state', async () => {
+    let resolveFull: (response: Response) => void = () => undefined;
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) => {
+        const parsed = new URL(String(url));
+        const method = init?.method ?? 'GET';
+        if (parsed.pathname.endsWith('/tags') && method === 'GET') {
+          return Promise.resolve(
+            jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+          );
+        }
+        if (
+          parsed.pathname === `/compositions/${COMPOSITION_ID}/full` &&
+          method === 'GET'
+        ) {
+          return new Promise<Response>((resolve) => {
+            resolveFull = resolve;
+          });
+        }
+        return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    renderCard({
+      state: {
+        title: 'Pending Title',
+        artists: [{ id: 'pending-artist', name: 'Pending Artist' }],
+      },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {
+          name: 'Pending Title — Pending Artist',
+        }),
+      ).toBeTruthy();
+    });
+    expect(screen.getByLabelText('Загрузка композиции')).toBeTruthy();
+
+    await act(async () => {
+      resolveFull(
+        jsonResponse(
+          200,
+          sampleCompositionFull({ title: 'Loaded Title', artists: [] }),
+        ),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Название')).toBeTruthy();
+    });
+    expect(screen.getByRole('heading', { name: 'Loaded Title' })).toBeTruthy();
   });
 
   it('404 на GET .../full показывает «не найдена» и ссылку на список, без вечного индикатора', async () => {
@@ -131,15 +189,15 @@ describe('карточка композиции', () => {
     const body = patchBodies(fetchMock)[0];
     expect(body).toEqual({
       title: 'Song One',
-      author: 'Author',
       status: 'DRAFT',
       tagIds: [],
     });
     expect(body).toHaveProperty('tagIds');
     expect(body.tagIds).toEqual([]);
+    expect(body).not.toHaveProperty('artistIds');
   });
 
-  it('сохранение без изменения тегов ключа tagIds не содержит', async () => {
+  it('сохранение без изменения тегов и исполнителей не содержит их ключей', async () => {
     const fetchMock = stubCardFetch({
       full: sampleCompositionFull({
         tags: [
@@ -167,10 +225,110 @@ describe('карточка композиции', () => {
     const body = patchBodies(fetchMock)[0];
     expect(body).toEqual({
       title: 'Renamed',
-      author: 'Author',
       status: 'DRAFT',
     });
     expect(body).not.toHaveProperty('tagIds');
+    expect(body).not.toHaveProperty('artistIds');
+  });
+
+  it('снятие всех исполнителей шлёт artistIds: []', async () => {
+    const queen = { id: 'artist-1', name: 'Queen' };
+    const adam = { id: 'artist-2', name: 'Adam Lambert' };
+    const fetchMock = stubCardFetch({
+      full: sampleCompositionFull({ artists: [queen, adam] }),
+      patchResponse: sampleComposition({ title: 'Song One', artists: [] }),
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Название')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Убрать: Queen' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Убрать: Adam Lambert' }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+
+    await waitFor(() => {
+      expect(patchBodies(fetchMock)).toHaveLength(1);
+    });
+
+    expect(patchBodies(fetchMock)[0]).toEqual({
+      title: 'Song One',
+      status: 'DRAFT',
+      artistIds: [],
+    });
+    expect(patchBodies(fetchMock)[0]).toHaveProperty('artistIds');
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /^Убрать:/ })).toBeNull();
+    });
+  });
+
+  it('смена порядка исполнителей шлёт полный набор в новом порядке', async () => {
+    const queen = { id: 'artist-1', name: 'Queen' };
+    const adam = { id: 'artist-2', name: 'Adam Lambert' };
+    const fetchMock = stubCardFetch({
+      full: sampleCompositionFull({ artists: [queen, adam] }),
+      patchResponse: sampleComposition({
+        title: 'Song One',
+        artists: [adam, queen],
+      }),
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Название')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ниже: Queen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+
+    await waitFor(() => {
+      expect(patchBodies(fetchMock)).toHaveLength(1);
+    });
+
+    expect(patchBodies(fetchMock)[0]).toEqual({
+      title: 'Song One',
+      status: 'DRAFT',
+      artistIds: [adam.id, queen.id],
+    });
+    await waitFor(() => {
+      expect(
+        screen
+          .getAllByRole('button', { name: /^Убрать:/ })
+          .map((button) => button.getAttribute('aria-label')),
+      ).toEqual(['Убрать: Adam Lambert', 'Убрать: Queen']);
+    });
+  });
+
+  it('заголовок карточки — название и исполнители; без них только название', async () => {
+    const queen = { id: 'artist-1', name: 'Queen' };
+    stubCardFetch({
+      full: sampleCompositionFull({ title: 'Song One', artists: [queen] }),
+    });
+    const view = renderCard();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: 'Song One — Queen' }),
+      ).toBeTruthy();
+    });
+    view.unmount();
+    cleanup();
+    vi.unstubAllGlobals();
+
+    stubCardFetch({
+      full: sampleCompositionFull({ title: 'Song Two', artists: [] }),
+    });
+    renderCard();
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Song Two' })).toBeTruthy();
+    });
+    expect(screen.queryByText('Song Two — —')).toBeNull();
+    expect(screen.queryByText('Song Two —')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Убрать:/ })).toBeNull();
   });
 
   it('смена статуса на PUBLISHED шлёт status: "PUBLISHED"', async () => {
@@ -577,7 +735,7 @@ describe('карточка композиции', () => {
                 sampleComposition({
                   id: COMPOSITION_ID,
                   title: 'List Title',
-                  author: 'List Author',
+                  artists: [{ id: 'list-artist', name: 'List Artist' }],
                 }),
               ],
               total: 1,
@@ -623,7 +781,7 @@ describe('карточка композиции', () => {
     );
     expect(router.state.location.state).toEqual({
       title: 'List Title',
-      author: 'List Author',
+      artists: [{ id: 'list-artist', name: 'List Artist' }],
     });
 
     await waitFor(() => {
@@ -637,7 +795,10 @@ describe('карточка композиции', () => {
 const renderCard = ({
   state,
 }: {
-  state?: { title?: string; author?: string };
+  state?: {
+    title?: string;
+    artists?: { id: string; name: string }[];
+  };
 } = {}) => {
   const store = new RootStore(createMemoryStorage());
   store.session.setPair(
@@ -698,7 +859,7 @@ const stubCardFetch = ({
             patchResponse ??
               sampleComposition({
                 title: full.title,
-                author: full.author,
+                artists: full.artists,
                 status: full.status,
                 tags: full.tags,
               }),
@@ -835,7 +996,7 @@ const sampleComposition = (
   overrides: {
     id?: string;
     title?: string;
-    author?: string;
+    artists?: { id: string; name: string }[];
     status?: 'DRAFT' | 'PUBLISHED';
     tags?: ReturnType<typeof sampleTag>[];
   } = {},
@@ -843,7 +1004,7 @@ const sampleComposition = (
   return {
     id: overrides.id ?? COMPOSITION_ID,
     title: overrides.title ?? 'Song One',
-    author: overrides.author ?? 'Author',
+    artists: overrides.artists ?? [],
     status: overrides.status ?? 'DRAFT',
     createdById: 'admin-1',
     tags: overrides.tags ?? [],
@@ -857,7 +1018,7 @@ const sampleCompositionFull = (
   overrides: Partial<{
     id: string;
     title: string;
-    author: string;
+    artists: { id: string; name: string }[];
     status: 'DRAFT' | 'PUBLISHED';
     tags: ReturnType<typeof sampleTag>[];
     originalAudioUrl: string | null;

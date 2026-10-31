@@ -1,6 +1,7 @@
 import { useState, type SubmitEvent } from 'react';
 import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
+import type { CompositionArtist } from '../../artists/artists-store.ts';
 import type { CompositionStatus } from '../compositions-store.ts';
 
 export const useCreateComposition = (
@@ -9,22 +10,23 @@ export const useCreateComposition = (
 ) => {
   const { compositions } = useRootStore();
   const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
+  const [artists, setArtists] = useState<CompositionArtist[]>([]);
   const [status, setStatus] = useState<CompositionStatus>('DRAFT');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [artistCreating, setArtistCreating] = useState(false);
   const [messages, setMessages] = useState<readonly string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
     setTitle('');
-    setAuthor('');
+    setArtists([]);
     setStatus('DRAFT');
     setSelectedTagIds([]);
     setMessages([]);
   };
 
   const handleClose = () => {
-    if (submitting) {
+    if (submitting || artistCreating) {
       return;
     }
     resetForm();
@@ -33,16 +35,14 @@ export const useCreateComposition = (
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (artistCreating) {
+      return;
+    }
 
     const trimmedTitle = title.trim();
-    const trimmedAuthor = author.trim();
 
     if (trimmedTitle === '') {
       setMessages(['Укажите название']);
-      return;
-    }
-    if (trimmedAuthor === '') {
-      setMessages(['Укажите автора']);
       return;
     }
 
@@ -51,7 +51,9 @@ export const useCreateComposition = (
     try {
       await compositions.create({
         title: trimmedTitle,
-        author: trimmedAuthor,
+        ...(artists.length > 0
+          ? { artistIds: artists.map((artist) => artist.id) }
+          : {}),
         ...(status === 'PUBLISHED' ? { status: 'PUBLISHED' as const } : {}),
         ...(selectedTagIds.length > 0 ? { tagIds: selectedTagIds } : {}),
       });
@@ -67,12 +69,14 @@ export const useCreateComposition = (
   return {
     title,
     setTitle,
-    author,
-    setAuthor,
+    artists,
+    setArtists,
     status,
     setStatus,
     selectedTagIds,
     setSelectedTagIds,
+    artistCreating,
+    setArtistCreating,
     messages,
     submitting,
     handleClose,

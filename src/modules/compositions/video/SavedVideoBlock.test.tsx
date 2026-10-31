@@ -704,7 +704,7 @@ describe('сохранённое видео на карточке', () => {
       await router.navigate(`/compositions/${OTHER_ID}`);
     });
     await waitFor(() => {
-      expect(screen.getByText('Song Two — Author')).toBeTruthy();
+      expect(screen.getByText('Song Two')).toBeTruthy();
     });
     fireEvent.click(screen.getByRole('tab', { name: 'Видео' }));
     expect(screen.getByLabelText('Сохранённое видео').getAttribute('src')).toBe(
@@ -718,7 +718,7 @@ describe('сохранённое видео на карточке', () => {
       OTHER_URL,
     );
     expect(screen.getByText('Длительность: 5 с')).toBeTruthy();
-    expect(screen.getByText('Song Two — Author')).toBeTruthy();
+    expect(screen.getByText('Song Two')).toBeTruthy();
   });
 });
 
@@ -864,7 +864,7 @@ const sampleFull = (
   return {
     id: COMPOSITION_ID,
     title: 'Song One',
-    author: 'Author',
+    artists: [],
     status: overrides.status ?? 'DRAFT',
     createdById: 'admin-1',
     tags: [],

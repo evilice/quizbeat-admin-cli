@@ -254,7 +254,7 @@ describe('экран списка композиций', () => {
               sampleComposition({
                 id: 'search-1',
                 title: 'Beatles Hit',
-                author: 'Lennon',
+                artists: [{ id: 'lennon', name: 'Lennon' }],
               }),
             ],
             total: 1,
@@ -296,9 +296,12 @@ describe('экран списка композиций', () => {
       ).searchParams.get('page'),
     ).toBe('2');
 
-    fireEvent.change(screen.getByLabelText('Поиск по названию или автору'), {
-      target: { value: 'beatles' },
-    });
+    fireEvent.change(
+      screen.getByLabelText('Поиск по названию или исполнителю'),
+      {
+        target: { value: 'beatles' },
+      },
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Beatles Hit')).toBeTruthy();
@@ -317,7 +320,7 @@ describe('экран списка композиций', () => {
         sampleComposition({
           id: 'c-1',
           title: 'Folk Song',
-          author: 'Anon',
+          artists: [{ id: 'anon', name: 'Anon' }],
           status: 'PUBLISHED',
           tags: [
             sampleTag({
@@ -347,6 +350,53 @@ describe('экран списка композиций', () => {
     expect(row!.textContent).toContain('Опубликована');
     const chip = row!.querySelector('.MuiChip-label');
     expect(chip?.textContent).toBe('Фолк');
+  });
+
+  it('колонка «Исполнители» — имена через запятую, пусто — «—» в строке и диалоге', async () => {
+    stubListFetch({
+      items: [
+        sampleComposition({
+          id: 'c-with-artists',
+          title: 'With Artists',
+          artists: [
+            { id: 'a-1', name: 'Queen' },
+            { id: 'a-2', name: 'Adam Lambert' },
+          ],
+        }),
+        sampleComposition({
+          id: 'c-no-artists',
+          title: 'No Artists',
+          artists: [],
+        }),
+      ],
+      total: 2,
+      page: 1,
+      limit: 20,
+    });
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('With Artists')).toBeTruthy();
+    });
+
+    const withArtistsRow = screen.getByText('With Artists').closest('tr');
+    expect(withArtistsRow).toBeTruthy();
+    expect(withArtistsRow!.querySelectorAll('td')[1]?.textContent).toBe(
+      'Queen, Adam Lambert',
+    );
+
+    const noArtistsRow = screen.getByText('No Artists').closest('tr');
+    expect(noArtistsRow!.querySelectorAll('td')[1]?.textContent).toBe('—');
+
+    openDeleteDialog('No Artists');
+    expect(
+      within(screen.getByRole('dialog')).getByText('Исполнители: —'),
+    ).toBeTruthy();
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Отмена',
+      }),
+    );
   });
 
   it('пустой 200 и ответ с ошибкой различаются', async () => {
@@ -418,7 +468,7 @@ describe('удаление композиции', () => {
   const COMPOSITION = sampleComposition({
     id: COMPOSITION_ID,
     title: 'Song One',
-    author: 'Author One',
+    artists: [{ id: 'artist-one', name: 'Artist One' }],
   });
 
   it('ошибка удаления показывается один раз, в диалоге, и сбрасывается отменой', async () => {
@@ -488,7 +538,7 @@ describe('удаление композиции', () => {
 
     openDeleteDialog('Song One');
     expect(
-      within(screen.getByRole('dialog')).getByText(/Author One/),
+      within(screen.getByRole('dialog')).getByText(/Исполнители: Artist One/),
     ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
 

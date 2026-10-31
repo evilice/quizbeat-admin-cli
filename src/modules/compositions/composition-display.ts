@@ -1,3 +1,4 @@
+import type { CompositionArtist } from '../artists/artists-store.ts';
 import type { Tag, TagLocale } from '../tags/tags-store.ts';
 import type { CompositionStatus } from './compositions-store.ts';
 
@@ -19,4 +20,29 @@ export const translationName = (tag: Tag, locale: TagLocale): string => {
 
 export const tagDisplayName = (tag: Tag): string => {
   return translationName(tag, 'ru') || tag.code;
+};
+
+const joinArtistNames = (artists: readonly CompositionArtist[]): string => {
+  return artists.map((artist) => artist.name).join(', ');
+};
+
+/** Подпись для списка и диалога удаления: пусто — «—». */
+export const artistNames = (artists: readonly CompositionArtist[]): string => {
+  return artists.length === 0 ? '—' : joinArtistNames(artists);
+};
+
+/**
+ * Заголовок карточки: без исполнителей — только название, без второго тире.
+ * Поэтому «—» из `artistNames` сюда не подставляется.
+ */
+export const compositionHeading = (
+  title: string | undefined,
+  artists: readonly CompositionArtist[] | undefined,
+): string => {
+  const trimmedTitle = title ?? '';
+  if (trimmedTitle === '') {
+    return '';
+  }
+  const names = artists === undefined ? '' : joinArtistNames(artists);
+  return names === '' ? trimmedTitle : `${trimmedTitle} — ${names}`;
 };

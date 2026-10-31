@@ -18,8 +18,7 @@ export const CompositionCardPage = observer(() => {
     notFound,
     loading,
     loadMessages,
-    headerTitle,
-    headerAuthor,
+    heading,
     full,
     tagOptions,
     tagMessages,
@@ -50,9 +49,9 @@ export const CompositionCardPage = observer(() => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {headerTitle !== undefined || headerAuthor !== undefined ? (
+        {heading !== '' ? (
           <Typography variant="h5" component="h1">
-            {[headerTitle, headerAuthor].filter(Boolean).join(' — ')}
+            {heading}
           </Typography>
         ) : null}
         <CircularProgress aria-label="Загрузка композиции" />
@@ -74,8 +73,6 @@ export const CompositionCardPage = observer(() => {
   if (full === null) {
     return null;
   }
-
-  const heading = [headerTitle, headerAuthor].filter(Boolean).join(' — ');
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

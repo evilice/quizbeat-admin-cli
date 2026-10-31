@@ -1,6 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 import type { ApiClient } from '../../shared/api/api-client.ts';
 import { ApiError } from '../../shared/api/api-error.ts';
+import type { CompositionArtist } from '../../modules/artists/artists-store.ts';
 import type { Tag } from '../../modules/tags/tags-store.ts';
 import type { AudioClip } from './audio/audio-clips-store.ts';
 import type { CompositionImage } from './images/images-store.ts';
@@ -11,7 +12,8 @@ export type CompositionStatus = 'DRAFT' | 'PUBLISHED';
 export type Composition = {
   id: string;
   title: string;
-  author: string;
+  /** В порядке, в котором исполнителей выбрали. Пусто — исполнителей нет. */
+  artists: CompositionArtist[];
   status: CompositionStatus;
   createdById: string;
   tags: Tag[];
@@ -50,16 +52,18 @@ export type ListCompositionsParams = {
 
 export type CreateCompositionInput = {
   title: string;
-  author: string;
+  /** Порядок значим; пустой список не отправляется. */
+  artistIds?: string[];
   status?: CompositionStatus;
   tagIds?: string[];
 };
 
 export type UpdateCompositionInput = {
   title?: string;
-  author?: string;
   status?: CompositionStatus;
   tagIds?: string[];
+  /** Полная замена набора; `[]` снимает всех исполнителей. */
+  artistIds?: string[];
 };
 
 export class CompositionsStore {
@@ -93,13 +97,15 @@ export class CompositionsStore {
   async create(input: CreateCompositionInput): Promise<Composition> {
     const body: {
       title: string;
-      author: string;
+      artistIds?: string[];
       status?: CompositionStatus;
       tagIds?: string[];
     } = {
       title: input.title,
-      author: input.author,
     };
+    if (input.artistIds !== undefined) {
+      body.artistIds = input.artistIds;
+    }
     if (input.status !== undefined) {
       body.status = input.status;
     }
@@ -126,21 +132,21 @@ export class CompositionsStore {
   ): Promise<Composition> {
     const body: {
       title?: string;
-      author?: string;
       status?: CompositionStatus;
       tagIds?: string[];
+      artistIds?: string[];
     } = {};
     if (input.title !== undefined) {
       body.title = input.title;
-    }
-    if (input.author !== undefined) {
-      body.author = input.author;
     }
     if (input.status !== undefined) {
       body.status = input.status;
     }
     if (input.tagIds !== undefined) {
       body.tagIds = input.tagIds;
+    }
+    if (input.artistIds !== undefined) {
+      body.artistIds = input.artistIds;
     }
 
     const composition = await this.api.requestJson<Composition>(

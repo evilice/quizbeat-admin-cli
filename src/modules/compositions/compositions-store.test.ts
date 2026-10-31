@@ -19,6 +19,8 @@ afterEach(() => {
 
 const TAG_A = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const TAG_B = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+const ARTIST_A = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+const ARTIST_B = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
 const COMPOSITION_ID = '11111111-1111-1111-1111-111111111111';
 const UNKNOWN_TAG_MESSAGE =
   'One or more tagIds do not reference an existing tag';
@@ -75,49 +77,47 @@ describe('CompositionsStore', () => {
     expect(url.searchParams.getAll('status')).toEqual(['DRAFT']);
   });
 
-  it('POST без status и tagIds не кладёт эти поля; с tagIds шлёт массив', async () => {
+  it('POST без status, tagIds и artistIds не кладёт эти поля; с ними шлёт массивы', async () => {
     const created = sampleComposition();
     const { compositions, fetchMock } = createStoreWithSession();
     stubJsonOk(fetchMock, created, 201);
 
-    await compositions.create({ title: 'Song', author: 'Author' });
+    await compositions.create({ title: 'Song' });
 
-    expect(requestBody(fetchMock, 0)).toEqual({
-      title: 'Song',
-      author: 'Author',
-    });
+    expect(requestBody(fetchMock, 0)).toEqual({ title: 'Song' });
     expect(requestBody(fetchMock, 0)).not.toHaveProperty('status');
     expect(requestBody(fetchMock, 0)).not.toHaveProperty('tagIds');
+    expect(requestBody(fetchMock, 0)).not.toHaveProperty('artistIds');
 
     fetchMock.mockClear();
     stubJsonOk(fetchMock, created, 201);
     await compositions.create({
       title: 'Song',
-      author: 'Author',
       status: 'PUBLISHED',
       tagIds: [TAG_A],
+      artistIds: [ARTIST_A, ARTIST_B],
     });
 
     expect(requestBody(fetchMock, 0)).toEqual({
       title: 'Song',
-      author: 'Author',
       status: 'PUBLISHED',
       tagIds: [TAG_A],
+      artistIds: [ARTIST_A, ARTIST_B],
     });
   });
 
-  it('PATCH с tagIds: [] содержит ключ со значением []; без tagIds ключа нет', async () => {
+  it('PATCH с tagIds/artistIds: [] содержит ключи со значением []; без них ключей нет', async () => {
     const { compositions, fetchMock } = createStoreWithSession();
     stubJsonOk(fetchMock, sampleComposition({ id: COMPOSITION_ID }));
 
-    await compositions.update(COMPOSITION_ID, { tagIds: [] });
+    await compositions.update(COMPOSITION_ID, { tagIds: [], artistIds: [] });
 
     expect(fetchUrl(fetchMock, 0)).toBe(
       `${apiBaseUrl}/compositions/${COMPOSITION_ID}`,
     );
     expect(requestMethod(fetchMock, 0)).toBe('PATCH');
-    expect(requestBody(fetchMock, 0)).toEqual({ tagIds: [] });
-    expect(requestBody(fetchMock, 0)).toHaveProperty('tagIds');
+    expect(requestBody(fetchMock, 0)).toEqual({ tagIds: [], artistIds: [] });
+    expect(requestBody(fetchMock, 0)).toHaveProperty('artistIds');
 
     fetchMock.mockClear();
     stubJsonOk(fetchMock, sampleComposition({ id: COMPOSITION_ID }));
@@ -125,6 +125,20 @@ describe('CompositionsStore', () => {
 
     expect(requestBody(fetchMock, 0)).toEqual({ title: 'New title' });
     expect(requestBody(fetchMock, 0)).not.toHaveProperty('tagIds');
+    expect(requestBody(fetchMock, 0)).not.toHaveProperty('artistIds');
+  });
+
+  it('PATCH передаёт artistIds в порядке выбора без сортировки', async () => {
+    const { compositions, fetchMock } = createStoreWithSession();
+    stubJsonOk(fetchMock, sampleComposition({ id: COMPOSITION_ID }));
+
+    await compositions.update(COMPOSITION_ID, {
+      artistIds: [ARTIST_B, ARTIST_A],
+    });
+
+    expect(requestBody(fetchMock, 0)).toEqual({
+      artistIds: [ARTIST_B, ARTIST_A],
+    });
   });
 
   it('DELETE с телом 200 и deletedAt считается успехом и возвращает объект', async () => {
@@ -162,7 +176,6 @@ describe('CompositionsStore', () => {
     await expect(
       compositions.create({
         title: 'Song',
-        author: 'Author',
         tagIds: [TAG_A],
       }),
     ).rejects.toMatchObject({
@@ -292,7 +305,7 @@ function sampleComposition(overrides: Partial<Composition> = {}): Composition {
   return {
     id: COMPOSITION_ID,
     title: 'Song',
-    author: 'Author',
+    artists: [],
     status: 'DRAFT',
     createdById: 'sa-1',
     tags: [],

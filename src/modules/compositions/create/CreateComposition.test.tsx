@@ -12,9 +12,9 @@ import {
   openCreateDialog,
   postBodies,
   renderCompositions,
+  sampleArtist,
   sampleComposition,
   sampleTag,
-  stubListFetch,
   submitCreateDialog,
 } from '../compositions-test-helpers.tsx';
 
@@ -24,8 +24,8 @@ afterEach(() => {
 });
 
 describe('создание композиции', () => {
-  it('пустое название при заполненном авторе не вызывает fetch', async () => {
-    const fetchMock = stubListFetch();
+  it('пустое название не вызывает fetch', async () => {
+    const fetchMock = stubCreateFetch();
     renderCompositions();
 
     await waitFor(() => {
@@ -34,43 +34,15 @@ describe('создание композиции', () => {
     const callsBefore = fetchMock.mock.calls.length;
 
     openCreateDialog();
-    fireEvent.change(
-      within(screen.getByRole('dialog')).getByLabelText('Автор'),
-      {
-        target: { value: 'Author' },
-      },
-    );
     submitCreateDialog();
 
     expect(screen.getByText('Укажите название')).toBeTruthy();
+    expect(screen.queryByText('Укажите автора')).toBeNull();
     expect(fetchMock.mock.calls.length).toBe(callsBefore);
   });
 
   it('название из одних пробелов не вызывает fetch', async () => {
-    const fetchMock = stubListFetch();
-    renderCompositions();
-
-    await waitFor(() => {
-      expect(screen.getByText('Song One')).toBeTruthy();
-    });
-    const callsBefore = fetchMock.mock.calls.length;
-
-    openCreateDialog();
-    const dialog = within(screen.getByRole('dialog'));
-    fireEvent.change(dialog.getByLabelText('Название'), {
-      target: { value: '   ' },
-    });
-    fireEvent.change(dialog.getByLabelText('Автор'), {
-      target: { value: 'Author' },
-    });
-    submitCreateDialog();
-
-    expect(screen.getByText('Укажите название')).toBeTruthy();
-    expect(fetchMock.mock.calls.length).toBe(callsBefore);
-  });
-
-  it('пустой автор при заполненном названии не вызывает fetch', async () => {
-    const fetchMock = stubListFetch();
+    const fetchMock = stubCreateFetch();
     renderCompositions();
 
     await waitFor(() => {
@@ -81,42 +53,42 @@ describe('создание композиции', () => {
     openCreateDialog();
     fireEvent.change(
       within(screen.getByRole('dialog')).getByLabelText('Название'),
+      { target: { value: '   ' } },
+    );
+    submitCreateDialog();
+
+    expect(screen.getByText('Укажите название')).toBeTruthy();
+    expect(fetchMock.mock.calls.length).toBe(callsBefore);
+  });
+
+  it('создание без исполнителей не содержит artistIds, status и tagIds', async () => {
+    const fetchMock = stubCreateFetch();
+    renderCompositions();
+
+    await waitFor(() => {
+      expect(screen.getByText('Song One')).toBeTruthy();
+    });
+
+    openCreateDialog();
+    fireEvent.change(
+      within(screen.getByRole('dialog')).getByLabelText('Название'),
       { target: { value: 'New Song' } },
     );
     submitCreateDialog();
 
-    expect(screen.getByText('Укажите автора')).toBeTruthy();
-    expect(fetchMock.mock.calls.length).toBe(callsBefore);
+    await waitFor(() => {
+      expect(postBodies(fetchMock)).toHaveLength(1);
+    });
+
+    const body = postBodies(fetchMock)[0];
+    expect(body).toEqual({ title: 'New Song' });
+    expect(body).not.toHaveProperty('status');
+    expect(body).not.toHaveProperty('tagIds');
+    expect(body).not.toHaveProperty('artistIds');
   });
 
-  it('создание без смены статуса не содержит ключ status; без тегов — без tagIds', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockImplementation((url: string, init?: RequestInit) => {
-        if (init?.method === 'POST') {
-          return Promise.resolve(
-            jsonResponse(
-              201,
-              sampleComposition({ id: 'created-1', title: 'New' }),
-            ),
-          );
-        }
-        const parsed = new URL(String(url));
-        if (parsed.pathname.endsWith('/tags')) {
-          return Promise.resolve(
-            jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
-          );
-        }
-        return Promise.resolve(
-          jsonResponse(200, {
-            items: [sampleComposition()],
-            total: 1,
-            page: 1,
-            limit: 20,
-          }),
-        );
-      });
-    vi.stubGlobal('fetch', fetchMock);
+  it('публикация без исполнителей допустима', async () => {
+    const fetchMock = stubCreateFetch();
     renderCompositions();
 
     await waitFor(() => {
@@ -126,11 +98,13 @@ describe('создание композиции', () => {
     openCreateDialog();
     const dialog = screen.getByRole('dialog');
     fireEvent.change(within(dialog).getByLabelText('Название'), {
-      target: { value: 'New Song' },
+      target: { value: 'Folk Song' },
     });
-    fireEvent.change(within(dialog).getByLabelText('Автор'), {
-      target: { value: 'New Author' },
+    fireEvent.mouseDown(within(dialog).getByLabelText('Статус'));
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Опубликована' })).toBeTruthy();
     });
+    fireEvent.click(screen.getByRole('option', { name: 'Опубликована' }));
     submitCreateDialog();
 
     await waitFor(() => {
@@ -138,14 +112,21 @@ describe('создание композиции', () => {
     });
 
     const body = postBodies(fetchMock)[0];
-    expect(body).toEqual({ title: 'New Song', author: 'New Author' });
-    expect(body).not.toHaveProperty('status');
-    expect(body).not.toHaveProperty('tagIds');
+    expect(body).toEqual({ title: 'Folk Song', status: 'PUBLISHED' });
+    expect(body).not.toHaveProperty('artistIds');
   });
 
-  it('создание с выбором «Опубликована» шлёт status PUBLISHED; с двумя тегами — массив uuid', async () => {
-    const tagA = sampleTag({
+  it('два исполнителя уходят artistIds в порядке выбора; теги — массивом uuid', async () => {
+    const queen = sampleArtist({
       id: '550e8400-e29b-41d4-a716-446655440001',
+      name: 'Queen',
+    });
+    const adam = sampleArtist({
+      id: '550e8400-e29b-41d4-a716-446655440002',
+      name: 'Adam Lambert',
+    });
+    const tagA = sampleTag({
+      id: '550e8400-e29b-41d4-a716-446655440011',
       code: 'rock',
       translations: [
         { locale: 'ru', name: 'Рок' },
@@ -153,50 +134,17 @@ describe('создание композиции', () => {
       ],
     });
     const tagB = sampleTag({
-      id: '550e8400-e29b-41d4-a716-446655440002',
+      id: '550e8400-e29b-41d4-a716-446655440012',
       code: 'jazz',
       translations: [
         { locale: 'ru', name: 'Джаз' },
         { locale: 'en', name: 'Jazz' },
       ],
     });
-    const fetchMock = vi
-      .fn()
-      .mockImplementation((url: string, init?: RequestInit) => {
-        if (init?.method === 'POST') {
-          return Promise.resolve(
-            jsonResponse(
-              201,
-              sampleComposition({
-                id: 'created-1',
-                title: 'Published',
-                status: 'PUBLISHED',
-                tags: [tagA, tagB],
-              }),
-            ),
-          );
-        }
-        const parsed = new URL(String(url));
-        if (parsed.pathname.endsWith('/tags')) {
-          return Promise.resolve(
-            jsonResponse(200, {
-              items: [tagA, tagB],
-              total: 2,
-              page: 1,
-              limit: 100,
-            }),
-          );
-        }
-        return Promise.resolve(
-          jsonResponse(200, {
-            items: [sampleComposition()],
-            total: 1,
-            page: 1,
-            limit: 20,
-          }),
-        );
-      });
-    vi.stubGlobal('fetch', fetchMock);
+    const fetchMock = stubCreateFetch({
+      artists: [queen, adam],
+      tags: [tagA, tagB],
+    });
     renderCompositions();
 
     await waitFor(() => {
@@ -213,9 +161,20 @@ describe('создание композиции', () => {
     fireEvent.change(within(dialog).getByLabelText('Название'), {
       target: { value: 'Published Song' },
     });
-    fireEvent.change(within(dialog).getByLabelText('Автор'), {
-      target: { value: 'Author' },
-    });
+    const artistsInput = within(dialog).getByLabelText('Исполнители');
+    fireEvent.focus(artistsInput);
+    fireEvent.change(artistsInput, { target: { value: 'a' } });
+    fireEvent.click(
+      await screen.findByRole(
+        'option',
+        {
+          name: 'Adam Lambert',
+        },
+        { timeout: 3000 },
+      ),
+    );
+    fireEvent.click(screen.getByRole('option', { name: 'Queen' }));
+
     fireEvent.mouseDown(within(dialog).getByLabelText('Статус'));
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'Опубликована' })).toBeTruthy();
@@ -228,7 +187,6 @@ describe('создание композиции', () => {
     });
     fireEvent.click(screen.getByRole('option', { name: 'Рок' }));
     fireEvent.click(screen.getByRole('option', { name: 'Джаз' }));
-    // close the multi-select menu so submit is reachable
     fireEvent.keyDown(document.activeElement ?? document.body, {
       key: 'Escape',
     });
@@ -242,42 +200,16 @@ describe('создание композиции', () => {
     const body = postBodies(fetchMock)[0];
     expect(body).toEqual({
       title: 'Published Song',
-      author: 'Author',
+      artistIds: [adam.id, queen.id],
       status: 'PUBLISHED',
       tagIds: [tagA.id, tagB.id],
     });
-    expect(Array.isArray(body.tagIds)).toBe(true);
+    expect(Array.isArray(body.artistIds)).toBe(true);
     expect(typeof body.tagIds).not.toBe('string');
   });
 
   it('201 закрывает диалог и вызывает повторное чтение списка', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockImplementation((url: string, init?: RequestInit) => {
-        if (init?.method === 'POST') {
-          return Promise.resolve(
-            jsonResponse(
-              201,
-              sampleComposition({ id: 'created-1', title: 'New' }),
-            ),
-          );
-        }
-        const parsed = new URL(String(url));
-        if (parsed.pathname.endsWith('/tags')) {
-          return Promise.resolve(
-            jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
-          );
-        }
-        return Promise.resolve(
-          jsonResponse(200, {
-            items: [sampleComposition()],
-            total: 1,
-            page: 1,
-            limit: 20,
-          }),
-        );
-      });
-    vi.stubGlobal('fetch', fetchMock);
+    const fetchMock = stubCreateFetch();
     renderCompositions();
 
     await waitFor(() => {
@@ -286,13 +218,10 @@ describe('создание композиции', () => {
     expect(getCompositionListCalls(fetchMock)).toHaveLength(1);
 
     openCreateDialog();
-    const dialog = screen.getByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Название'), {
-      target: { value: 'New Song' },
-    });
-    fireEvent.change(within(dialog).getByLabelText('Автор'), {
-      target: { value: 'Author' },
-    });
+    fireEvent.change(
+      within(screen.getByRole('dialog')).getByLabelText('Название'),
+      { target: { value: 'New Song' } },
+    );
     submitCreateDialog();
 
     await waitFor(() => {
@@ -314,41 +243,17 @@ describe('создание композиции', () => {
         { locale: 'en', name: 'Ghost' },
       ],
     });
-    const fetchMock = vi
-      .fn()
-      .mockImplementation((url: string, init?: RequestInit) => {
-        if (init?.method === 'POST') {
-          return Promise.resolve(
-            jsonResponse(400, {
-              statusCode: 400,
-              message: unknownTagMessage,
-              error: 'Bad Request',
-              path: '/compositions',
-              timestamp: '2026-09-25T00:00:00.000Z',
-            }),
-          );
-        }
-        const parsed = new URL(String(url));
-        if (parsed.pathname.endsWith('/tags')) {
-          return Promise.resolve(
-            jsonResponse(200, {
-              items: [tagA],
-              total: 1,
-              page: 1,
-              limit: 100,
-            }),
-          );
-        }
-        return Promise.resolve(
-          jsonResponse(200, {
-            items: [sampleComposition()],
-            total: 1,
-            page: 1,
-            limit: 20,
-          }),
-        );
-      });
-    vi.stubGlobal('fetch', fetchMock);
+    const fetchMock = stubCreateFetch({
+      tags: [tagA],
+      createStatus: 400,
+      createBody: {
+        statusCode: 400,
+        message: unknownTagMessage,
+        error: 'Bad Request',
+        path: '/compositions',
+        timestamp: '2026-09-25T00:00:00.000Z',
+      },
+    });
     renderCompositions();
 
     await waitFor(() => {
@@ -360,9 +265,6 @@ describe('создание композиции', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.change(within(dialog).getByLabelText('Название'), {
       target: { value: 'Song' },
-    });
-    fireEvent.change(within(dialog).getByLabelText('Автор'), {
-      target: { value: 'Author' },
     });
     fireEvent.mouseDown(within(dialog).getByLabelText('Теги'));
     await waitFor(() => {
@@ -382,3 +284,60 @@ describe('создание композиции', () => {
     expect(getCompositionListCalls(fetchMock)).toHaveLength(1);
   });
 });
+
+const stubCreateFetch = ({
+  artists = [] as ReturnType<typeof sampleArtist>[],
+  tags = [] as ReturnType<typeof sampleTag>[],
+  createStatus = 201,
+  createBody,
+}: {
+  artists?: ReturnType<typeof sampleArtist>[];
+  tags?: ReturnType<typeof sampleTag>[];
+  createStatus?: number;
+  createBody?: unknown;
+} = {}) => {
+  const fetchMock = vi
+    .fn()
+    .mockImplementation((url: string, init?: RequestInit) => {
+      const parsed = new URL(String(url));
+      const method = init?.method ?? 'GET';
+      if (method === 'POST' && parsed.pathname === '/compositions') {
+        return Promise.resolve(
+          jsonResponse(
+            createStatus,
+            createBody ?? sampleComposition({ id: 'created-1', title: 'New' }),
+          ),
+        );
+      }
+      if (method === 'GET' && parsed.pathname === '/tags') {
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: tags,
+            total: tags.length,
+            page: 1,
+            limit: 100,
+          }),
+        );
+      }
+      if (method === 'GET' && parsed.pathname === '/artists') {
+        return Promise.resolve(
+          jsonResponse(200, {
+            items: artists,
+            total: artists.length,
+            page: 1,
+            limit: 20,
+          }),
+        );
+      }
+      return Promise.resolve(
+        jsonResponse(200, {
+          items: [sampleComposition()],
+          total: 1,
+          page: 1,
+          limit: 20,
+        }),
+      );
+    });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+};

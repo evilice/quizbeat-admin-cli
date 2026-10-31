@@ -1,6 +1,7 @@
 import { useState, type SubmitEvent } from 'react';
 import { messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
+import type { CompositionArtist } from '../../artists/artists-store.ts';
 import type {
   Composition,
   CompositionFull,
@@ -14,37 +15,41 @@ export const useEditComposition = (
 ) => {
   const { compositions } = useRootStore();
   const [title, setTitle] = useState(composition.title);
-  const [author, setAuthor] = useState(composition.author);
+  const [artists, setArtists] = useState<CompositionArtist[]>(
+    composition.artists,
+  );
   const [status, setStatus] = useState<CompositionStatus>(composition.status);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     composition.tags.map((tag) => tag.id),
   );
   const [tagsTouched, setTagsTouched] = useState(false);
+  const [artistsTouched, setArtistsTouched] = useState(false);
+  const [artistCreating, setArtistCreating] = useState(false);
   const [messages, setMessages] = useState<readonly string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (artistCreating) {
+      return;
+    }
 
     const trimmedTitle = title.trim();
-    const trimmedAuthor = author.trim();
 
     if (trimmedTitle === '') {
       setMessages(['Укажите название']);
       return;
     }
-    if (trimmedAuthor === '') {
-      setMessages(['Укажите автора']);
-      return;
-    }
 
     const input: UpdateCompositionInput = {
       title: trimmedTitle,
-      author: trimmedAuthor,
       status,
     };
     if (tagsTouched) {
       input.tagIds = selectedTagIds;
+    }
+    if (artistsTouched) {
+      input.artistIds = artists.map((artist) => artist.id);
     }
 
     setSaving(true);
@@ -52,10 +57,11 @@ export const useEditComposition = (
     try {
       const updated = await compositions.update(composition.id, input);
       setTitle(updated.title);
-      setAuthor(updated.author);
+      setArtists(updated.artists);
       setStatus(updated.status);
       setSelectedTagIds(updated.tags.map((tag) => tag.id));
       setTagsTouched(false);
+      setArtistsTouched(false);
       onSaved(updated);
     } catch (error) {
       setMessages(messagesFromError(error));
@@ -64,16 +70,23 @@ export const useEditComposition = (
     }
   };
 
+  const changeArtists = (next: CompositionArtist[]) => {
+    setArtists(next);
+    setArtistsTouched(true);
+  };
+
   return {
     title,
     setTitle,
-    author,
-    setAuthor,
+    artists,
+    changeArtists,
     status,
     setStatus,
     selectedTagIds,
     setSelectedTagIds,
     setTagsTouched,
+    artistCreating,
+    setArtistCreating,
     messages,
     saving,
     handleSubmit,

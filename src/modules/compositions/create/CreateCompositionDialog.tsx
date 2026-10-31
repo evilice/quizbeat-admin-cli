@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import type { CompositionStatus } from '../compositions-store.ts';
 import { STATUS_LABELS, tagDisplayName } from '../composition-display.ts';
+import { ArtistsField } from '../artists/ArtistsField.tsx';
 import type { Tag } from '../../tags/tags-store.ts';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
 import { useCreateComposition } from './use-create-composition.ts';
@@ -35,12 +36,14 @@ export const CreateCompositionDialog = ({
   const {
     title,
     setTitle,
-    author,
-    setAuthor,
+    artists,
+    setArtists,
     status,
     setStatus,
     selectedTagIds,
     setSelectedTagIds,
+    artistCreating,
+    setArtistCreating,
     messages,
     submitting,
     handleClose,
@@ -69,14 +72,10 @@ export const CreateCompositionDialog = ({
             fullWidth
             margin="dense"
           />
-          <TextField
-            label="Автор"
-            value={author}
-            onChange={(event) => {
-              setAuthor(event.target.value);
-            }}
-            autoComplete="off"
-            fullWidth
+          <ArtistsField
+            value={artists}
+            onChange={setArtists}
+            onCreatingChange={setArtistCreating}
           />
           <FormControl fullWidth>
             <InputLabel id="create-composition-status-label">Статус</InputLabel>
@@ -131,10 +130,17 @@ export const CreateCompositionDialog = ({
           <ErrorMessages messages={messages} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} disabled={submitting}>
+          <Button
+            onClick={handleClose}
+            disabled={submitting || artistCreating}
+          >
             Отмена
           </Button>
-          <Button type="submit" variant="contained" disabled={submitting}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={submitting || artistCreating}
+          >
             Создать
           </Button>
         </DialogActions>

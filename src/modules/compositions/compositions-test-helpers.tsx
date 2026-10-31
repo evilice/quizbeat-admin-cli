@@ -97,11 +97,23 @@ export function sampleTag(
   };
 }
 
+export function sampleArtist(
+  overrides: {
+    id?: string;
+    name?: string;
+  } = {},
+) {
+  return {
+    id: overrides.id ?? 'artist-id',
+    name: overrides.name ?? 'Artist',
+  };
+}
+
 export function sampleComposition(
   overrides: {
     id?: string;
     title?: string;
-    author?: string;
+    artists?: ReturnType<typeof sampleArtist>[];
     status?: 'DRAFT' | 'PUBLISHED';
     tags?: ReturnType<typeof sampleTag>[];
   } = {},
@@ -109,7 +121,7 @@ export function sampleComposition(
   return {
     id: overrides.id ?? 'comp-1',
     title: overrides.title ?? 'Song One',
-    author: overrides.author ?? 'Author',
+    artists: overrides.artists ?? [],
     status: overrides.status ?? 'DRAFT',
     createdById: 'admin-1',
     tags: overrides.tags ?? [],

@@ -9,7 +9,10 @@ import {
 } from '@mui/material';
 import { useLastValue } from '../../../shared/hooks/use-last-value.ts';
 import { ErrorMessages } from '../../../shared/ui/ErrorMessages.tsx';
-import { DELETE_COMPOSITION_CONFIRM_TEXT } from '../composition-display.ts';
+import {
+  artistNames,
+  DELETE_COMPOSITION_CONFIRM_TEXT,
+} from '../composition-display.ts';
 import type { Composition } from '../compositions-store.ts';
 
 type DeleteCompositionDialogProps = {
@@ -35,7 +38,7 @@ export const DeleteCompositionDialog = ({
       <DialogContent>
         <DialogContentText component="div">
           <Typography component="p" sx={{ m: 0 }}>
-            Автор: {shown?.author ?? ''}
+            Исполнители: {shown === null ? '' : artistNames(shown.artists)}
           </Typography>
           <Typography component="p" sx={{ mt: 1, mb: 0 }}>
             {DELETE_COMPOSITION_CONFIRM_TEXT}

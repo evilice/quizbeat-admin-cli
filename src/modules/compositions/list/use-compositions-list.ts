@@ -121,7 +121,7 @@ export const useCompositionsList = () => {
   const openComposition = (composition: Composition) => {
     const state: CompositionLocationState = {
       title: composition.title,
-      author: composition.author,
+      artists: composition.artists,
     };
     void navigate(`/compositions/${composition.id}`, { state });
   };

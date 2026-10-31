@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { ApiError, messagesFromError } from '../../../shared/api/api-error.ts';
 import { useRootStore } from '../../../shared/store/root-store-context.tsx';
+import type { CompositionArtist } from '../../artists/artists-store.ts';
+import { compositionHeading } from '../composition-display.ts';
 import type { Composition, CompositionFull } from '../compositions-store.ts';
 import { useTagOptions } from '../use-tag-options.ts';
 
 export type CompositionLocationState = {
   title?: string;
-  author?: string;
+  artists?: CompositionArtist[];
 };
 
 export type CompositionCardTab =
@@ -21,7 +23,7 @@ const mergeCompositionIntoFull = (
     ...current,
     id: updated.id,
     title: updated.title,
-    author: updated.author,
+    artists: updated.artists,
     status: updated.status,
     createdById: updated.createdById,
     tags: updated.tags,
@@ -173,14 +175,13 @@ export const useCompositionCard = () => {
   }, []);
 
   const headerTitle = full?.title ?? locationState?.title;
-  const headerAuthor = full?.author ?? locationState?.author;
+  const headerArtists = full?.artists ?? locationState?.artists;
 
   return {
     notFound: missingId || notFound,
     loading: missingId ? false : loading,
     loadMessages,
-    headerTitle,
-    headerAuthor,
+    heading: compositionHeading(headerTitle, headerArtists),
     full: missingId ? null : full,
     tagOptions,
     tagMessages,

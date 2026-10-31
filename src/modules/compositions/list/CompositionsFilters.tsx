@@ -38,7 +38,7 @@ export const CompositionsFilters = ({
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <TextField
         fullWidth
-        label="Поиск по названию или автору"
+        label="Поиск по названию или исполнителю"
         value={search}
         onChange={(event) => {
           onSearchChange(event.target.value);

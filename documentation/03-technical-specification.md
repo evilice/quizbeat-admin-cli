@@ -353,7 +353,7 @@ refresh после успеха больше не используется. Пр
 
 ### Этап 12 — Исполнители вместо автора
 
-Статус: в работе, задачи 1–2 выполнены. Серверный этап 17 (`quizbeat-srv`):
+Статус: выполнен. Серверный этап 17 (`quizbeat-srv`) влит в `main`:
 справочник `/artists`, `artistIds` в композициях. Решение заказчика (2026-10-31):
 [performers.md](https://github.com/evilice/quizbeat-docs/blob/main/product/performers.md).
 

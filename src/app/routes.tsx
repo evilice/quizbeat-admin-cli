@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router';
 import { AdminsPage } from '../modules/admins/AdminsPage.tsx';
+import { ArtistsPage } from '../modules/artists/ArtistsPage.tsx';
 import { AppShell } from './AppShell.tsx';
 import { ChangePasswordPage } from '../modules/session/ChangePasswordPage.tsx';
 import { CompositionCardPage } from '../modules/compositions/CompositionCardPage.tsx';
@@ -17,6 +18,7 @@ export const routes: RouteObject[] = [
       { path: '/compositions', element: <CompositionsPage /> },
       { path: '/compositions/:id', element: <CompositionCardPage /> },
       { path: '/tags', element: <TagsPage /> },
+      { path: '/artists', element: <ArtistsPage /> },
       { path: '/admins', element: <AdminsPage /> },
       { path: '/storage', element: <StoragePage /> },
       { path: '/password', element: <ChangePasswordPage /> },

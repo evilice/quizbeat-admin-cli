@@ -112,6 +112,7 @@ describe('роль в оболочке и пункты меню', () => {
       'Хранилище',
       'Композиции',
       'Теги',
+      'Исполнители',
     ]);
     const adminsLink = navLinks[0];
     expect(adminsLink?.getAttribute('href')).toBe('/admins');
@@ -121,6 +122,8 @@ describe('роль в оболочке и пункты меню', () => {
     expect(compositionsLink?.getAttribute('href')).toBe('/compositions');
     const tagsLink = navLinks[3];
     expect(tagsLink?.getAttribute('href')).toBe('/tags');
+    const artistsLink = navLinks[4];
+    expect(artistsLink?.getAttribute('href')).toBe('/artists');
     openAccount();
     expect(screen.getByText('super@example.com')).toBeTruthy();
     expect(screen.queryByText(sub)).toBeNull();
@@ -140,7 +143,7 @@ describe('роль в оболочке и пункты меню', () => {
     ).toBe(true);
   });
 
-  it('ADMIN видит «Композиции» и «Теги», не видит «Сотрудники», переход на /compositions вызывает GET /compositions', async () => {
+  it('ADMIN видит «Композиции», «Теги» и «Исполнители», не видит «Сотрудники», переход на /compositions вызывает GET /compositions', async () => {
     const sub = 'admin-2';
     const access = makeAccessToken({
       sub,
@@ -166,11 +169,14 @@ describe('роль в оболочке и пункты меню', () => {
     expect(navLinks.map((link) => link.textContent)).toEqual([
       'Композиции',
       'Теги',
+      'Исполнители',
     ]);
     const compositionsLink = navLinks[0];
     expect(compositionsLink?.getAttribute('href')).toBe('/compositions');
     const tagsLink = navLinks[1];
     expect(tagsLink?.getAttribute('href')).toBe('/tags');
+    const artistsLink = navLinks[2];
+    expect(artistsLink?.getAttribute('href')).toBe('/artists');
 
     openAccount();
     expect(screen.getByText('admin@example.com')).toBeTruthy();
@@ -188,6 +194,42 @@ describe('роль в оболочке и пункты меню', () => {
     expect(listCalls.length).toBeGreaterThanOrEqual(1);
     expect(
       String(listCalls[0]?.[0]).startsWith(`${apiBaseUrl}/compositions`),
+    ).toBe(true);
+  });
+
+  it('прямой /artists под ADMIN открывает справочник и вызывает GET /artists', async () => {
+    const access = makeAccessToken({
+      sub: 'admin-2',
+      role: 'ADMIN',
+      type: 'staff',
+    });
+    const fetchMock = stubFetch(() =>
+      jsonResponse(200, {
+        items: [
+          {
+            id: 'artist-1',
+            name: 'Queen',
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 20,
+      }),
+    );
+    const store = newRootStore();
+    store.session.setPair(access, 'refresh-1', 'admin@example.com');
+
+    render(shell(store, '/artists'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Queen')).toBeTruthy();
+    });
+    expect(screen.getByLabelText('Поиск по имени')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Исполнители' })).toBeTruthy();
+    expect(currentNavLabel()).toBe('Исполнители');
+    expect(
+      String(fetchMock.mock.calls[0]?.[0]).startsWith(`${apiBaseUrl}/artists`),
     ).toBe(true);
   });
 
@@ -218,6 +260,7 @@ describe('роль в оболочке и пункты меню', () => {
     });
     expect(screen.queryByRole('link', { name: 'Сотрудники' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Теги' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Исполнители' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Композиции' })).toBeTruthy();
     expect(screen.queryByText('Никого не найдено')).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
@@ -254,6 +297,10 @@ describe('роль в оболочке и пункты меню', () => {
 
     render(shell(store, '/tags'));
     expect(currentNavLabel()).toBe('Теги');
+    cleanup();
+
+    render(shell(store, '/artists'));
+    expect(currentNavLabel()).toBe('Исполнители');
     cleanup();
 
     render(shell(store, '/compositions'));

@@ -51,6 +51,75 @@ describe('ArtistsStore', () => {
     expect(requestMethod(fetchMock, 0)).toBe('POST');
     expect(requestBody(fetchMock, 0)).toEqual({ name: 'Queen' });
   });
+
+  it('update шлёт PATCH с { name } на путь записи', async () => {
+    const updated = sampleArtist({ name: 'Queen!' });
+    const { artists, fetchMock } = createStoreWithSession();
+    stubJsonOk(fetchMock, updated);
+
+    await expect(
+      artists.update(updated.id, { name: 'Queen!' }),
+    ).resolves.toEqual(updated);
+
+    expect(fetchUrl(fetchMock, 0)).toBe(`${apiBaseUrl}/artists/${updated.id}`);
+    expect(requestMethod(fetchMock, 0)).toBe('PATCH');
+    expect(requestBody(fetchMock, 0)).toEqual({ name: 'Queen!' });
+  });
+
+  it('remove шлёт DELETE и принимает пустой 204', async () => {
+    const artist = sampleArtist();
+    const { artists, fetchMock } = createStoreWithSession();
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response(null, { status: 204 })),
+    );
+
+    await expect(artists.remove(artist.id)).resolves.toBeUndefined();
+
+    expect(fetchUrl(fetchMock, 0)).toBe(`${apiBaseUrl}/artists/${artist.id}`);
+    expect(requestMethod(fetchMock, 0)).toBe('DELETE');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('409 удаления отдаёт details.compositionCount, 404 — статус', async () => {
+    const artist = sampleArtist();
+    const { artists, fetchMock } = createStoreWithSession();
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        jsonResponse(409, {
+          statusCode: 409,
+          message: 'Artist is used by one or more compositions',
+          error: 'Conflict',
+          path: `/artists/${artist.id}`,
+          timestamp: '2026-01-01T00:00:00.000Z',
+          details: { compositionCount: 3 },
+        }),
+      ),
+    );
+
+    await expect(artists.remove(artist.id)).rejects.toMatchObject({
+      status: 409,
+      messages: ['Artist is used by one or more compositions'],
+      details: { compositionCount: 3 },
+    });
+
+    fetchMock.mockClear();
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        jsonResponse(404, {
+          statusCode: 404,
+          message: 'Not Found',
+          error: 'Not Found',
+          path: `/artists/${artist.id}`,
+          timestamp: '2026-01-01T00:00:00.000Z',
+        }),
+      ),
+    );
+
+    await expect(artists.remove(artist.id)).rejects.toMatchObject({
+      status: 404,
+      messages: ['Not Found'],
+    });
+  });
 });
 
 const createStoreWithSession = (): {

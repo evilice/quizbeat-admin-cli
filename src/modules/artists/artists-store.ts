@@ -30,6 +30,10 @@ export type CreateArtistInput = {
   name: string;
 };
 
+export type UpdateArtistInput = {
+  name?: string;
+};
+
 export class ArtistsStore {
   readonly api: ApiClient;
 
@@ -67,6 +71,28 @@ export class ArtistsStore {
       throw new ApiError(null, ['Пустой ответ создания исполнителя']);
     }
     return artist;
+  }
+
+  async update(id: string, input: UpdateArtistInput): Promise<Artist> {
+    const body: { name?: string } = {};
+    if (input.name !== undefined) {
+      body.name = input.name;
+    }
+
+    const artist = await this.api.requestJson<Artist>(`/artists/${id}`, {
+      method: 'PATCH',
+      body,
+    });
+    if (artist === undefined) {
+      throw new ApiError(null, ['Пустой ответ правки исполнителя']);
+    }
+    return artist;
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.api.requestJson(`/artists/${id}`, {
+      method: 'DELETE',
+    });
   }
 }
 

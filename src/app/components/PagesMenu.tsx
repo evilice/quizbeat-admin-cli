@@ -8,6 +8,7 @@ const menuItems = [
   { label: 'Хранилище', to: '/storage', role: 'SUPER_ADMIN' },
   { label: 'Композиции', to: '/compositions' },
   { label: 'Теги', to: '/tags' },
+  { label: 'Исполнители', to: '/artists' },
 ];
 
 const MenuItems: React.FC<{ session: SessionStore; pathname: string }> = ({

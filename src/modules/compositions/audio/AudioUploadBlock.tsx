@@ -17,7 +17,7 @@ export function AudioUploadBlock({
   compositionId: string;
   originalAudioUrl: string | null;
   originalAudioDurationSec: number | null;
-  onUploaded: (originalAudioDurationSec: number) => void;
+  onUploaded: (compositionId: string, originalAudioDurationSec: number) => void;
 }) {
   const { audioClips } = useRootStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +35,7 @@ export function AudioUploadBlock({
     setMessages([]);
     try {
       const result = await audioClips.uploadAudio(compositionId, file);
-      onUploaded(result.originalAudioDurationSec);
+      onUploaded(compositionId, result.originalAudioDurationSec);
       setFile(null);
       if (fileInputRef.current !== null) {
         fileInputRef.current.value = '';

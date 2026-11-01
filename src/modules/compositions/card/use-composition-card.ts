@@ -44,8 +44,14 @@ export const useCompositionCard = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [loadMessages, setLoadMessages] = useState<readonly string[]>([]);
-  const [clipsReloadToken, setClipsReloadToken] = useState(0);
-  const [audioVersion, setAudioVersion] = useState(0);
+  const [clipsReloadState, setClipsReloadState] = useState({
+    compositionId: id,
+    value: 0,
+  });
+  const [audioVersionState, setAudioVersionState] = useState({
+    compositionId: id,
+    value: 0,
+  });
   const [videoVersionState, setVideoVersionState] = useState({
     compositionId: id,
     value: 0,
@@ -60,7 +66,8 @@ export const useCompositionCard = () => {
     setLoading(!missingId);
     setNotFound(false);
     setLoadMessages([]);
-    setClipsReloadToken(0);
+    setAudioVersionState({ compositionId: id, value: 0 });
+    setClipsReloadState({ compositionId: id, value: 0 });
     setVideoVersionState({ compositionId: id, value: 0 });
     setTab('general');
   }
@@ -104,26 +111,43 @@ export const useCompositionCard = () => {
 
   const applySaved = (updated: Composition) => {
     setFull((current) =>
-      current === null ? null : mergeCompositionIntoFull(current, updated),
+      current === null || current.id !== updated.id
+        ? current
+        : mergeCompositionIntoFull(current, updated),
     );
   };
 
-  const handleAudioUploaded = (durationSec: number) => {
+  const handleAudioUploaded = (
+    compositionId: string,
+    durationSec: number,
+  ) => {
     setFull((current) =>
-      current === null
-        ? null
+      current === null || current.id !== compositionId
+        ? current
         : {
             ...current,
             originalAudioDurationSec: durationSec,
             originalAudioUrl: null,
           },
     );
-    setAudioVersion((value) => value + 1);
-    setClipsReloadToken((value) => value + 1);
+    setAudioVersionState((current) =>
+      current.compositionId === compositionId
+        ? { compositionId, value: current.value + 1 }
+        : current,
+    );
+    setClipsReloadState((current) =>
+      current.compositionId === compositionId
+        ? { compositionId, value: current.value + 1 }
+        : current,
+    );
   };
 
-  const handlePointsCreated = () => {
-    setClipsReloadToken((value) => value + 1);
+  const handlePointsCreated = (compositionId: string) => {
+    setClipsReloadState((current) =>
+      current.compositionId === compositionId
+        ? { compositionId, value: current.value + 1 }
+        : current,
+    );
   };
 
   // Ссылка сбрасывается до GET: иначе плеер на миг покажет уже заменённый файл.
@@ -185,8 +209,8 @@ export const useCompositionCard = () => {
     full: missingId ? null : full,
     tagOptions,
     tagMessages,
-    clipsReloadToken,
-    audioVersion,
+    clipsReloadToken: clipsReloadState.value,
+    audioVersion: audioVersionState.value,
     videoVersion: videoVersionState.value,
     tab,
     setTab,

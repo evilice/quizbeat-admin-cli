@@ -32,8 +32,9 @@ export class SessionStore {
   readonly api: ApiClient;
 
   private readonly storage: SessionStorage;
-  #refreshInFlight: Promise<void> | null = null;
-  /** Растёт при каждой потере сессии; refresh из прошлой эпохи не пишется. */
+  #refreshInFlight: { epoch: number; promise: Promise<void> } | null = null;
+  #loggingOut = false;
+  /** Растёт при смене сессии; refresh из прошлой эпохи не пишется. */
   #epoch = 0;
 
   constructor(storage: SessionStorage) {
@@ -42,7 +43,14 @@ export class SessionStore {
     this.email = storage.getItem(EMAIL_KEY);
     this.api = createApiClient(() => this.accessToken, {
       refresh: () => this.refreshAccess(),
-      onAuthLost: () => this.clearTokens(),
+      // Во время выхода 401 не должен стирать сессию раньше самого logout:
+      // иначе поздний clear() затрёт уже новый вход.
+      onAuthLost: () => {
+        if (!this.#loggingOut) {
+          this.clearTokens();
+        }
+      },
+      getSessionEpoch: () => this.#epoch,
     });
     makeAutoObservable(
       this,
@@ -54,9 +62,24 @@ export class SessionStore {
   }
 
   setPair(accessToken: string, refreshToken: string, email?: string): void {
+    this.applyPair(accessToken, refreshToken, email, true);
+  }
+
+  private applyPair(
+    accessToken: string,
+    refreshToken: string,
+    email: string | undefined,
+    newSession: boolean,
+  ): void {
     const parsed = parseAccessToken(accessToken);
     if (parsed === null) {
       throw new ApiError(null, ['Сервер вернул недопустимый токен доступа']);
+    }
+
+    if (newSession) {
+      // Новый вход делает недействительными запросы и refresh прошлой сессии.
+      this.#epoch += 1;
+      this.#refreshInFlight = null;
     }
 
     this.accessToken = accessToken;
@@ -78,6 +101,7 @@ export class SessionStore {
 
   clearTokens(): void {
     this.#epoch += 1;
+    this.#refreshInFlight = null;
     this.accessToken = null;
     this.id = null;
     this.role = null;
@@ -87,6 +111,7 @@ export class SessionStore {
 
   clear(): void {
     this.#epoch += 1;
+    this.#refreshInFlight = null;
     this.accessToken = null;
     this.id = null;
     this.role = null;
@@ -105,8 +130,12 @@ export class SessionStore {
         auth: false,
       },
     );
-    if (tokens === undefined) {
-      return;
+    if (
+      tokens === undefined ||
+      !tokens.accessToken ||
+      !tokens.refreshToken
+    ) {
+      throw new ApiError(null, ['Сервер вернул пустую пару токенов']);
     }
     this.setPair(tokens.accessToken, tokens.refreshToken, email);
   }
@@ -119,50 +148,92 @@ export class SessionStore {
   }
 
   async logout(): Promise<void> {
-    const token = this.refreshToken;
-    if (token === null || token === '') {
-      this.clear();
-      return;
-    }
-
+    const epoch = this.#epoch;
+    this.#loggingOut = true;
     try {
-      await this.api.requestJson('/auth/staff/logout', {
-        method: 'POST',
-        body: { refreshToken: token },
-        auth: false,
-      });
-    } catch {
-      // 204, сеть, 401 — локально чистим в любом случае
+      // Нельзя отзывать refresh, который вот-вот ротируется: иначе на
+      // сервере останется жить только что выданный токен.
+      const inFlight = this.#refreshInFlight;
+      if (inFlight !== null && inFlight.epoch === epoch) {
+        try {
+          await inFlight.promise;
+        } catch {
+          // Ошибка refresh уже обработана в performRefresh.
+        }
+      }
+
+      // Пока ждали refresh, могли войти заново или выйти из другой вкладки.
+      if (this.#epoch !== epoch) {
+        if (this.accessToken === null && this.refreshToken === null) {
+          this.clear();
+        }
+        return;
+      }
+
+      const token = this.refreshToken;
+      if (token === null || token === '') {
+        this.clear();
+        return;
+      }
+
+      try {
+        await this.api.requestJson('/auth/staff/logout', {
+          method: 'POST',
+          body: { refreshToken: token },
+          auth: false,
+        });
+      } catch {
+        // 204, сеть, 401 — локально чистим в любом случае
+      } finally {
+        if (this.#epoch === epoch) {
+          this.clear();
+        }
+      }
     } finally {
-      this.clear();
+      this.#loggingOut = false;
     }
   }
 
   /** Для перехватчика: `false`, если refresh некуда слать. */
   async refreshAccess(): Promise<boolean> {
+    if (this.#loggingOut) {
+      return false;
+    }
     if (this.refreshToken === null || this.refreshToken === '') {
       return false;
     }
+    const epoch = this.#epoch;
     await this.runSharedRefresh();
-    return true;
+    return (
+      this.#epoch === epoch &&
+      this.accessToken !== null &&
+      this.refreshToken !== null
+    );
   }
 
   private runSharedRefresh(): Promise<void> {
-    if (this.#refreshInFlight !== null) {
-      return this.#refreshInFlight;
+    const epoch = this.#epoch;
+    if (
+      this.#refreshInFlight !== null &&
+      this.#refreshInFlight.epoch === epoch
+    ) {
+      return this.#refreshInFlight.promise;
     }
-    this.#refreshInFlight = this.performRefresh().finally(() => {
-      this.#refreshInFlight = null;
+
+    const promise = this.performRefresh(epoch).finally(() => {
+      if (this.#refreshInFlight?.epoch === epoch) {
+        this.#refreshInFlight = null;
+      }
     });
-    return this.#refreshInFlight;
+    this.#refreshInFlight = { epoch, promise };
+    return promise;
   }
 
-  private async performRefresh(): Promise<void> {
+  private async performRefresh(epoch: number): Promise<void> {
     const refreshToken = this.refreshToken;
     if (refreshToken === null || refreshToken === '') {
       return;
     }
-    const epoch = this.#epoch;
 
     let tokens: StaffAuthTokens | undefined;
     try {
@@ -174,6 +245,7 @@ export class SessionStore {
     } catch (error) {
       if (
         epoch === this.#epoch &&
+        refreshToken === this.refreshToken &&
         error instanceof ApiError &&
         error.status === 401
       ) {
@@ -181,15 +253,15 @@ export class SessionStore {
       }
       throw error;
     }
-    if (tokens === undefined) {
+    if (tokens === undefined || !tokens.accessToken || !tokens.refreshToken) {
       throw new ApiError(null, ['Пустой ответ refresh']);
     }
-    if (epoch !== this.#epoch) {
-      // Пока шёл refresh, сессию сбросили (выход, потеря авторизации).
+    if (epoch !== this.#epoch || refreshToken !== this.refreshToken) {
+      // Пока шёл refresh, сессию сбросили (выход, смена пароля, новый вход).
       return;
     }
     try {
-      this.setPair(tokens.accessToken, tokens.refreshToken);
+      this.applyPair(tokens.accessToken, tokens.refreshToken, undefined, false);
     } catch (error) {
       // Сервер уже ротировал refresh, а пара не разобралась: сессии нет.
       this.clearTokens();

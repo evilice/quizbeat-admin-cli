@@ -657,13 +657,231 @@ describe('SessionStore: login, refresh, logout', () => {
     );
 
     const refreshing = session.refreshAccess();
-    await session.logout();
+    const loggingOut = session.logout();
     releaseRefresh?.();
-    await refreshing;
+    await Promise.all([refreshing, loggingOut]);
 
     expect(session.accessToken).toBeNull();
     expect(session.refreshToken).toBeNull();
     expect(storage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+  });
+
+  it('поздний 401 после входа другим сотрудником не повторяется с чужим токеном', async () => {
+    const accessA = staffAccess('admin-a', 'v1');
+    const accessB = staffAccess('admin-b', 'v1');
+    const session = new SessionStore(createMemoryStorage());
+    session.setPair(accessA, 'refresh-a', 'a@example.com');
+
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let adminCalls = 0;
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async (url: string) => {
+        if (String(url).endsWith('/admins')) {
+          adminCalls += 1;
+          if (adminCalls === 1) {
+            await gate;
+            return unauthorizedJson(
+              '/admins',
+              'Invalid or missing access token',
+            );
+          }
+        }
+        return jsonResponse(200, { ok: true });
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const pending = session.api.requestJson('/admins', { method: 'GET' });
+    await vi.waitFor(() => {
+      expect(adminCalls).toBe(1);
+    });
+
+    session.setPair(accessB, 'refresh-b', 'b@example.com');
+    release?.();
+
+    await expect(pending).rejects.toMatchObject({ status: 401 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(session.accessToken).toBe(accessB);
+    expect(session.refreshToken).toBe('refresh-b');
+    expect(session.email).toBe('b@example.com');
+  });
+
+  it('выход дожидается refresh и отзывает уже ротированный токен', async () => {
+    const storage = createMemoryStorage();
+    const session = new SessionStore(storage);
+    session.setPair(staffAccess('admin-1', 'v1'), 'refresh-old');
+    const newAccess = staffAccess('admin-1', 'v2');
+
+    let releaseRefresh: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async (url: string) => {
+        if (String(url).endsWith('/auth/staff/refresh')) {
+          await gate;
+          return jsonResponse(200, {
+            accessToken: newAccess,
+            refreshToken: 'refresh-new',
+          });
+        }
+        if (String(url).endsWith('/auth/staff/logout')) {
+          return new Response(null, { status: 204 });
+        }
+        return jsonResponse(500, { message: 'unexpected' });
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const refreshing = session.refreshAccess();
+    const loggingOut = session.logout();
+    releaseRefresh?.();
+    await Promise.all([refreshing, loggingOut]);
+
+    const logoutCall = fetchMock.mock.calls.find((call) =>
+      String(call[0]).endsWith('/auth/staff/logout'),
+    );
+    expect(bodyJson(logoutCall?.[1])).toEqual({
+      refreshToken: 'refresh-new',
+    });
+    expect(session.accessToken).toBeNull();
+    expect(session.refreshToken).toBeNull();
+    expect(storage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+  });
+
+  it('выход не стирает сессию, если во время него вошли заново', async () => {
+    const session = new SessionStore(createMemoryStorage());
+    session.setPair(staffAccess('admin-a', 'v1'), 'refresh-a', 'a@example.com');
+    const accessB = staffAccess('admin-b', 'v1');
+
+    let releaseLogout: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      releaseLogout = resolve;
+    });
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async (url: string) => {
+        const path = new URL(String(url)).pathname;
+        if (path.endsWith('/auth/staff/logout')) {
+          await gate;
+          return new Response(null, { status: 204 });
+        }
+        if (path.endsWith('/admins')) {
+          return unauthorizedJson('/admins', 'Invalid or missing access token');
+        }
+        if (path.endsWith('/auth/staff/login')) {
+          return jsonResponse(200, {
+            accessToken: accessB,
+            refreshToken: 'refresh-b',
+          });
+        }
+        return jsonResponse(500, { message: 'unexpected' });
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const loggingOut = session.logout();
+    await vi.waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some((call) =>
+          String(call[0]).endsWith('/auth/staff/logout'),
+        ),
+      ).toBe(true);
+    });
+
+    await expect(
+      session.api.requestJson('/admins', { method: 'GET' }),
+    ).rejects.toMatchObject({ status: 401 });
+
+    await session.login('b@example.com', 'pw');
+    releaseLogout?.();
+    await loggingOut;
+
+    expect(session.accessToken).toBe(accessB);
+    expect(session.refreshToken).toBe('refresh-b');
+    expect(session.email).toBe('b@example.com');
+  });
+
+  it('refresh 401 во время выхода очищает и email', async () => {
+    const storage = createMemoryStorage();
+    const session = new SessionStore(storage);
+    session.setPair(staffAccess('admin-1', 'v1'), 'refresh-old', 'a@example.com');
+
+    let releaseRefresh: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (String(url).endsWith('/auth/staff/refresh')) {
+          await gate;
+          return unauthorizedJson(
+            '/auth/staff/refresh',
+            'Invalid or expired refresh token',
+          );
+        }
+        return new Response(null, { status: 204 });
+      }),
+    );
+
+    const refreshing = session.refreshAccess();
+    const loggingOut = session.logout();
+    releaseRefresh?.();
+    await Promise.allSettled([refreshing, loggingOut]);
+
+    expect(session.accessToken).toBeNull();
+    expect(session.refreshToken).toBeNull();
+    expect(session.email).toBeNull();
+    expect(storage.getItem(EMAIL_KEY)).toBeNull();
+  });
+
+  it('смена пароля во время refresh не возвращает refresh-токен', async () => {
+    const storage = createMemoryStorage();
+    const session = new SessionStore(storage);
+    const access = staffAccess('admin-1', 'v1');
+    session.setPair(access, 'refresh-old');
+
+    let releaseRefresh: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (String(url).endsWith('/auth/staff/refresh')) {
+          await gate;
+          return jsonResponse(200, {
+            accessToken: staffAccess('admin-1', 'v2'),
+            refreshToken: 'refresh-new',
+          });
+        }
+        return jsonResponse(500, { message: 'unexpected' });
+      }),
+    );
+
+    const refreshing = session.refreshAccess();
+    session.forgetRefresh();
+    releaseRefresh?.();
+    const refreshed = await refreshing;
+
+    expect(refreshed).toBe(false);
+    expect(session.accessToken).toBe(access);
+    expect(session.refreshToken).toBeNull();
+    expect(storage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+  });
+
+  it('пустой успешный ответ логина не оставляет сессию без refresh', async () => {
+    const session = new SessionStore(createMemoryStorage());
+    stubFetch(() => new Response(null, { status: 200 }));
+
+    await expect(session.login('a@example.com', 'pw')).rejects.toBeInstanceOf(
+      ApiError,
+    );
+    expect(session.accessToken).toBeNull();
+    expect(session.refreshToken).toBeNull();
   });
 
   it('логин с нечитаемым access даёт ошибку и не ставит сессию', async () => {

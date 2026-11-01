@@ -24,6 +24,7 @@ import { RootStore } from '../../../shared/store/root-store.ts';
 import type { SessionStorage } from '../../session/session-store.ts';
 import { AppProviders } from '../../../app/App.tsx';
 import { routes } from '../../../app/routes.tsx';
+import { useCompositionCard } from './use-composition-card.ts';
 
 const COMPOSITION_ID = '11111111-1111-1111-1111-111111111111';
 const UNKNOWN_TAG_MESSAGE =
@@ -790,7 +791,99 @@ describe('карточка композиции', () => {
       ).toBe('Loaded Title');
     });
   });
+
+  it('позднее сохранение прежней композиции не подменяет открытую следующую', async () => {
+    const fetchMock = vi.fn((url: string) => {
+      const pathname = new URL(String(url)).pathname;
+      if (pathname.endsWith('/tags')) {
+        return Promise.resolve(
+          jsonResponse(200, { items: [], total: 0, page: 1, limit: 100 }),
+        );
+      }
+      if (pathname === '/compositions/a/full') {
+        return Promise.resolve(
+          jsonResponse(
+            200,
+            sampleCompositionFull({ id: 'a', title: 'Composition A' }),
+          ),
+        );
+      }
+      if (pathname === '/compositions/b/full') {
+        return Promise.resolve(
+          jsonResponse(
+            200,
+            sampleCompositionFull({ id: 'b', title: 'Composition B' }),
+          ),
+        );
+      }
+      return Promise.resolve(jsonResponse(500, { message: 'unexpected' }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const store = new RootStore(createMemoryStorage());
+    store.session.setPair(
+      makeAccessToken({ sub: 'viewer-1', role: 'ADMIN', type: 'staff' }),
+      'refresh-1',
+      'viewer@example.com',
+    );
+    const router = createMemoryRouter(
+      [{ path: '/compositions/:id', element: <CardProbe /> }],
+      { initialEntries: ['/compositions/a'] },
+    );
+    render(
+      <AppProviders store={store}>
+        <RouterProvider router={router} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('full-id').textContent).toBe('a');
+    });
+
+    await act(async () => {
+      await router.navigate('/compositions/b');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('full-id').textContent).toBe('b');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'save-a' }));
+    fireEvent.click(screen.getByRole('button', { name: 'upload-a' }));
+
+    expect(screen.getByTestId('full-id').textContent).toBe('b');
+    expect(screen.getByTestId('full-title').textContent).toBe('Composition B');
+    expect(screen.getByTestId('full-duration').textContent).toBe('');
+  });
 });
+
+const CardProbe = () => {
+  const card = useCompositionCard();
+  return (
+    <div>
+      <div data-testid="full-id">{card.full?.id ?? ''}</div>
+      <div data-testid="full-title">{card.full?.title ?? ''}</div>
+      <div data-testid="full-duration">
+        {card.full?.originalAudioDurationSec ?? ''}
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          card.applySaved(sampleComposition({ id: 'a', title: 'Late A' }));
+        }}
+      >
+        save-a
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          card.handleAudioUploaded('a', 99);
+        }}
+      >
+        upload-a
+      </button>
+    </div>
+  );
+};
 
 const renderCard = ({
   state,

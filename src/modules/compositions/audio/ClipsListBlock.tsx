@@ -67,6 +67,26 @@ export function ClipsListBlock({
   const playingIdRef = useRef<string | null>(null);
   const mayRefreshUrl = useAttemptThrottle(URL_REFRESH_INTERVAL_MS);
 
+  function replaceClips(next: AudioClip[]) {
+    setClips((current) => {
+      const playing = playingIdRef.current;
+      if (playing === null) {
+        return next;
+      }
+      const previous = current.find((item) => item.id === playing);
+      if (previous?.status !== 'DONE' || previous.fileUrl === undefined) {
+        return next;
+      }
+      // Новый presigned URL у играющего отрезка обрывает воспроизведение.
+      // Ссылку обновит onError или ручное чтение.
+      return next.map((item) =>
+        item.id === playing && item.status === 'DONE'
+          ? { ...item, fileUrl: previous.fileUrl }
+          : item,
+      );
+    });
+  }
+
   useEffect(() => {
     if (reloadToken === 0) {
       return;
@@ -77,7 +97,7 @@ export function ClipsListBlock({
       .listClips(compositionId)
       .then((next) => {
         if (!cancelled) {
-          setClips(next);
+          replaceClips(next);
           setMessages([]);
         }
       })
@@ -104,7 +124,7 @@ export function ClipsListBlock({
         .listClips(compositionId)
         .then((next) => {
           if (!cancelled) {
-            setClips(next);
+            replaceClips(next);
           }
         })
         .catch((error: unknown) => {
@@ -166,7 +186,7 @@ export function ClipsListBlock({
 
     try {
       const next = await audioClips.listClips(compositionId);
-      setClips(next);
+      replaceClips(next);
     } catch (error) {
       setMessages(messagesFromError(error));
     }
@@ -228,10 +248,17 @@ export function ClipsListBlock({
     if (!mayRefreshUrl(clipId)) {
       return;
     }
+    if (playingIdRef.current === clipId) {
+      setPlayback(null);
+    }
     void audioClips
       .listClips(compositionId)
       .then((next) => {
-        setClips(next);
+        if (playingIdRef.current === null) {
+          setClips(next);
+        } else {
+          replaceClips(next);
+        }
       })
       .catch((error: unknown) => {
         setMessages(messagesFromError(error));

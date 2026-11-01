@@ -2,7 +2,7 @@ import { Typography } from '@mui/material';
 import { Navigate } from 'react-router';
 
 export function HomePage() {
-  return <Typography>Рабочие экраны появятся на следующих этапах.</Typography>;
+  return <Navigate to="/compositions" replace />;
 }
 
 export function MissingPage() {

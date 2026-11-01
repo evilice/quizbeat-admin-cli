@@ -276,7 +276,7 @@ describe('роль в оболочке и пункты меню', () => {
     ).toBe(true);
   });
 
-  it('подсвечивает пункт меню открытого раздела, в том числе карточку композиции', () => {
+  it('подсвечивает пункт меню открытого раздела, в том числе карточку композиции', async () => {
     const store = newRootStore();
     store.session.setPair(
       makeAccessToken({
@@ -290,7 +290,9 @@ describe('роль в оболочке и пункты меню', () => {
     stubFetch(() => jsonResponse(200, {}));
 
     render(shell(store, '/'));
-    expect(currentNavLabel()).toBeNull();
+    await waitFor(() => {
+      expect(currentNavLabel()).toBe('Композиции');
+    });
     fireEvent.click(screen.getByRole('link', { name: 'Теги' }));
     expect(currentNavLabel()).toBe('Теги');
     cleanup();
@@ -485,13 +487,13 @@ describe('логин, восстановление и выход', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Аккаунт' })).toBeTruthy();
     });
+    await waitFor(() => {
+      expect(currentNavLabel()).toBe('Композиции');
+    });
     openAccount();
     expect(screen.getByText('admin@example.com')).toBeTruthy();
     expect(screen.queryByLabelText(/email/i)).toBeNull();
     expect(screen.queryByLabelText(/пароль/i)).toBeNull();
-    expect(
-      screen.getByText('Рабочие экраны появятся на следующих этапах.'),
-    ).toBeTruthy();
   });
 
   it('логин 401 показывает Invalid credentials и остаётся на форме', async () => {
@@ -572,6 +574,9 @@ describe('логин, восстановление и выход', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Аккаунт' })).toBeTruthy();
     });
+    await waitFor(() => {
+      expect(currentNavLabel()).toBe('Композиции');
+    });
     openAccount();
     expect(screen.getByText('saved@example.com')).toBeTruthy();
 
@@ -584,9 +589,6 @@ describe('логин, восстановление и выход', () => {
     );
     expect(screen.queryByLabelText(/email/i)).toBeNull();
     expect(screen.queryByLabelText(/пароль/i)).toBeNull();
-    expect(
-      screen.getByText('Рабочие экраны появятся на следующих этапах.'),
-    ).toBeTruthy();
   });
 
   it('выход возвращает форму, повторный рендер без refresh не зовёт восстановление', async () => {

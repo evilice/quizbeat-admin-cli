@@ -48,9 +48,20 @@ export const useListQuery = <TParams, T>({
 
     void fetchCurrent(currentParams, page)
       .then((result) => {
-        if (!cancelled) {
-          setListState({ key: requestKey, result, messages: [] });
+        if (cancelled) {
+          return;
         }
+        const lastPage = Math.max(
+          1,
+          Math.ceil(result.total / (result.limit || DEFAULT_PAGE_LIMIT)),
+        );
+        if ((result.items?.length ?? 0) === 0 && result.page > lastPage) {
+          // Последнюю строку последней страницы удалили: перечитываем
+          // непустую страницу вместо «Страница N из N−1».
+          setPage(lastPage);
+          return;
+        }
+        setListState({ key: requestKey, result, messages: [] });
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -85,6 +96,17 @@ export const useListQuery = <TParams, T>({
     try {
       const refreshed = await fetchPage(params, page);
       if (latest.current.requestKey === startedKey) {
+        const lastPage = Math.max(
+          1,
+          Math.ceil(refreshed.total / refreshed.limit),
+        );
+        if (refreshed.items.length === 0 && refreshed.page > lastPage) {
+          // Удалили последнюю строку последней страницы: возвращаемся на
+          // непустую страницу, иначе на экране «ничего не найдено» и
+          // «Страница N из N−1».
+          setPage(lastPage);
+          return null;
+        }
         setListState({ key: startedKey, result: refreshed, messages: [] });
       }
       return null;
@@ -133,7 +155,7 @@ export const listPresentation = ({
   loading: boolean;
   hasError: boolean;
 }) => {
-  const itemCount = result?.items.length ?? 0;
+  const itemCount = result?.items?.length ?? 0;
   const showTable = itemCount > 0;
   return {
     showEmpty: !loading && !hasError && result !== null && itemCount === 0,

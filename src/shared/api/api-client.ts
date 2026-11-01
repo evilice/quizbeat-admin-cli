@@ -36,6 +36,12 @@ export type CreateApiClientOptions = {
   refresh?: () => Promise<boolean>;
   /** Повторный 401 после успешной ротации — как 401 самого refresh. */
   onAuthLost?: () => void;
+  /**
+   * Номер эпохи сессии. Запрос, отправленный в прошлой сессии, не повторяется
+   * и не завершает новую сессию, если за время ожидания вошли другим
+   * сотрудником.
+   */
+  getSessionEpoch?: () => number;
 };
 
 export type ApiClient = {
@@ -54,7 +60,8 @@ export function createApiClient(
   getAccessToken: () => string | null,
   options: CreateApiClientOptions = {},
 ): ApiClient {
-  const { refresh, onAuthLost } = options;
+  const { refresh, onAuthLost, getSessionEpoch } = options;
+  const sessionEpoch = (): number => getSessionEpoch?.() ?? 0;
 
   async function request(
     path: string,
@@ -100,6 +107,7 @@ export function createApiClient(
     const headers = new Headers(requestOptions.headers);
     const useAuth = requestOptions.auth !== false;
     const sentToken = useAuth ? getAccessToken() : null;
+    const sentEpoch = sessionEpoch();
 
     if (sentToken !== null && sentToken !== '') {
       headers.set('Authorization', `Bearer ${sentToken}`);
@@ -145,6 +153,13 @@ export function createApiClient(
         throw error;
       }
 
+      // Пока запрос ждал ответа, сессию могли завершить или заменить входом
+      // другого сотрудника. Повтор с чужим токеном недопустим: мутация
+      // выполнилась бы от имени новой сессии.
+      if (sessionEpoch() !== sentEpoch) {
+        throw error;
+      }
+
       // Токен уже заменили, пока шёл запрос: ротацию сделал другой 401,
       // второй refresh не нужен.
       const alreadyRotated = getAccessToken() !== sentToken;
@@ -154,15 +169,22 @@ export function createApiClient(
 
         if (!refreshed) {
           // Refresh слать некуда, access мёртв: сессия потеряна.
-          onAuthLost?.();
+          if (sessionEpoch() === sentEpoch) {
+            onAuthLost?.();
+          }
           throw error;
         }
+      }
+
+      if (sessionEpoch() !== sentEpoch) {
+        throw error;
       }
 
       try {
         return await send(path, requestOptions, false);
       } catch (retryError) {
         if (
+          sessionEpoch() === sentEpoch &&
           retryError instanceof ApiError &&
           retryError.status === 401 &&
           requestOptions.isNonTokenUnauthorized?.(retryError) !== true

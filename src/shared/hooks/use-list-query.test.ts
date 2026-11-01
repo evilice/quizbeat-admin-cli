@@ -103,6 +103,70 @@ describe('useListQuery', () => {
     expect(result.current.result).toBeNull();
   });
 
+  it('reload после удаления последней строки последней страницы возвращается на предыдущую', async () => {
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValueOnce(pageOf(1, ['a', 'b'], 3))
+      .mockResolvedValueOnce(pageOf(2, ['c'], 3))
+      .mockResolvedValueOnce(pageOf(2, [], 2))
+      .mockResolvedValueOnce(pageOf(1, ['a', 'b'], 2));
+    const { result } = renderHook(() =>
+      useListQuery({ params: {}, fetchPage }),
+    );
+    await waitFor(() => {
+      expect(result.current.items).toEqual(['a', 'b']);
+    });
+
+    act(() => {
+      result.current.goToNextPage();
+    });
+    await waitFor(() => {
+      expect(result.current.currentPage).toBe(2);
+    });
+
+    act(() => {
+      result.current.reload();
+    });
+
+    await waitFor(() => {
+      expect(result.current.currentPage).toBe(1);
+      expect(result.current.items).toEqual(['a', 'b']);
+    });
+    expect(fetchPage).toHaveBeenLastCalledWith({}, 1);
+  });
+
+  it('после удаления последней строки последней страницы возвращается на предыдущую', async () => {
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValueOnce(pageOf(1, ['a', 'b'], 3))
+      .mockResolvedValueOnce(pageOf(2, ['c'], 3))
+      .mockResolvedValueOnce(pageOf(2, [], 2))
+      .mockResolvedValueOnce(pageOf(1, ['a', 'b'], 2));
+    const { result } = renderHook(() =>
+      useListQuery({ params: {}, fetchPage }),
+    );
+    await waitFor(() => {
+      expect(result.current.items).toEqual(['a', 'b']);
+    });
+
+    act(() => {
+      result.current.goToNextPage();
+    });
+    await waitFor(() => {
+      expect(result.current.currentPage).toBe(2);
+    });
+
+    await act(async () => {
+      await result.current.refreshCurrentPage();
+    });
+
+    await waitFor(() => {
+      expect(result.current.currentPage).toBe(1);
+      expect(result.current.items).toEqual(['a', 'b']);
+    });
+    expect(fetchPage).toHaveBeenLastCalledWith({}, 1);
+  });
+
   it('refreshCurrentPage обновляет страницу и возвращает текст ошибки', async () => {
     const fetchPage = vi
       .fn()

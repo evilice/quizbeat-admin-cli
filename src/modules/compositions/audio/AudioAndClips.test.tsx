@@ -1056,6 +1056,90 @@ describe('список отрезков и опрос', () => {
     expect(clipGets(fetchMock)).toHaveLength(1);
   });
 
+  it('опрос не меняет src играющего отрезка', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() =>
+      Promise.resolve(),
+    );
+    const otherId = '33333333-3333-3333-3333-333333333333';
+    const oldUrl = 'https://example.com/playing-old.mp3';
+    const newUrl = 'https://example.com/playing-new.mp3';
+    const pending = sampleClip({ id: CLIP_ID, status: 'PENDING' });
+    delete pending.fileUrl;
+    const done = sampleClip({
+      id: otherId,
+      status: 'DONE',
+      fileUrl: oldUrl,
+      startTimeSec: 3,
+    });
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        jsonResponse(200, [
+          sampleClip({ id: CLIP_ID, status: 'DONE', fileUrl: newUrl }),
+          sampleClip({
+            id: otherId,
+            status: 'DONE',
+            fileUrl: newUrl,
+            startTimeSec: 3,
+          }),
+        ]),
+      ),
+    );
+    renderClips([pending, done], fetchMock);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Проиграть' }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(
+      screen.getByLabelText(`Прослушать ${otherId}`).getAttribute('src'),
+    ).toBe(oldUrl);
+    expect(
+      screen.getByLabelText(`Прослушать ${CLIP_ID}`).getAttribute('src'),
+    ).toBe(newUrl);
+    vi.restoreAllMocks();
+  });
+
+  it('перечитывание после загрузки трека не меняет src играющего отрезка', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() =>
+      Promise.resolve(),
+    );
+    const oldUrl = 'https://example.com/playing-old.mp3';
+    const newUrl = 'https://example.com/playing-new.mp3';
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        jsonResponse(200, [
+          sampleClip({ status: 'DONE', fileUrl: newUrl }),
+        ]),
+      ),
+    );
+    const { rerender, store } = renderClips(
+      [sampleClip({ status: 'DONE', fileUrl: oldUrl })],
+      fetchMock,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Проиграть' }));
+    rerender(
+      <AppProviders store={store}>
+        <ClipsListBlock
+          compositionId={COMPOSITION_ID}
+          initialClips={[sampleClip({ status: 'DONE', fileUrl: oldUrl })]}
+          reloadToken={1}
+        />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(clipGets(fetchMock)).toHaveLength(1);
+    });
+    expect(
+      screen.getByLabelText(`Прослушать ${CLIP_ID}`).getAttribute('src'),
+    ).toBe(oldUrl);
+    vi.restoreAllMocks();
+  });
+
   it('строка не-DONE не читает fileUrl', () => {
     const pending = sampleClip({ status: 'PENDING' });
     delete pending.fileUrl;
@@ -1490,7 +1574,11 @@ async function renderCard() {
   return view;
 }
 
-function renderClips(clips: AudioClip[], fetchMock: ReturnType<typeof vi.fn>) {
+function renderClips(
+  clips: AudioClip[],
+  fetchMock: ReturnType<typeof vi.fn>,
+  reloadToken = 0,
+) {
   vi.stubGlobal('fetch', fetchMock);
   const store = new RootStore(createMemoryStorage());
   store.session.setPair(
@@ -1498,15 +1586,18 @@ function renderClips(clips: AudioClip[], fetchMock: ReturnType<typeof vi.fn>) {
     'refresh-1',
     'viewer@example.com',
   );
-  return render(
-    <AppProviders store={store}>
-      <ClipsListBlock
-        compositionId={COMPOSITION_ID}
-        initialClips={clips}
-        reloadToken={0}
-      />
-    </AppProviders>,
-  );
+  return {
+    ...render(
+      <AppProviders store={store}>
+        <ClipsListBlock
+          compositionId={COMPOSITION_ID}
+          initialClips={clips}
+          reloadToken={reloadToken}
+        />
+      </AppProviders>,
+    ),
+    store,
+  };
 }
 
 function stubCardFetch({

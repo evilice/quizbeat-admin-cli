@@ -80,7 +80,7 @@ export function WaveformPointsBlock({
   audioVersion: number;
   /** Блок на скрытой вкладке остаётся смонтированным, но не должен играть. */
   active?: boolean;
-  onPointsCreated: () => void;
+  onPointsCreated: (compositionId: string) => void;
 }) {
   const { audioClips } = useRootStore();
   const [freshUrl, setFreshUrl] = useState<{
@@ -100,6 +100,7 @@ export function WaveformPointsBlock({
   const [playing, setPlaying] = useState(false);
   const draftKey = useRef(0);
   const autoRefreshUsed = useRef(false);
+  const urlRequestId = useRef(0);
   const waveformRef = useRef<AudioWaveformHandle>(null);
 
   useEffect(() => {
@@ -113,6 +114,7 @@ export function WaveformPointsBlock({
   }, [active]);
 
   useEffect(() => {
+    const requestId = ++urlRequestId.current;
     if (originalAudioUrl !== null || originalAudioDurationSec === null) {
       return;
     }
@@ -121,7 +123,7 @@ export function WaveformPointsBlock({
     void audioClips
       .getAudioUrl(compositionId)
       .then((result) => {
-        if (!cancelled) {
+        if (!cancelled && urlRequestId.current === requestId) {
           setFreshUrl({
             source: originalAudioUrl,
             version: audioVersion,
@@ -130,7 +132,7 @@ export function WaveformPointsBlock({
         }
       })
       .catch((error: unknown) => {
-        if (!cancelled) {
+        if (!cancelled && urlRequestId.current === requestId) {
           setMessages(messagesFromError(error));
         }
       });
@@ -154,15 +156,19 @@ export function WaveformPointsBlock({
       : originalAudioUrl;
 
   async function loadFreshUrl() {
+    const requestId = ++urlRequestId.current;
+    const source = originalAudioUrl;
+    const version = audioVersion;
     try {
       const result = await audioClips.getAudioUrl(compositionId);
-      setFreshUrl({
-        source: originalAudioUrl,
-        version: audioVersion,
-        url: result.url,
-      });
+      if (urlRequestId.current !== requestId) {
+        return;
+      }
+      setFreshUrl({ source, version, url: result.url });
     } catch (error) {
-      setMessages(messagesFromError(error));
+      if (urlRequestId.current === requestId) {
+        setMessages(messagesFromError(error));
+      }
     }
   }
 
@@ -301,7 +307,7 @@ export function WaveformPointsBlock({
         })),
       );
       setDrafts([]);
-      onPointsCreated();
+      onPointsCreated(compositionId);
     } catch (error) {
       setMessages(messagesFromError(error));
     } finally {
@@ -422,7 +428,17 @@ export function WaveformPointsBlock({
               </Button>
             </>
           ) : (
-            <Typography>Ссылка на волну обновляется</Typography>
+            <>
+              <Typography>Ссылка на волну обновляется</Typography>
+              <Button
+                variant="text"
+                onClick={() => {
+                  void refreshUrl();
+                }}
+              >
+                Обновить ссылку
+              </Button>
+            </>
           )}
           <Box
             sx={{

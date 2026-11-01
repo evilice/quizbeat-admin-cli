@@ -371,11 +371,12 @@ MinIO исчез, повторный `GET /full` без `videoDurationSec` и `v
 композиций. `lint`, `test` (407) и `build` — код возврата 0.
 
 Серверная ветка `feat/step-17-artists-schema` влита в локальную `main`
-fast-forward 1 ноября 2026; `main` на коммите `7015a43` (этап 17,
-задача 3), `origin/main` пока `43d425b` — не запушено. Образы
-`quizbeat-app` и `quizbeat-srv-migrate` пересобраны из `main`. До
-пересборки `migrate` оставался старым и не видел `AddArtists`; после
-пересборки миграция видна в `migration:show`. Smoke на `main`: меню,
+fast-forward 1 ноября 2026. Серверная задача 4 этапа 17 выполнена —
+колонка `author` удалена; `main` и `origin/main` совпадают на коммите
+`79b30b8`. Образы `quizbeat-app` и `quizbeat-srv-migrate`
+пересобирались из `main` в ходе этапа. До пересборки `migrate`
+оставался старым и не видел `AddArtists`; после пересборки миграция видна
+в `migration:show`. Smoke на `main`: меню,
 пустой список исполнителей, создание и удаление исполнителя, пустой
 список композиций — проходят.
 

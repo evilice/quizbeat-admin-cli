@@ -101,7 +101,7 @@ src/
 - [documentation/tasks/status.md](./documentation/tasks/status.md) —
   какие этапы и задачи выполнены. Сверяться заново.
 - [documentation/tasks/task-writing-guidelines.md](./documentation/tasks/task-writing-guidelines.md) —
-  формат задач. Декомпозиция этапов 0–10 —
+  формат задач. Декомпозиция этапов 0–12 —
   [этап 0](./documentation/tasks/step-0/README.md),
   [этап 1](./documentation/tasks/step-1/README.md),
   [этап 2](./documentation/tasks/step-2/README.md),
@@ -113,7 +113,8 @@ src/
   [этап 8](./documentation/tasks/step-8/README.md),
   [этап 9](./documentation/tasks/step-9/README.md),
   [этап 10](./documentation/tasks/step-10/README.md),
-  [этап 11](./documentation/tasks/step-11/README.md).
+  [этап 11](./documentation/tasks/step-11/README.md),
+  [этап 12](./documentation/tasks/step-12/README.md).
 
 ## Правила разработки
 
